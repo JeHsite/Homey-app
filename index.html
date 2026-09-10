@@ -1230,6 +1230,10 @@ const NAV_ITEMS_ALL = [{
   label: 'סקירה כללית',
   icon: IHome
 }, {
+  id: 'kidmoney',
+  label: 'הכסף שלי',
+  icon: IPiggyBank
+}, {
   id: 'expenses',
   label: 'הוצאות והכנסות',
   icon: IDollar,
@@ -1643,7 +1647,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, ותמונה אם הוספתם. הם נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -1719,7 +1723,7 @@ function OnboardingTour({
   }, {
     emoji: '👨‍👩‍👧',
     title: 'כל המשפחה ביחד',
-    body: [LP('בהגדרות תמצאו את ', LB('קוד הקבוצה'), '. בני משפחה נרשמים עם "הצטרפות למשפחה" והקוד — ורואים את אותם נתונים.'), LP(LB('ילדים לא נרשמים'), ' — מוסיפים אותם במסך ', LB('"מי משתמש עכשיו?"'), ' ← כפתור ה-', LB('+'), '. לילד לא צריך אימייל או סיסמה, והוא רואה רק פתקים, טיולים ומתנות.'), LP('להורים מומלץ להגדיר ', LB('קוד PIN'), ' דרך אייקון העריכה שליד הפרופיל — כדי שילדים לא ייכנסו בטעות לאזורים הכספיים.')]
+    body: [LP('בהגדרות תמצאו את ', LB('קוד הקבוצה'), '. בני משפחה נרשמים עם "הצטרפות למשפחה" והקוד — ורואים את אותם נתונים.'), LP(LB('ילדים לא נרשמים'), ' — מוסיפים אותם במסך ', LB('"מי משתמש עכשיו?"'), ' ← כפתור ה-', LB('+'), '. לילד לא צריך אימייל או סיסמה. יש לו אזור ', LB('"הכסף שלי"'), ' — ארנק, הוצאות ויעדי חיסכון (אייפון, רישיון, טיול עם חברים…), בנפרד מתקציב המשפחה.'), LP('להורים מומלץ להגדיר ', LB('קוד PIN'), ' דרך אייקון העריכה שליד הפרופיל — כדי שילדים לא ייכנסו בטעות לאזורים הכספיים.')]
   }, {
     emoji: '📲',
     title: 'התקנה למסך הבית',
@@ -2189,53 +2193,6 @@ function ProfileScreen({
   const [pinGateFor, setPinGateFor] = useState(null);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
-  const [bioAvailable, setBioAvailable] = useState(false);
-  useEffect(() => {
-    if (!window.PublicKeyCredential) {
-      setBioAvailable(false);
-      return;
-    }
-    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(ok => setBioAvailable(!!ok)).catch(() => setBioAvailable(false));
-  }, []);
-  const tryBiometric = async () => {
-    setPinError('');
-    try {
-      const challenge = new Uint8Array(32);
-      crypto.getRandomValues(challenge);
-      const cred = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: {
-            name: 'Homey'
-          },
-          user: {
-            id: new TextEncoder().encode(pinGateFor.id),
-            name: pinGateFor.name,
-            displayName: pinGateFor.name
-          },
-          pubKeyCredParams: [{
-            type: 'public-key',
-            alg: -7
-          }, {
-            type: 'public-key',
-            alg: -257
-          }],
-          authenticatorSelection: {
-            authenticatorAttachment: 'platform',
-            userVerification: 'required'
-          },
-          timeout: 30000
-        }
-      });
-      if (cred) {
-        const p = pinGateFor;
-        setPinGateFor(null);
-        onSelect(p);
-      }
-    } catch (e) {
-      setPinError('הזיהוי הביומטרי בוטל או נכשל — אפשר להזין קוד');
-    }
-  };
   const [editingMember, setEditingMember] = useState(null);
   useEffect(() => {
     if (isDemo) return;
@@ -2390,12 +2347,7 @@ function ProfileScreen({
     }, pinError), /*#__PURE__*/React.createElement("button", {
       onClick: checkPin,
       className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mb-2"
-    }, "אישור"), bioAvailable && /*#__PURE__*/React.createElement("button", {
-      onClick: tryBiometric,
-      className: "ent-pill-btn ghost w-full py-2.5 text-sm mb-2 flex items-center justify-center gap-2"
-    }, /*#__PURE__*/React.createElement(IFaceId, {
-      size: 16
-    }), " כניסה עם זיהוי פנים / טביעת אצבע"), /*#__PURE__*/React.createElement("button", {
+    }, "אישור"), /*#__PURE__*/React.createElement("button", {
       onClick: () => setPinGateFor(null),
       className: "ent-pill-btn ghost w-full py-2 text-sm"
     }, "ביטול"), /*#__PURE__*/React.createElement("p", {
@@ -3958,7 +3910,10 @@ function App() {
     }
   });
   const isChild = currentProfile?.role === 'child';
-  const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild));
+  const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
+    ...item,
+    label: 'הכסף של הילדים'
+  } : item);
   const parentOnlyIds = NAV_ITEMS_ALL.filter(i => i.parentOnly).map(i => i.id);
   return /*#__PURE__*/React.createElement("div", {
     dir: "rtl",
@@ -5354,7 +5309,13 @@ function App() {
     onClick: () => deleteGift(g.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
-  }))))))), activeTab === 'help' && /*#__PURE__*/React.createElement("div", {
+  }))))))), activeTab === 'kidmoney' && /*#__PURE__*/React.createElement(KidMoney, {
+    familyId: familyId,
+    isDemo: isDemo,
+    currentProfile: currentProfile,
+    currency: currency,
+    showToast: showToast
+  }), activeTab === 'help' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
@@ -5394,7 +5355,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל — כך ילדים לא ייכנסו בטעות לאזורים הכספיים. הקוד נשמר מוצפן ונבדק בשרת, ואחרי 5 ניסיונות שגויים הכניסה ננעלת ל-5 דקות. כדי לשנות או להסיר קוד צריך את הקוד הנוכחי; שכחתם? התחברו מחדש עם הסיסמה, ותוך 10 דקות אפשר לשנות אותו בלי הקוד הישן. פרופיל ילד רואה רק פתקים, טיולים ומתנות.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל — כך ילדים לא ייכנסו בטעות לאזורים הכספיים. הקוד נשמר מוצפן ונבדק בשרת, ואחרי 5 ניסיונות שגויים הכניסה ננעלת ל-5 דקות. כדי לשנות או להסיר קוד צריך את הקוד הנוכחי; שכחתם? התחברו מחדש עם הסיסמה, ותוך 10 דקות אפשר לשנות אותו בלי הקוד הישן. פרופיל ילד רואה פתקים, טיולים, מתנות ואת \"הכסף שלי\" — ארנק, הוצאות ויעדי חיסכון משלו, בנפרד מתקציב המשפחה. הורים רואים את כל הילדים ב\"הכסף של הילדים\".")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -5736,6 +5697,491 @@ function App() {
     pushHint: pushHint,
     onEnablePush: togglePush
   }));
+}
+/* ---- הכסף של הילדים: ארנק, הוצאות ויעדי חיסכון לכל ילד, נפרד מתקציב המשפחה (supabase/kids.sql) ---- */
+const KID_INCOME = [['דמי כיס', '💰'], ['מתנה בכסף', '🎁'], ['עבודה', '💼'], ['מכרתי משהו', '🏷️'], ['אחר', '➕']];
+const KID_EXPENSE = [['ממתקים ואוכל', '🍫'], ['בילוי עם חברים', '🎉'], ['בגדים', '👕'], ['משחקים ואפליקציות', '🎮'], ['חוגים', '⚽'], ['מתנות לאחרים', '🎀'], ['תחבורה', '🚌'], ['אחר', '➖']];
+const KID_GOALS = [['קופת חיסכון', '🐷'], ['אייפון / טלפון חדש', '📱'], ['מתנת יומולדת', '🎂'], ['טיול עם חברים', '🏕️'], ['רישיון נהיגה', '🚗'], ['השקעה לעתיד', '📈'], ['אופניים / קורקינט', '🛴'], ['מחשב / קונסולה', '💻'], ['אחר', '🎯']];
+const KID_TO_GOAL = 'העברה לחיסכון';
+const KID_FROM_GOAL = 'חזרה מחיסכון';
+const KID_DEMO_STORE = {};
+const kidToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const kidEmoji = (list, c) => (list.find(x => x[0] === c) || [0, '•'])[1];
+function KidMoney({
+  familyId,
+  isDemo,
+  currentProfile,
+  currency,
+  showToast
+}) {
+  const isChild = currentProfile?.role === 'child';
+  const [kids, setKids] = useState(isChild ? [{
+    id: currentProfile.id,
+    name: currentProfile.name
+  }] : null);
+  const [kidId, setKidId] = useState(isChild ? currentProfile.id : null);
+  const [entries, setEntries] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [status, setStatus] = useState('loading'); // loading | ok | setup | error
+  const [form, setForm] = useState(null); // income | expense | goal
+  const [cat, setCat] = useState('');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [depositFor, setDepositFor] = useState(null);
+  const [depositAmt, setDepositAmt] = useState('');
+  const [busy, setBusy] = useState(false);
+  const money = v => `${currency}${Number(v || 0).toLocaleString()}`;
+  const inputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
+  useEffect(() => {
+    if (isChild) return;
+    if (isDemo) {
+      setKids([{
+        id: 'p3',
+        name: 'נועה'
+      }, {
+        id: 'p4',
+        name: 'איתי'
+      }]);
+      return;
+    }
+    sb.from('children').select('id, name').eq('family_id', familyId).then(({
+      data
+    }) => setKids(data || []));
+  }, [familyId, isChild, isDemo]);
+  useEffect(() => {
+    if (!kidId && kids && kids.length) setKidId(kids[0].id);
+  }, [kids, kidId]);
+  useEffect(() => {
+    if (!kidId) return;
+    let cancelled = false;
+    setStatus('loading');
+    setForm(null);
+    setDepositFor(null);
+    (async () => {
+      if (isDemo) {
+        if (!KID_DEMO_STORE[kidId]) KID_DEMO_STORE[kidId] = {
+          entries: [{
+            id: 'd2',
+            type: 'expense',
+            category: 'ממתקים ואוכל',
+            amount: 12,
+            note: 'קיוסק',
+            date: kidToday()
+          }, {
+            id: 'd1',
+            type: 'income',
+            category: 'דמי כיס',
+            amount: 50,
+            note: '',
+            date: kidToday()
+          }],
+          goals: [{
+            id: 'g1',
+            title: 'אייפון ליומולדת',
+            category: 'אייפון / טלפון חדש',
+            target: 2500,
+            saved: 640
+          }]
+        };
+        setEntries([...KID_DEMO_STORE[kidId].entries]);
+        setGoals([...KID_DEMO_STORE[kidId].goals]);
+        setStatus('ok');
+        return;
+      }
+      const [e1, g1] = await Promise.all([sb.from('kid_entries').select('*').eq('child_id', kidId).order('date', {
+        ascending: false
+      }).order('created_at', {
+        ascending: false
+      }).limit(1000), sb.from('kid_goals').select('*').eq('child_id', kidId).order('created_at')]);
+      if (cancelled) return;
+      const err = e1.error || g1.error;
+      if (err) {
+        // הטבלאות עוד לא נוצרו (kids.sql לא הורץ)
+        setStatus(['PGRST205', '42P01'].includes(err.code) ? 'setup' : 'error');
+        return;
+      }
+      setEntries(e1.data || []);
+      setGoals(g1.data || []);
+      setStatus('ok');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [kidId, isDemo]);
+  const pushEntry = async row => {
+    if (isDemo) {
+      KID_DEMO_STORE[kidId].entries.unshift({
+        id: 'd' + Date.now() + Math.random(),
+        ...row
+      });
+      setEntries([...KID_DEMO_STORE[kidId].entries]);
+      return;
+    }
+    const {
+      data,
+      error
+    } = await sb.from('kid_entries').insert(row).select().single();
+    if (error) throw error;
+    setEntries(prev => [data, ...prev]);
+  };
+  const sum = arr => arr.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const inc = entries.filter(e => e.type === 'income');
+  const exp = entries.filter(e => e.type === 'expense');
+  const balance = sum(inc) - sum(exp);
+  const mk = kidToday().slice(0, 7);
+  const monthIn = sum(inc.filter(e => String(e.date).startsWith(mk) && e.category !== KID_FROM_GOAL));
+  const monthOut = sum(exp.filter(e => String(e.date).startsWith(mk) && e.category !== KID_TO_GOAL));
+  const savedTotal = goals.reduce((s, g) => s + Number(g.saved || 0), 0);
+  const openForm = f => {
+    setForm(form === f ? null : f);
+    setCat('');
+    setAmount('');
+    setNote('');
+  };
+  const submit = async () => {
+    const amt = Number(amount);
+    if (!cat) return showToast('בחרו קטגוריה');
+    if (!(amt > 0)) return showToast('הזינו סכום');
+    setBusy(true);
+    try {
+      const base = {
+        family_id: familyId,
+        child_id: kidId
+      };
+      if (form === 'goal') {
+        const row = {
+          ...base,
+          title: note.trim() || cat,
+          category: cat,
+          target: amt,
+          saved: 0
+        };
+        if (isDemo) {
+          KID_DEMO_STORE[kidId].goals.push({
+            id: 'g' + Date.now(),
+            ...row
+          });
+          setGoals([...KID_DEMO_STORE[kidId].goals]);
+        } else {
+          const {
+            data,
+            error
+          } = await sb.from('kid_goals').insert(row).select().single();
+          if (error) throw error;
+          setGoals(prev => [...prev, data]);
+        }
+        showToast('🎯 יעד חדש נוצר!');
+      } else {
+        await pushEntry({
+          ...base,
+          type: form,
+          category: cat,
+          amount: amt,
+          note: note.trim() || null,
+          date: kidToday()
+        });
+        showToast(form === 'income' ? 'יש! הכסף נכנס לארנק 💰' : 'ההוצאה נשמרה');
+      }
+      setForm(null);
+    } catch (_e) {
+      showToast('שגיאה בשמירה');
+    }
+    setBusy(false);
+  };
+  const doDeposit = async g => {
+    const amt = Number(depositAmt);
+    if (!(amt > 0)) return;
+    if (amt > balance) return showToast(`בארנק יש ${money(Math.max(0, balance))} — אי אפשר להפקיד יותר`);
+    setBusy(true);
+    try {
+      const saved = Number(g.saved || 0) + amt;
+      if (isDemo) {
+        KID_DEMO_STORE[kidId].goals = KID_DEMO_STORE[kidId].goals.map(x => x.id === g.id ? {
+          ...x,
+          saved
+        } : x);
+        setGoals([...KID_DEMO_STORE[kidId].goals]);
+      } else {
+        const {
+          error
+        } = await sb.from('kid_goals').update({
+          saved
+        }).eq('id', g.id);
+        if (error) throw error;
+        setGoals(prev => prev.map(x => x.id === g.id ? {
+          ...x,
+          saved
+        } : x));
+      }
+      await pushEntry({
+        family_id: familyId,
+        child_id: kidId,
+        type: 'expense',
+        category: KID_TO_GOAL,
+        amount: amt,
+        note: g.title,
+        date: kidToday()
+      });
+      setDepositFor(null);
+      setDepositAmt('');
+      showToast(saved >= Number(g.target) ? '🎉 הגעת ליעד! כל הכבוד!' : 'הכסף הועבר לחיסכון 🐷');
+    } catch (_e) {
+      showToast('שגיאה בשמירה');
+    }
+    setBusy(false);
+  };
+  const removeGoal = async g => {
+    const saved = Number(g.saved || 0);
+    if (!window.confirm(saved > 0 ? `למחוק את "${g.title}"? ${money(saved)} שנחסכו יחזרו לארנק.` : `למחוק את "${g.title}"?`)) return;
+    try {
+      if (saved > 0) await pushEntry({
+        family_id: familyId,
+        child_id: kidId,
+        type: 'income',
+        category: KID_FROM_GOAL,
+        amount: saved,
+        note: g.title,
+        date: kidToday()
+      });
+      if (isDemo) {
+        KID_DEMO_STORE[kidId].goals = KID_DEMO_STORE[kidId].goals.filter(x => x.id !== g.id);
+        setGoals([...KID_DEMO_STORE[kidId].goals]);
+      } else {
+        const {
+          error
+        } = await sb.from('kid_goals').delete().eq('id', g.id);
+        if (error) throw error;
+        setGoals(prev => prev.filter(x => x.id !== g.id));
+      }
+    } catch (_e) {
+      showToast('שגיאה במחיקה');
+    }
+  };
+  const removeEntry = async e => {
+    if (isDemo) {
+      KID_DEMO_STORE[kidId].entries = KID_DEMO_STORE[kidId].entries.filter(x => x.id !== e.id);
+      setEntries([...KID_DEMO_STORE[kidId].entries]);
+      return;
+    }
+    const {
+      error
+    } = await sb.from('kid_entries').delete().eq('id', e.id);
+    if (error) return showToast('שגיאה במחיקה');
+    setEntries(prev => prev.filter(x => x.id !== e.id));
+  };
+  const chip = (label, emoji, selected, onClick) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    type: "button",
+    onClick,
+    className: "ent-pill-btn px-3 py-1.5 text-xs",
+    style: {
+      background: selected ? 'var(--bronze)' : 'var(--navy-panel)',
+      color: selected ? 'var(--on-accent)' : 'var(--text-2)',
+      border: '1px solid var(--line)'
+    }
+  }, emoji + ' ' + label);
+  const stat = (label, value, color) => /*#__PURE__*/React.createElement("div", {
+    className: "ent-mini-card p-4"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mb-1",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, label), /*#__PURE__*/React.createElement("p", {
+    className: "text-xl font-bold",
+    style: {
+      color
+    }
+  }, value));
+  const muted = (text, extra) => /*#__PURE__*/React.createElement("p", {
+    className: "text-sm " + (extra || ''),
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, text);
+  const heading = /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(IPiggyBank, {
+    size: 20
+  }), isChild ? ' הכסף שלי' : ' הכסף של הילדים');
+  if (kids && kids.length === 0) return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3"
+  }, heading, muted('עוד אין פרופילי ילדים במשפחה.'), muted('מוסיפים ילד במסך "מי משתמש עכשיו?" (החלפת פרופיל) ← כפתור ה-+. לילד לא צריך אימייל או סיסמה.'));
+  const formList = form === 'income' ? KID_INCOME : form === 'expense' ? KID_EXPENSE : KID_GOALS;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, heading, !isChild && kids && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, kids.map(k => chip(k.name, '🧒', k.id === kidId, () => setKidId(k.id)))), status === 'loading' && muted('טוען…'), status === 'error' && muted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && /*#__PURE__*/React.createElement("div", {
+    className: "p-4 rounded-xl space-y-1",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, "🛠️ האזור הזה כמעט מוכן"), muted(isChild ? 'בקשו מההורה להשלים את ההגדרה — ואז אפשר להתחיל לנהל את הכסף שלכם.' : 'צריך להריץ פעם אחת את קובץ ההגדרה supabase/kids.sql ב-Supabase (SQL Editor).')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 lg:grid-cols-4 gap-3"
+  }, stat('💳 בארנק', money(balance), balance >= 0 ? 'var(--pos)' : 'var(--neg-soft)'), stat('⬇️ נכנס החודש', money(monthIn), 'var(--pos)'), stat('⬆️ יצא החודש', money(monthOut), 'var(--neg-soft)'), stat('🐷 בחיסכון', money(savedTotal), 'var(--bronze)')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => openForm('income'),
+    className: "ent-pill-btn solid-bronze px-4 py-2 text-sm"
+  }, "+ כסף נכנס"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => openForm('expense'),
+    className: "ent-pill-btn ghost px-4 py-2 text-sm"
+  }, "− כסף יצא"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => openForm('goal'),
+    className: "ent-pill-btn ghost px-4 py-2 text-sm"
+  }, "🎯 יעד חיסכון חדש")), status === 'ok' && form && /*#__PURE__*/React.createElement("div", {
+    className: "p-4 rounded-xl space-y-3",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, form === 'income' ? 'מאיפה הגיע הכסף?' : form === 'expense' ? 'על מה הוצאת?' : 'בשביל מה חוסכים?'), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, formList.map(([l, e]) => chip(l, e, cat === l, () => setCat(l)))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    type: "number",
+    inputMode: "decimal",
+    min: "0",
+    placeholder: form === 'goal' ? `כמה צריך לחסוך? ${currency}` : `סכום ${currency}`,
+    value: amount,
+    onChange: e => setAmount(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    maxLength: 60,
+    placeholder: form === 'goal' ? 'שם היעד, למשל "אייפון ליומולדת"' : form === 'income' ? 'ממי / על מה? (אופציונלי)' : 'מה קנית? (אופציונלי)',
+    value: note,
+    onChange: e => setNote(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    disabled: busy,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm",
+    style: {
+      opacity: busy ? 0.6 : 1
+    }
+  }, busy ? 'שומר…' : 'שמירה'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setForm(null),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && balance > 0 && muted('💡 טיפ: הציבו יעד חיסכון — הרבה יותר קל לחסוך כשיודעים בשביל מה.', 'mt-1')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold"
+  }, "🎯 יעדי חיסכון"), goals.length === 0 ? muted('עוד אין יעדים. מה הדבר הבא שתרצו? אייפון, רישיון, טיול עם חברים…') : /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, goals.map(g => {
+    const target = Number(g.target || 0);
+    const saved = Number(g.saved || 0);
+    const pct = target ? Math.min(100, Math.round(saved / target * 100)) : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: g.id,
+      className: "ent-mini-card p-4 space-y-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ent-heading font-bold"
+    }, kidEmoji(KID_GOALS, g.category), ' ', g.title), /*#__PURE__*/React.createElement("button", {
+      className: "ent-icon-btn",
+      onClick: () => removeGoal(g),
+      "aria-label": "מחיקת יעד"
+    }, /*#__PURE__*/React.createElement(ITrash, {
+      size: 15
+    }))), /*#__PURE__*/React.createElement("div", {
+      className: "ent-progress-track"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "ent-progress-fill",
+      style: {
+        width: `${pct}%`
+      }
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, money(saved), " מתוך ", money(target), pct >= 100 ? ' · 🎉 הושג!' : ` · עוד ${money(target - saved)} (${pct}%)`), depositFor === g.id ? /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-2"
+    }, /*#__PURE__*/React.createElement("input", {
+      className: inputCls,
+      type: "number",
+      inputMode: "decimal",
+      min: "0",
+      autoFocus: true,
+      placeholder: `כמה להפקיד? ${currency}`,
+      value: depositAmt,
+      onChange: e => setDepositAmt(e.target.value),
+      onKeyDown: e => e.key === 'Enter' && doDeposit(g)
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => doDeposit(g),
+      disabled: busy,
+      className: "ent-pill-btn solid-bronze px-4 py-2 text-sm"
+    }, "הפקדה"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setDepositFor(null),
+      className: "ent-pill-btn ghost px-3 py-2 text-sm"
+    }, "✕")) : pct < 100 && /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setDepositFor(g.id);
+        setDepositAmt('');
+      },
+      className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+    }, "🐷 הפקדה מהארנק"));
+  }))), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold mb-2"
+  }, "📒 מה נכנס ומה יצא"), entries.length === 0 ? muted('עוד אין תנועות. התחילו מ"כסף נכנס" — למשל דמי כיס.') : entries.slice(0, 40).map(e => {
+    const isIn = e.type === 'income';
+    const transfer = e.category === KID_TO_GOAL || e.category === KID_FROM_GOAL;
+    const d = String(e.date || '').slice(0, 10).split('-');
+    return /*#__PURE__*/React.createElement("div", {
+      key: e.id,
+      className: "flex items-center justify-between gap-3 py-2",
+      style: {
+        borderBottom: '1px solid var(--line)'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm truncate",
+      style: {
+        color: 'var(--text)'
+      }
+    }, transfer ? '🐷' : kidEmoji(isIn ? KID_INCOME : KID_EXPENSE, e.category), ' ', e.category, e.note ? ' · ' + e.note : ''), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, d.length === 3 ? `${d[2]}.${d[1]}` : '')), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 shrink-0"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-bold",
+      style: {
+        color: transfer ? 'var(--bronze)' : isIn ? 'var(--pos)' : 'var(--neg-soft)'
+      }
+    }, (isIn ? '+' : '−') + money(e.amount)), !transfer && /*#__PURE__*/React.createElement("button", {
+      className: "ent-icon-btn",
+      onClick: () => removeEntry(e),
+      "aria-label": "מחיקה"
+    }, /*#__PURE__*/React.createElement(ITrash, {
+      size: 14
+    }))));
+  })));
 }
 function NewCategoryForm({
   onAdd
