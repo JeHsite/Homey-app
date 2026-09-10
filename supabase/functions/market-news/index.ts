@@ -11,7 +11,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    const key = Deno.env.get("FINNHUB_KEY");
+    const key = Deno.env.get("FINNHUB_KEY")?.trim(); // רווח מיותר בהדבקה שובר את המפתח
     if (!key) throw new Error("missing key");
 
     const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${key}`);
