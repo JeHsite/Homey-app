@@ -610,6 +610,29 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-empty-art { width: 120px; height: 90px; color: var(--text-dim); }
   .ent-empty-art .acc { color: var(--bronze); }
 
+  /* ===== המסך הראשי של הילד ===== */
+  .ent-kid-hero { position: relative; overflow: hidden; background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, #8B5CF6 30%, transparent), transparent 60%), radial-gradient(120% 140% at 0% 100%, color-mix(in srgb, #FF8A3D 26%, transparent), transparent 60%), var(--navy-panel); }
+  .ent-kid-float { display: inline-block; font-size: 64px; line-height: 1; flex-shrink: 0; }
+  .ent-kid-wave { display: inline-block; transform-origin: 70% 70%; }
+  .ent-kid-grad-text { background: linear-gradient(90deg, #FF8A3D, #8B5CF6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .ent-kid-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .75rem; border-radius: 999px; font-size: .78rem; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text-2); }
+  .ent-kid-badge { font-size: 46px; line-height: 1; display: inline-block; }
+  .ent-ring-fg { transition: stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1); }
+  .ent-sparkle { position: absolute; font-size: 14px; pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ent-kid-float { animation: ent-float 3.2s ease-in-out infinite; }
+    .ent-kid-wave { animation: ent-wave 2.4s ease-in-out 1s 2; }
+    .ent-kid-badge { animation: ent-pop .6s cubic-bezier(.2,1.6,.4,1) .2s backwards; }
+    .ent-ring-fg { animation: ent-ring 1s cubic-bezier(.2,.7,.2,1) .15s backwards; }
+    .ent-sparkle { animation: ent-twinkle 2.2s ease-in-out infinite; }
+    .ent-tip { animation: ent-rise .35s ease-out backwards; }
+  }
+  @keyframes ent-float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+  @keyframes ent-wave { 0%, 60%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(16deg); } 20%, 40% { transform: rotate(-8deg); } }
+  @keyframes ent-pop { from { transform: scale(.3); opacity: 0; } }
+  @keyframes ent-ring { from { stroke-dashoffset: var(--ring-len); } }
+  @keyframes ent-twinkle { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+
 </style>
 </head>
 <body>
@@ -1887,6 +1910,86 @@ function celebrate() {
   setTimeout(() => box.remove(), 3200);
 }
 
+/* ---- זיהוי פנים / טביעת אצבע (WebAuthn): לכל פרופיל הורה, בכל מכשיר בנפרד, רק אחרי הזנת PIN נכון.
+   זו נעילת מסך במכשיר (כמו ה-PIN) — הטלפון מאשר כל פנים/אצבע שרשומות בו. ---- */
+const BIO_KEY = id => 'homey_bio_' + id;
+const BIO_SKIP = id => 'homey_bio_skip_' + id;
+const lsGet = k => {
+  try {
+    return localStorage.getItem(k);
+  } catch (_e) {
+    return null;
+  }
+};
+const lsSet = (k, v) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch (_e) {}
+};
+const lsDel = k => {
+  try {
+    localStorage.removeItem(k);
+  } catch (_e) {}
+};
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+async function bioSupported() {
+  try {
+    return !!window.PublicKeyCredential && (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+  } catch (_e) {
+    return false;
+  }
+}
+const bioEnrolled = id => !!lsGet(BIO_KEY(id));
+const bioForget = id => lsDel(BIO_KEY(id));
+async function bioEnroll(p) {
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: {
+        name: 'Homey'
+      },
+      user: {
+        id: new TextEncoder().encode(String(p.id).slice(0, 64)),
+        name: p.name,
+        displayName: p.name
+      },
+      pubKeyCredParams: [{
+        type: 'public-key',
+        alg: -7
+      }, {
+        type: 'public-key',
+        alg: -257
+      }],
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform',
+        userVerification: 'required',
+        residentKey: 'discouraged'
+      },
+      timeout: 60000
+    }
+  });
+  if (cred) lsSet(BIO_KEY(p.id), b64u(cred.rawId));
+  return !!cred;
+}
+async function bioVerify(p) {
+  const id = lsGet(BIO_KEY(p.id));
+  if (!id) return false;
+  const res = await navigator.credentials.get({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{
+        type: 'public-key',
+        id: unb64u(id),
+        transports: ['internal']
+      }],
+      userVerification: 'required',
+      timeout: 60000
+    }
+  });
+  return !!res;
+}
+
 /* ---- PIN: נשמר מוצפן ונבדק בשרת (supabase/pin.sql). אם ה-SQL עוד לא הורץ — נופל חזרה להתנהגות הישנה ---- */
 const isMissingRpc = e => !!e && (e.code === 'PGRST202' || /could not find the function/i.test(e.message || ''));
 async function checkPinServer(profileId, pin) {
@@ -1973,7 +2076,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -2546,6 +2649,11 @@ function ProfileScreen({
   const [pinGateFor, setPinGateFor] = useState(null);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [bioOk, setBioOk] = useState(false);
+  const [offerBio, setOfferBio] = useState(null);
+  useEffect(() => {
+    bioSupported().then(setBioOk);
+  }, []);
   const [editingMember, setEditingMember] = useState(null);
   useEffect(() => {
     if (isDemo) return;
@@ -2608,11 +2716,29 @@ function ProfileScreen({
     setChildName('');
     setShowAddChild(false);
   };
+  // אחרי PIN נכון: אם אפשר, מציעים (פעם אחת) להפעיל זיהוי פנים במכשיר הזה
+  const passGate = p => {
+    setPinGateFor(null);
+    if (bioOk && !bioEnrolled(p.id) && !lsGet(BIO_SKIP(p.id))) setOfferBio(p);else onSelect(p);
+  };
+  const tryBio = async p => {
+    setPinError('');
+    try {
+      if (await bioVerify(p)) {
+        setPinGateFor(null);
+        onSelect(p);
+      }
+    } catch (_e) {
+      setPinError('הזיהוי בוטל או נכשל — אפשר להזין קוד');
+    }
+  };
   const attemptSelect = p => {
     if (p.role === 'parent' && p.hasPin) {
       setPinGateFor(p);
       setPinInput('');
       setPinError('');
+      // זיהוי פנים מופעל מיד, עוד בתוך הלחיצה (ספארי דורש שזה יקרה ממחווה של המשתמש)
+      if (bioOk && bioEnrolled(p.id)) tryBio(p);
       return;
     }
     onSelect(p);
@@ -2621,17 +2747,11 @@ function ProfileScreen({
     const p = pinGateFor;
     // דמו, או מסד שעוד לא עבר ל-pin.sql — השוואה מקומית כמו קודם
     if (isDemo || p.pin) {
-      if (pinInput === p.pin) {
-        setPinGateFor(null);
-        onSelect(p);
-      } else setPinError('קוד שגוי, נסה/י שוב');
+      if (pinInput === p.pin) passGate(p);else setPinError('קוד שגוי, נסה/י שוב');
       return;
     }
     const res = await checkPinServer(p.id, pinInput);
-    if (res === 'ok' || res === 'none') {
-      setPinGateFor(null);
-      onSelect(p);
-    } else if (res === 'locked') setPinError('יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות');else if (res === 'wrong') {
+    if (res === 'ok' || res === 'none') passGate(p);else if (res === 'locked') setPinError('יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות');else if (res === 'wrong') {
       setPinError('קוד שגוי, נסה/י שוב');
       setPinInput('');
     } else setPinError('לא הצלחנו לבדוק את הקוד — בדקו חיבור לאינטרנט');
@@ -2646,9 +2766,11 @@ function ProfileScreen({
       if (isDemo) {
         rest.pin = newPin || null;
         rest.hasPin = !!newPin;
+        bioForget(memberId);
       } else {
         const res = await savePin(memberId, newPin, currentPin);
         if (res !== 'ok' && res !== 'ok_legacy') return res;
+        bioForget(memberId); // קוד השתנה — זיהוי הפנים במכשיר מתאפס עד שיוזן הקוד החדש
         rest.pin = res === 'ok_legacy' ? newPin || null : null;
         rest.hasPin = !!newPin;
       }
@@ -2667,6 +2789,49 @@ function ProfileScreen({
     setEditingMember(null);
     return 'ok';
   };
+  if (offerBio) {
+    const p = offerBio;
+    const finish = () => {
+      setOfferBio(null);
+      onSelect(p);
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "ent-root min-h-screen flex items-center justify-center px-4",
+      dir: "rtl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "ent-card p-8 w-full max-w-xs text-center space-y-4"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ent-icon-badge"
+    }, /*#__PURE__*/React.createElement(IFaceId, {
+      size: 24
+    })), /*#__PURE__*/React.createElement("h2", {
+      className: "ent-heading font-bold text-lg"
+    }, "כניסה מהירה"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm leading-relaxed",
+      style: {
+        color: 'var(--text-2)'
+      }
+    }, "להפעיל כניסה עם זיהוי פנים / טביעת אצבע לפרופיל של ", p.name, " במכשיר הזה? בפעם הבאה לא יהיה צריך להקליד קוד."), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs leading-relaxed",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, "שימו לב: הטלפון מאשר כל פנים או אצבע שרשומות בו. אם גם ילד רשום במכשיר — עדיף להישאר עם קוד בלבד."), /*#__PURE__*/React.createElement("button", {
+      onClick: async () => {
+        try {
+          await bioEnroll(p);
+        } catch (_e) {}
+        finish();
+      },
+      className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
+    }, "הפעלה"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        lsSet(BIO_SKIP(p.id), '1');
+        finish();
+      },
+      className: "ent-pill-btn ghost w-full py-2 text-sm"
+    }, "לא עכשיו")));
+  }
   if (pinGateFor) {
     return /*#__PURE__*/React.createElement("div", {
       className: "ent-root min-h-screen flex items-center justify-center px-4",
@@ -2700,7 +2865,21 @@ function ProfileScreen({
     }, pinError), /*#__PURE__*/React.createElement("button", {
       onClick: checkPin,
       className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mb-2"
-    }, "אישור"), /*#__PURE__*/React.createElement("button", {
+    }, "אישור"), bioOk && bioEnrolled(pinGateFor.id) && /*#__PURE__*/React.createElement("button", {
+      onClick: () => tryBio(pinGateFor),
+      className: "ent-pill-btn ghost w-full py-2.5 text-sm mb-2 flex items-center justify-center gap-2"
+    }, /*#__PURE__*/React.createElement(IFaceId, {
+      size: 16
+    }), " כניסה עם זיהוי פנים / טביעת אצבע"), bioOk && !bioEnrolled(pinGateFor.id) && lsGet(BIO_SKIP(pinGateFor.id)) && /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        lsDel(BIO_SKIP(pinGateFor.id));
+        setPinError('אחרי הזנת הקוד נציע להפעיל זיהוי פנים');
+      },
+      className: "text-xs underline mb-2",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, "להפעיל זיהוי פנים?"), /*#__PURE__*/React.createElement("button", {
       onClick: () => setPinGateFor(null),
       className: "ent-pill-btn ghost w-full py-2 text-sm"
     }, "ביטול"), /*#__PURE__*/React.createElement("p", {
@@ -4764,63 +4943,15 @@ function App() {
     style: {
       color: 'var(--text-dim)'
     }
-  }, "אין אירועים קרובים")))), activeTab === 'dashboard' && isChild && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-6"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold"
-  }, "היי ", currentProfile?.name, "!"), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('trips'),
-    className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs flex items-center gap-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(ICompass, {
-    size: 13
-  }), " הטיול הבא"), nextTrip ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 font-semibold text-sm flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--cyan)'
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    cat: nextTrip.type,
-    map: TRIP_TYPES,
-    size: 15
-  })), nextTrip.title) : /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "לא תוכננו טיולים")), /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('gifts'),
-    className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs flex items-center gap-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(IGift, {
-    size: 13
-  }), " האירוע הקרוב"), nextGift ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 font-semibold text-sm flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    cat: nextGift.category,
-    map: GIFT_CATEGORIES,
-    size: 15
-  })), nextGift.event) : /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "אין אירועים קרובים")))), isChild && parentOnlyIds.includes(activeTab) && /*#__PURE__*/React.createElement("div", {
+  }, "אין אירועים קרובים")))), activeTab === 'dashboard' && isChild && /*#__PURE__*/React.createElement(KidDashboard, {
+    familyId: familyId,
+    isDemo: isDemo,
+    currentProfile: currentProfile,
+    currency: currency,
+    nextTrip: nextTrip,
+    nextGift: nextGift,
+    onNavigate: setActiveTab
+  }), isChild && parentOnlyIds.includes(activeTab) && /*#__PURE__*/React.createElement("div", {
     className: "ent-card ent-locked"
   }, /*#__PURE__*/React.createElement(ILock, {
     size: 30,
@@ -5775,7 +5906,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('התפריט', 'במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה — התפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('המסך הראשי של הילד', 'ילד שנכנס לפרופיל שלו רואה מסך משלו: כמה יש בארנק, רמת חיסכון עם תגים, טבעות התקדמות ליעדים, טיפ ומשפט מוטיבציה שמתחלפים כל יום, וכפתורים מהירים להוספת כסף, הוצאה ויעד.'), GS('זיהוי פנים / טביעת אצבע', 'להורה עם קוד PIN: אחרי הזנת הקוד הנכון Homey מציעה להפעיל כניסה עם זיהוי פנים או טביעת אצבע באותו מכשיר. שימו לב — הטלפון מאשר כל פנים או אצבע שרשומות בו, אז אם גם ילד רשום במכשיר, עדיף להישאר עם קוד. שינוי הקוד מבטל את זיהוי הפנים עד שמזינים את הקוד החדש.'), GS('התפריט','במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה — התפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -6106,6 +6237,33 @@ const KID_GOALS = [['קופת חיסכון', '🐷'], ['אייפון / טלפו�
 const KID_TO_GOAL = 'העברה לחיסכון';
 const KID_FROM_GOAL = 'חזרה מחיסכון';
 const KID_DEMO_STORE = {};
+const ensureKidDemo = id => {
+  if (!KID_DEMO_STORE[id]) KID_DEMO_STORE[id] = {
+    entries: [{
+      id: 'd2',
+      type: 'expense',
+      category: 'ממתקים ואוכל',
+      amount: 12,
+      note: 'קיוסק',
+      date: kidToday()
+    }, {
+      id: 'd1',
+      type: 'income',
+      category: 'דמי כיס',
+      amount: 50,
+      note: '',
+      date: kidToday()
+    }],
+    goals: [{
+      id: 'g1',
+      title: 'אייפון ליומולדת',
+      category: 'אייפון / טלפון חדש',
+      target: 2500,
+      saved: 640
+    }]
+  };
+  return KID_DEMO_STORE[id];
+};
 const kidToday = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -6163,30 +6321,7 @@ function KidMoney({
     setDepositFor(null);
     (async () => {
       if (isDemo) {
-        if (!KID_DEMO_STORE[kidId]) KID_DEMO_STORE[kidId] = {
-          entries: [{
-            id: 'd2',
-            type: 'expense',
-            category: 'ממתקים ואוכל',
-            amount: 12,
-            note: 'קיוסק',
-            date: kidToday()
-          }, {
-            id: 'd1',
-            type: 'income',
-            category: 'דמי כיס',
-            amount: 50,
-            note: '',
-            date: kidToday()
-          }],
-          goals: [{
-            id: 'g1',
-            title: 'אייפון ליומולדת',
-            category: 'אייפון / טלפון חדש',
-            target: 2500,
-            saved: 640
-          }]
-        };
+        ensureKidDemo(kidId);
         setEntries([...KID_DEMO_STORE[kidId].entries]);
         setGoals([...KID_DEMO_STORE[kidId].goals]);
         setStatus('ok');
@@ -6242,6 +6377,21 @@ function KidMoney({
     setAmount('');
     setNote('');
   };
+  // כפתור מהיר מהמסך הראשי של הילד ("קיבלתי כסף" וכו') — פותח ישר את הטופס המתאים
+  useEffect(() => {
+    if (status !== 'ok') return;
+    let intent = null;
+    try {
+      intent = sessionStorage.getItem('homey_kid_intent');
+      sessionStorage.removeItem('homey_kid_intent');
+    } catch (_e) {}
+    if (intent) {
+      setForm(intent);
+      setCat('');
+      setAmount('');
+      setNote('');
+    }
+  }, [status]);
   const submit = async () => {
     const amt = Number(amount);
     if (!cat) return showToast('בחרו קטגוריה');
@@ -6600,6 +6750,285 @@ function KidMoney({
     title: isChild ? '🌱 היעדים האישיים שלי' : '🌱 יעדים אישיים',
     note: isChild ? 'ללמוד משהו חדש, ספורט, רישיון — עם שלבים לסימון.' : 'היעדים האישיים של הילד/ה.'
   }));
+}
+
+/* ---- המסך הראשי של הילד: ארנק, רמה, יעדים, טיפ ומשפט יומי ---- */
+const KID_TIPS = ['לפני שקונים משהו — מחכים יום אחד. אם עדיין רוצים, כנראה שזה שווה את זה.', 'כל פעם שמקבלים דמי כיס, שמים קודם חלק בחיסכון — ורק אז מבזבזים.', 'להשוות מחירים לפני קנייה זה כמו למצוא כסף ברחוב.', 'רושמים כל הוצאה, גם קטנה — הקטנות מצטברות מהר.', 'יעד שרואים בדמיון (אייפון? אופניים?) עוזר לחסוך הרבה יותר.', 'קיבלת מתנה בכסף? אפשר לחלק: חצי לחיסכון, חצי לכיף.', 'לא חייבים לקנות הכל עכשיו — גם לחכות זה סוג של ניצחון.', 'אפשר להרוויח מדברים שכבר יש לך: למכור צעצוע או ספר שכבר לא משתמשים בהם.', 'ממתק כל יום ב־₪5 זה ₪150 בחודש. מה עוד אפשר לקנות בזה?', 'לפני קנייה שואלים: אני צריך את זה, או רק רוצה את זה?', 'חיסכון קטן כל שבוע עדיף על חיסכון גדול פעם בשנה.', 'מבצע "קנה 2 קבל 1" משתלם רק אם באמת צריך 3.', 'כסף בחיסכון לא נעלם — הוא מחכה לדבר שבאמת חשוב לך.', 'שווה לשאול את ההורים איך הם חוסכים — אפשר ללמוד מהם המון.', 'הכי כיף לקנות משהו שחסכת בשבילו בעצמך.', 'עבודה קטנה (שמירה על ילדים, עזרה, מכירה) יכולה לקרב אותך מהר ליעד.', 'משחקים עם קניות בפנים — שווה לבדוק כמה זה עולה באמת בסוף החודש.', 'כשמגיעים לחצי הדרך ליעד — מגיע לך רגע של גאווה.'];
+const KID_QUOTES = ['כל שקל שחוסכים היום — הוא חלום שמתקרב מחר.', 'צעדים קטנים, יעדים גדולים.', 'מי שחוסך — בוחר בעצמו.', 'הסבלנות שלך היא כוח־על.', 'את/ה הבוס של הכסף שלך.', 'לא צריך למהר — צריך להתמיד.', 'היעד שלך מחכה לך. קדימה!', 'חיסכון זה לא לוותר — זה לבחור.', 'כל הפקדה קטנה היא ניצחון קטן.', 'היום זה עוד צעד קדימה.'];
+const KID_LEVELS = [[0, 'חוסך/ת מתחיל/ה', '🌱'], [100, 'חוסך/ת צעיר/ה', '🐣'], [500, 'חוסך/ת מקצוען/ית', '⭐'], [1500, 'אלוף/ת החיסכון', '🏆'], [5000, 'מלך/ת הכסף', '👑']];
+const dayIndex = () => Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+const KidRing = ({
+  pct,
+  emoji
+}) => {
+  const r = 34,
+    c = 2 * Math.PI * r;
+  return /*#__PURE__*/React.createElement("svg", {
+    width: "84",
+    height: "84",
+    viewBox: "0 0 84 84",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+    id: "kidRingGrad",
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "1"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0",
+    stopColor: "#8B5CF6"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "1",
+    stopColor: "#FF8A3D"
+  }))), /*#__PURE__*/React.createElement("circle", {
+    cx: "42",
+    cy: "42",
+    r: r,
+    fill: "none",
+    strokeWidth: "9",
+    style: {
+      stroke: 'var(--navy-panel-2)'
+    }
+  }), /*#__PURE__*/React.createElement("circle", {
+    className: "ent-ring-fg",
+    cx: "42",
+    cy: "42",
+    r: r,
+    fill: "none",
+    stroke: "url(#kidRingGrad)",
+    strokeWidth: "9",
+    strokeLinecap: "round",
+    strokeDasharray: c,
+    strokeDashoffset: c * (1 - Math.min(1, Math.max(0, pct))),
+    transform: "rotate(-90 42 42)",
+    style: {
+      '--ring-len': c
+    }
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "42",
+    y: "50",
+    textAnchor: "middle",
+    fontSize: "24"
+  }, emoji));
+};
+function KidDashboard({
+  familyId,
+  isDemo,
+  currentProfile,
+  currency,
+  nextTrip,
+  nextGift,
+  onNavigate
+}) {
+  const kidId = currentProfile.id;
+  const [entries, setEntries] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [tipIdx, setTipIdx] = useState(() => dayIndex() % KID_TIPS.length);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (isDemo) {
+        const s = ensureKidDemo(kidId);
+        setEntries([...s.entries]);
+        setGoals([...s.goals]);
+        return;
+      }
+      const [e1, g1] = await Promise.all([sb.from('kid_entries').select('type, category, amount, date').eq('child_id', kidId).limit(1000), sb.from('kid_goals').select('*').eq('child_id', kidId).order('created_at')]);
+      if (cancelled || e1.error || g1.error) return;
+      setEntries(e1.data || []);
+      setGoals(g1.data || []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [kidId, isDemo]);
+  const money = v => `${currency}${Math.round(Number(v) || 0).toLocaleString()}`;
+  const sum = arr => arr.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const balance = sum(entries.filter(e => e.type === 'income')) - sum(entries.filter(e => e.type === 'expense'));
+  const mk = kidToday().slice(0, 7);
+  const monthIn = sum(entries.filter(e => e.type === 'income' && String(e.date).startsWith(mk) && e.category !== KID_FROM_GOAL));
+  const saved = goals.reduce((s, g) => s + Number(g.saved || 0), 0);
+  const lvlIdx = KID_LEVELS.reduce((acc, l, i) => saved >= l[0] ? i : acc, 0);
+  const lvl = KID_LEVELS[lvlIdx],
+    nextLvl = KID_LEVELS[lvlIdx + 1];
+  const lvlPct = nextLvl ? (saved - lvl[0]) / (nextLvl[0] - lvl[0]) : 1;
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : hour < 21 ? 'ערב טוב' : 'לילה טוב';
+  const quote = KID_QUOTES[dayIndex() % KID_QUOTES.length];
+  const topGoals = goals.filter(g => Number(g.saved) < Number(g.target)).sort((a, b) => b.saved / b.target - a.saved / a.target).slice(0, 3);
+  const go = intent => {
+    if (intent) {
+      try {
+        sessionStorage.setItem('homey_kid_intent', intent);
+      } catch (_e) {}
+    }
+    onNavigate('kidmoney');
+  };
+  const chip = (label, value) => /*#__PURE__*/React.createElement("span", {
+    className: "ent-kid-chip"
+  }, label, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: 'var(--text)'
+    }
+  }, value));
+  const action = (emoji, label, intent, primary) => /*#__PURE__*/React.createElement("button", {
+    key: intent,
+    onClick: () => go(intent),
+    className: `ent-pill-btn ${primary ? 'solid-bronze' : 'ghost'} py-3 flex items-center justify-center gap-2`,
+    style: {
+      fontSize: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, emoji), label);
+  const upcoming = (Ic, title, item, text, color, tab) => /*#__PURE__*/React.createElement("button", {
+    onClick: () => onNavigate(tab),
+    className: "ent-mini-card p-4 text-right w-full"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs flex items-center gap-1.5",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, /*#__PURE__*/React.createElement(Ic, {
+    size: 13
+  }), " ", title), /*#__PURE__*/React.createElement("p", {
+    className: "mt-1 font-semibold text-sm",
+    style: {
+      color: item ? color : 'var(--text-dim)'
+    }
+  }, text));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6 ent-kid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card ent-kid-hero p-6"
+  }, [['10%', '14%', '#FF8A3D', '0s'], ['72%', '10%', '#8B5CF6', '.7s'], ['58%', '78%', '#FF8A3D', '1.4s'], ['88%', '62%', '#8B5CF6', '.35s']].map(([l, t, c, d], i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "ent-sparkle",
+    "aria-hidden": "true",
+    style: {
+      left: l,
+      top: t,
+      color: c,
+      animationDelay: d
+    }
+  }, "✦")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-4 relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0 space-y-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, greet, ","), /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-2xl font-bold"
+  }, currentProfile.name, " ", /*#__PURE__*/React.createElement("span", {
+    className: "ent-kid-wave"
+  }, "👋")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "בארנק שלך"), /*#__PURE__*/React.createElement("p", {
+    className: "ent-hero-num",
+    style: {
+      color: 'var(--text)'
+    }
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: balance,
+    currency: currency
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, chip('🐷 בחיסכון ', money(saved)), chip('⬇️ נכנס החודש ', money(monthIn)))), /*#__PURE__*/React.createElement("span", {
+    className: "ent-kid-float",
+    "aria-hidden": "true"
+  }, "🐷"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-3 gap-3"
+  }, action('💰', 'קיבלתי כסף', 'income', true), action('🛍️', 'הוצאתי כסף', 'expense'), action('🎯', 'יעד חדש', 'goal')), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3 text-center"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הרמה שלך"), /*#__PURE__*/React.createElement("span", {
+    key: lvl[1],
+    className: "ent-kid-badge"
+  }, lvl[2]), /*#__PURE__*/React.createElement("p", {
+    className: "ent-heading font-bold text-lg ent-kid-grad-text"
+  }, lvl[1]), nextLvl ? goalBar(lvlPct, 'linear-gradient(90deg, #8B5CF6, #FF8A3D)') : null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, nextLvl ? `עוד ${money(nextLvl[0] - saved)} בחיסכון לרמה "${nextLvl[1]}" ${nextLvl[2]}` : 'הגעת לרמה הכי גבוהה! 👑')), /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "ent-heading font-bold"
+  }, "💡 טיפ של היום"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTipIdx((tipIdx + 1) % KID_TIPS.length),
+    className: "ent-pill-btn ghost px-3 py-1 text-xs"
+  }, "טיפ נוסף")), /*#__PURE__*/React.createElement("p", {
+    key: tipIdx,
+    className: "text-sm leading-relaxed ent-tip",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, KID_TIPS[tipIdx]))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold"
+  }, "🎯 היעדים שלי"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => go(null),
+    className: "ent-pill-btn ghost px-3 py-1 text-xs"
+  }, "לכל היעדים")), topGoals.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    text: goals.length ? 'כל היעדים הושגו! 🎉' : 'עוד אין יעדים',
+    hint: 'לחצו על "יעד חדש" ובחרו בשביל מה לחסוך'
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
+  }, topGoals.map(g => {
+    const pct = Number(g.saved) / Number(g.target);
+    return /*#__PURE__*/React.createElement("button", {
+      key: g.id,
+      onClick: () => go(null),
+      className: "ent-mini-card p-4 flex flex-col items-center gap-2 text-center"
+    }, /*#__PURE__*/React.createElement(KidRing, {
+      pct: pct,
+      emoji: kidEmoji(KID_GOALS, g.category)
+    }), /*#__PURE__*/React.createElement("p", {
+      className: "font-bold text-sm",
+      style: {
+        color: 'var(--text)'
+      }
+    }, g.title), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, Math.round(pct * 100), "% · עוד ", money(g.target - g.saved)));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 text-center"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mb-2",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "✨ משפט להיום"), /*#__PURE__*/React.createElement("p", {
+    className: "ent-heading text-xl font-bold ent-kid-grad-text",
+    style: {
+      lineHeight: 1.5
+    }
+  }, quote)), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, upcoming(ICompass, 'הטיול הבא', nextTrip, nextTrip ? nextTrip.title : 'לא תוכננו טיולים', 'var(--cyan)', 'trips'), upcoming(IGift, 'האירוע הקרוב', nextGift, nextGift ? nextGift.event : 'אין אירועים קרובים', 'var(--bronze)', 'gifts')));
 }
 
 /* ---- יעדים, שאלון פתיחה ויעדים מוצעים (supabase/goals.sql) ---- */
