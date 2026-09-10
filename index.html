@@ -607,6 +607,64 @@ const IHome = p => /*#__PURE__*/React.createElement(Icon, {
     d: "M5 10v10h14V10"
   }))
 });
+const ISparkles = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19 15l.8 1.9 1.9.8-1.9.8L19 20.5l-.8-1.9-1.9-.8 1.9-.8z"
+  }))
+});
+const IPaw = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "5.5",
+    cy: "10",
+    r: "2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "9",
+    cy: "5.5",
+    r: "2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "15",
+    cy: "5.5",
+    r: "2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "18.5",
+    cy: "10",
+    r: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 12c-2.8 0-5 2.5-5 5 0 1.7 1.3 3 3 3 .8 0 1.4-.3 2-.6.6.3 1.2.6 2 .6 1.7 0 3-1.3 3-3 0-2.5-2.2-5-5-5z"
+  }))
+});
+const IBaby = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M9 12h.01M15 12h.01"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19 6.3a9 9 0 011.8 3.9 2 2 0 010 3.6 9 9 0 01-17.6 0 2 2 0 010-3.6A9 9 0 0112 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"
+  }))
+});
+const IHeart = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement("path", {
+    d: "M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 000-7.8z"
+  })
+});
+const IBus = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "4",
+    width: "18",
+    height: "13",
+    rx: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M3 11h18M7 17v3M17 17v3M7.5 14h.01M16.5 14h.01"
+  }))
+});
 const IDollar = p => /*#__PURE__*/React.createElement(Icon, {
   ...p,
   d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
@@ -1247,17 +1305,57 @@ const EXPENSE_CATEGORIES = {
     Icon: IBag,
     subs: ['אלקטרוניקה', 'בית ותחזוקה', 'פנאי ותחביבים', 'שונות']
   },
-  'תחבורה': {
+  'רכב': {
     Icon: ICar,
-    subs: ['דלק', 'תחבורה ציבורית', 'חניה', 'תיקונים']
+    subs: ['דלק', 'טיפולים ומוסך', 'ביטוח ורישוי', 'חניה וכבישי אגרה']
+  },
+  'תחבורה': {
+    Icon: IBus,
+    subs: ['תחבורה ציבורית', 'מוניות', 'רכבת', 'אופניים וקורקינט']
   },
   'בריאות': {
     Icon: IHealth,
-    subs: ['תרופות', 'רופאים', 'ביטוח בריאות']
+    subs: ['תרופות', 'רופאים', 'ביטוח בריאות', 'שיניים ואופטיקה']
+  },
+  'טיפוח': {
+    Icon: ISparkles,
+    subs: ['מספרה', 'קוסמטיקה', 'מוצרי טיפוח', 'ציפורניים']
   },
   'פנאי': {
     Icon: IGamepad,
-    subs: ['בילויים', 'מנויים', 'ספורט']
+    subs: ['בילויים', 'מנויים', 'ספורט', 'תרבות והופעות']
+  },
+  'מתנות': {
+    Icon: IGift,
+    subs: ['ימי הולדת', 'חתונות ואירועים', 'חגים', 'מתנות לילדים']
+  },
+  'ילדים': {
+    Icon: IBaby,
+    subs: ['גן וצהרון', 'חוגים', 'צעצועים וציוד', 'דמי כיס']
+  },
+  'חינוך': {
+    Icon: IGraduationCap,
+    subs: ['שכר לימוד', 'קורסים', 'ספרים וציוד', 'שיעורים פרטיים']
+  },
+  'תקשורת': {
+    Icon: IWifi,
+    subs: ['סלולר', 'אינטרנט', 'טלוויזיה', 'סטרימינג']
+  },
+  'ביטוחים': {
+    Icon: IShield,
+    subs: ['ביטוח חיים', 'ביטוח דירה', 'ביטוח סיעודי', 'ביטוח נסיעות']
+  },
+  'חיות מחמד': {
+    Icon: IPaw,
+    subs: ['מזון', 'וטרינר', 'טיפוח', 'ציוד וצעצועים']
+  },
+  'חופשות': {
+    Icon: IPlane,
+    subs: ['טיסות', 'לינה', 'אטרקציות', 'השכרת רכב']
+  },
+  'תרומות': {
+    Icon: IHeart,
+    subs: ['צדקה', 'עמותות', 'מוסדות דת וקהילה', 'מעשרות']
   }
 };
 const INCOME_CATEGORIES = {
@@ -1322,8 +1420,9 @@ const THEMES = [{
   desc: 'שחור-לבן · ללא צבע',
   swatch: ['#0D0D0D', '#BFBFBF', '#8A8A8A']
 }];
-const CUSTOM_ICONS = [ITag, IGamepad, IHealth, IBag, IBriefcase, IBuilding, IHandshake, ITarget];
-const CHART_COLORS = ['#CBA05A', '#4FD8FF', 'var(--pos-soft)', '#D9B77A', '#9BA8D8', '#C98F6B', '#E0A9E0'];
+// מוסיפים רק בסוף — האינדקס נשמר במסד הנתונים
+const CUSTOM_ICONS = [ITag, IGamepad, IHealth, IBag, IBriefcase, IBuilding, IHandshake, ITarget, ISparkles, IPaw, IBaby, IHeart, IBus, IGift, IPlane, IGraduationCap, IWifi, IShield, ICar, IHome, IUtensils];
+const CHART_COLORS = ['#CBA05A', '#4FD8FF', 'var(--pos-soft)', '#D9B77A', '#9BA8D8', '#C98F6B', '#E0A9E0', '#7FB3A5', '#E3C46F', '#A48BD9', '#6FB7E3', '#D98C8C', '#9FD18B', '#F0B27A', '#8FA7B3', '#C7A2FF', '#E6D3A3'];
 let idCounter = 600;
 const nextId = () => ++idCounter;
 const monthLabel = dateStr => {
@@ -1458,9 +1557,232 @@ function generateFamilyCode(name) {
   const digits = String(Math.floor(10 + Math.random() * 90));
   return prefix + digits;
 }
+/* ---- PIN: נשמר מוצפן ונבדק בשרת (supabase/pin.sql). אם ה-SQL עוד לא הורץ — נופל חזרה להתנהגות הישנה ---- */
+const isMissingRpc = e => !!e && (e.code === 'PGRST202' || /could not find the function/i.test(e.message || ''));
+async function checkPinServer(profileId, pin) {
+  const {
+    data,
+    error
+  } = await sb.rpc('verify_pin', {
+    p_profile_id: profileId,
+    p_pin: pin
+  });
+  return error ? 'error' : data; // ok | wrong | locked | none | forbidden
+}
+async function savePin(profileId, newPin, currentPin) {
+  const {
+    data,
+    error
+  } = await sb.rpc('set_pin', {
+    p_profile_id: profileId,
+    p_new_pin: newPin || null,
+    p_current_pin: currentPin || null
+  });
+  if (isMissingRpc(error)) {
+    const {
+      error: e2
+    } = await sb.from('profiles').update({
+      pin: newPin || null
+    }).eq('id', profileId);
+    return e2 ? 'error' : 'ok_legacy';
+  }
+  return error ? 'error' : data; // ok | wrong_pin | locked | invalid_pin | forbidden
+}
+const PIN_MESSAGES = {
+  wrong_pin: 'הקוד הנוכחי שגוי',
+  locked: 'יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות',
+  invalid_pin: 'PIN חייב להיות 4-6 ספרות',
+  forbidden: 'אין הרשאה לשנות את הקוד הזה',
+  error: 'שגיאה בשמירת הקוד — בדקו חיבור לאינטרנט'
+};
+
+/* ---- מסמכים משפטיים: פרטיות, תנאי שימוש, נגישות ---- */
+const LEGAL_UPDATED = '10.09.2026';
+const LEGAL_OWNER = 'איתמר הורביץ (ENT code, video & beyond)';
+const LEGAL_EMAIL = 'jehbuissnes@gmail.com';
+const LB = t => /*#__PURE__*/React.createElement("b", {
+  style: {
+    color: 'var(--text)'
+  }
+}, t);
+const LP = (...kids) => /*#__PURE__*/React.createElement("p", null, ...kids);
+const LUL = (...items) => /*#__PURE__*/React.createElement("ul", {
+  className: "list-disc pr-5 space-y-1"
+}, ...items.map((t, i) => /*#__PURE__*/React.createElement("li", {
+  key: i
+}, ...[].concat(t))));
+const LS = (title, ...kids) => /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  className: "ent-heading font-bold mb-1",
+  style: {
+    color: 'var(--bronze)'
+  }
+}, title), ...kids);
+const LMAIL = () => /*#__PURE__*/React.createElement("a", {
+  href: 'mailto:' + LEGAL_EMAIL,
+  style: {
+    color: 'var(--cyan)'
+  }
+}, LEGAL_EMAIL);
+function LegalDoc({
+  doc
+}) {
+  const head = title => [/*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, title), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, 'עודכן לאחרונה: ' + LEGAL_UPDATED)];
+  let parts;
+  if (doc === 'terms') {
+    parts = [...head('תנאי שימוש'), LS('כללי', LP('השימוש ב-Homey כפוף לתנאים אלה ולמדיניות הפרטיות. השירות מופעל על ידי ', LB(LEGAL_OWNER), ' וניתן כרגע ללא תשלום. אם אינכם מסכימים לתנאים — אל תשתמשו בשירות.')), LS('מה השירות', LP('Homey היא כלי לניהול משק בית משפחתי: תיעוד הוצאות והכנסות, חיובים, חסכונות, נכסים, פתקים, טיולים ומתנות.'), LP(LB('Homey אינה ייעוץ פיננסי, השקעות, מס או משפטי.'), ' חדשות הכלכלה מוצגות לידיעה בלבד, ממקור חיצוני (Finnhub), ואינן המלצה.')), LS('החשבון והמשפחה', LUL('ההרשמה מיועדת לבני 18 ומעלה.', 'אתם אחראים לשמור על הסיסמה ועל קוד הקבוצה. כל מי שמחזיק בקוד יכול להצטרף למשפחה ולראות את הנתונים — שתפו אותו רק עם בני המשפחה.', 'ההורה אחראי לפרופילי הילדים שהוא יוצר ולמידע שמוזן בהם.', 'קוד PIN מונע כניסה מקרית לאזורים הכספיים, אבל אינו תחליף לשמירה על הטלפון עצמו.')), LS('שימוש אסור', LP('אסור לנסות לגשת לנתונים של משפחות אחרות, לעקוף מנגנוני אבטחה, לשבש את השירות, או להשתמש בו לפעילות בלתי חוקית.')), LS('זמינות ואחריות', LUL('השירות ניתן "כמות שהוא" (AS IS), בלי התחייבות לזמינות רציפה או לכך שיהיה נקי מתקלות.', 'תזכורות ותחזיות הן עזר בלבד. האחריות לשלם בזמן ולבדוק את הנתונים היא שלכם.', 'מומלץ לשמור תיעוד משלכם למידע חשוב — איננו מתחייבים לשחזר מידע שנמחק או אבד.')), LS('הגבלת אחריות', LP('במידה המרבית המותרת בדין, המפעיל לא יישא באחריות לנזק עקיף, תוצאתי או כספי שנגרם מהשימוש בשירות או מהסתמכות עליו.')), LS('קניין רוחני', LP('העיצוב, הקוד והתכנים של Homey שייכים למפעיל. המידע שאתם מזינים שייך לכם.')), LS('הפסקת שימוש', LP('אפשר להפסיק להשתמש בכל רגע ולבקש מחיקת חשבון (ראו מדיניות הפרטיות). המפעיל רשאי להשעות חשבון שמפר את התנאים, או להפסיק את השירות בהודעה מראש סבירה.')), LS('שינויים בתנאים', LP('התנאים עשויים להתעדכן, ותאריך העדכון יופיע בראש העמוד. המשך השימוש אחרי עדכון מהווה הסכמה לתנאים המעודכנים.')), LS('דין וסמכות שיפוט', LP('על התנאים חלים דיני מדינת ישראל, וסמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים בישראל.')), LS('יצירת קשר', LP(LMAIL()))];
+  } else if (doc === 'a11y') {
+    parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
+  } else {
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, ותמונה אם הוספתם. הם נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4 text-sm leading-relaxed",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, ...parts);
+}
+function LegalModal({
+  doc,
+  onClose
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center px-4 z-50",
+    style: {
+      background: 'rgba(0,0,0,0.6)'
+    },
+    dir: "rtl",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 w-full max-w-lg overflow-y-auto",
+    style: {
+      maxHeight: '85vh'
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement(LegalDoc, {
+    doc
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mt-5"
+  }, "סגירה")));
+}
+
+/* ---- הדרכה למשתמש חדש (פעם אחת לכל פרופיל הורה; אפשר לפתוח שוב מ"מדריך ומידע") ---- */
+function OnboardingTour({
+  onClose,
+  pushState,
+  pushHint,
+  onEnablePush
+}) {
+  const [step, setStep] = useState(0);
+  const ua = navigator.userAgent;
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const li = (...kids) => /*#__PURE__*/React.createElement("li", null, ...kids);
+  const ol = (...items) => /*#__PURE__*/React.createElement("ol", {
+    className: "list-decimal pr-5 space-y-1"
+  }, ...items);
+  const installBody = standalone ? [LP('✓ Homey כבר מותקנת על המכשיר הזה — מעולה!')] : isIOS ? [ol(li('פתחו את Homey ב', LB('ספארי')), li('לחצו על כפתור ', LB('השיתוף'), ' (ריבוע עם חץ למעלה)'), li('בחרו ', LB('"הוסף למסך הבית"'), ' ← ', LB('"הוסף"')), li('מעכשיו פתחו את Homey ', LB('מהאייקון')))] : isAndroid ? [ol(li('פתחו את Homey ב', LB('כרום')), li('לחצו על ', LB('⋮'), ' (שלוש הנקודות למעלה)'), li('בחרו ', LB('"התקן אפליקציה"'), ' או ', LB('"הוספה למסך הבית"')))] : [LP(LB('אייפון:'), ' ספארי ← שתף ← "הוסף למסך הבית".'), LP(LB('אנדרואיד:'), ' כרום ← ⋮ ← "התקן אפליקציה".'), LP(LB('מחשב:'), ' בכרום או באדג׳ — אייקון ההתקנה בשורת הכתובת.')];
+  const updateNote = LP('🔄 ', LB('עדכונים מגיעים לבד'), ' — גרסה חדשה נטענת בפתיחה הבאה. אם משהו נראה ישן, סגרו את האפליקציה לגמרי ופתחו מחדש.');
+  const pushBody = [LP('Homey יכולה לשלוח לכם תזכורת בבוקר — עד יומיים לפני כל חיוב שעוד לא שולם.'), pushState === 'on' ? LP('✓ ', LB('ההתראות פעילות'), ' במכשיר הזה.') : pushState === 'off' || pushState === 'busy' ? /*#__PURE__*/React.createElement("button", {
+    onClick: onEnablePush,
+    disabled: pushState === 'busy',
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, pushState === 'busy' ? 'רגע…' : '🔔 הפעלת התראות') : LP(pushHint || ''), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, 'אפשר לשנות את זה בכל רגע בהגדרות ← "התראות תשלום".')];
+  const steps = [{
+    emoji: '👋',
+    title: 'ברוכים הבאים ל-Homey',
+    body: [LP('כל הכסף של הבית במקום אחד — לכל המשפחה.'), LP('בכמה צעדים קצרים נראה איך הכל עובד. אפשר לדלג בכל שלב, ולחזור להדרכה מ', LB('"מדריך ומידע"'), '.')]
+  }, {
+    emoji: '📊',
+    title: 'כמה נשאר החודש?',
+    body: [LP('הדשבורד מחשב ', LB('כמה נשאר לכם להוציא החודש'), ': הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שעוד לא שולמו.'), LP('כדי שהמספר יהיה מדויק — הזינו הכנסות וחיובים קבועים.')]
+  }, {
+    emoji: '➕',
+    title: 'הוספת הוצאות וחיובים',
+    body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה — למשל מזון ← סופר, או רכב ← דלק.'), LP('חיובים קבועים (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"חיובים והתחייבויות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הם חוזרים אוטומטית ל"לא שולם".')]
+  }, {
+    emoji: '👨‍👩‍👧',
+    title: 'כל המשפחה ביחד',
+    body: [LP('בהגדרות תמצאו את ', LB('קוד הקבוצה'), '. בני משפחה נרשמים עם "הצטרפות למשפחה" והקוד — ורואים את אותם נתונים.'), LP('לילדים יוצרים ', LB('פרופיל ילד'), ' שרואה רק פתקים, טיולים ומתנות. להורים מומלץ להגדיר ', LB('קוד PIN'), ' דרך אייקון העריכה בפרופיל.')]
+  }, {
+    emoji: '📲',
+    title: 'התקנה למסך הבית',
+    body: [...installBody, updateNote]
+  }, {
+    emoji: '🔔',
+    title: 'תזכורות לפני כל תשלום',
+    body: pushBody
+  }];
+  const s = steps[step];
+  const last = step === steps.length - 1;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center px-4 z-50",
+    style: {
+      background: 'rgba(0,0,0,0.65)'
+    },
+    dir: "rtl",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "הדרכה"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 w-full max-w-md overflow-y-auto",
+    style: {
+      maxHeight: '88vh'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-4xl mb-3"
+  }, s.emoji), /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold mb-3",
+    style: {
+      color: 'var(--text)'
+    }
+  }, s.title), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 text-sm leading-relaxed",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, ...s.body), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-1.5 my-5"
+  }, steps.map((_, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "h-1.5 rounded-full transition-all",
+    style: {
+      width: i === step ? 18 : 6,
+      background: i === step ? 'var(--bronze)' : 'var(--line)'
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, step > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setStep(step - 1),
+    className: "ent-pill-btn ghost px-4 py-2 text-sm"
+  }, "הקודם"), !last && /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "ent-pill-btn ghost px-4 py-2 text-sm"
+  }, "דלג"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => last ? onClose() : setStep(step + 1),
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex-1"
+  }, last ? 'יאללה, מתחילים' : 'הבא'))));
+}
 function LoginScreen({
   onEnter
 }) {
+  const [legalDoc, setLegalDoc] = useState(null);
   const [mode, setMode] = useState('login');
   const [signupType, setSignupType] = useState('create');
   const [name, setName] = useState('');
@@ -1532,10 +1854,10 @@ function LoginScreen({
           } = await sb.from('profiles').insert({
             id: userId,
             family_id: family.id,
-            full_name: name,
-            pin: pin || null
+            full_name: name
           });
           if (profErr) throw profErr;
+          if (pin) await savePin(userId, pin, null);
           setPendingFamilyId(family.id);
           setRevealCode(code);
           setLoading(false);
@@ -1556,10 +1878,10 @@ function LoginScreen({
           } = await sb.from('profiles').insert({
             id: userId,
             family_id: family.id,
-            full_name: name,
-            pin: pin || null
+            full_name: name
           });
           if (profErr) throw profErr;
+          if (pin) await savePin(userId, pin, null);
           setLoading(false);
           onEnter(family.id);
           return;
@@ -1786,7 +2108,36 @@ function LoginScreen({
   })), /*#__PURE__*/React.createElement("button", {
     onClick: () => onEnter('DEMO'),
     className: "ent-pill-btn ghost w-full py-2.5 text-sm"
-  }, "כניסת דמו מהירה (בלי הרשמה, בלי שמירה)")));
+  }, "כניסת דמו מהירה (בלי הרשמה, בלי שמירה)"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-center mt-4 leading-relaxed",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, "בהרשמה ובשימוש ב-Homey את/ה מאשר/ת את ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setLegalDoc('terms'),
+    className: "underline",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "תנאי השימוש"), " ואת ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setLegalDoc('privacy'),
+    className: "underline",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "מדיניות הפרטיות"), " · ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setLegalDoc('a11y'),
+    className: "underline",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הצהרת נגישות")), legalDoc && /*#__PURE__*/React.createElement(LegalModal, {
+    doc: legalDoc,
+    onClose: () => setLegalDoc(null)
+  })));
 }
 function ProfileScreen({
   familyId,
@@ -1883,13 +2234,16 @@ function ProfileScreen({
         data: parents
       }, {
         data: kids
-      }] = await Promise.all([sb.from('profiles').select('id, full_name, avatar, pin, status, photo_url').eq('family_id', familyId), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId)]);
+      }] = await Promise.all([
+      // has_pin קיים אחרי pin.sql; לפני כן נופלים לעמודת pin הישנה
+      sb.from('profiles').select('id, full_name, avatar, has_pin, status, photo_url').eq('family_id', familyId).then(r => r.error ? sb.from('profiles').select('id, full_name, avatar, pin, status, photo_url').eq('family_id', familyId) : r), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId)]);
       const list = [...(parents || []).map(p => ({
         id: p.id,
         name: p.full_name,
         avatar: p.avatar || '',
         role: 'parent',
-        pin: p.pin,
+        pin: p.pin || null,
+        hasPin: !!(p.has_pin || p.pin),
         status: p.status || '',
         photoUrl: p.photo_url || ''
       })), ...(kids || []).map(k => ({
@@ -1934,7 +2288,7 @@ function ProfileScreen({
     setShowAddChild(false);
   };
   const attemptSelect = p => {
-    if (p.role === 'parent' && p.pin) {
+    if (p.role === 'parent' && p.hasPin) {
       setPinGateFor(p);
       setPinInput('');
       setPinError('');
@@ -1942,27 +2296,55 @@ function ProfileScreen({
     }
     onSelect(p);
   };
-  const checkPin = () => {
-    if (pinInput === pinGateFor.pin) {
-      const p = pinGateFor;
+  const checkPin = async () => {
+    const p = pinGateFor;
+    // דמו, או מסד שעוד לא עבר ל-pin.sql — השוואה מקומית כמו קודם
+    if (isDemo || p.pin) {
+      if (pinInput === p.pin) {
+        setPinGateFor(null);
+        onSelect(p);
+      } else setPinError('קוד שגוי, נסה/י שוב');
+      return;
+    }
+    const res = await checkPinServer(p.id, pinInput);
+    if (res === 'ok' || res === 'none') {
       setPinGateFor(null);
       onSelect(p);
-    } else setPinError('קוד שגוי, נסה/י שוב');
+    } else if (res === 'locked') setPinError('יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות');else if (res === 'wrong') {
+      setPinError('קוד שגוי, נסה/י שוב');
+      setPinInput('');
+    } else setPinError('לא הצלחנו לבדוק את הקוד — בדקו חיבור לאינטרנט');
   };
   const saveProfileEdit = async (memberId, role, updates) => {
+    const {
+      pin: newPin,
+      currentPin,
+      ...rest
+    } = updates;
+    if ('pin' in updates && role === 'parent') {
+      if (isDemo) {
+        rest.pin = newPin || null;
+        rest.hasPin = !!newPin;
+      } else {
+        const res = await savePin(memberId, newPin, currentPin);
+        if (res !== 'ok' && res !== 'ok_legacy') return res;
+        rest.pin = res === 'ok_legacy' ? newPin || null : null;
+        rest.hasPin = !!newPin;
+      }
+    }
     setMembers(prev => prev.map(m => m.id === memberId ? {
       ...m,
-      ...updates
+      ...rest
     } : m));
     if (!isDemo) {
       const table = role === 'parent' ? 'profiles' : 'children';
       const dbUpdates = {};
       if ('status' in updates) dbUpdates.status = updates.status;
       if ('photoUrl' in updates) dbUpdates.photo_url = updates.photoUrl;
-      if ('pin' in updates && role === 'parent') dbUpdates.pin = updates.pin || null;
-      await sb.from(table).update(dbUpdates).eq('id', memberId);
+      if (Object.keys(dbUpdates).length) await sb.from(table).update(dbUpdates).eq('id', memberId);
     }
     setEditingMember(null);
+    return 'ok';
   };
   if (pinGateFor) {
     return /*#__PURE__*/React.createElement("div", {
@@ -2005,7 +2387,12 @@ function ProfileScreen({
     }), " כניסה עם זיהוי פנים / טביעת אצבע"), /*#__PURE__*/React.createElement("button", {
       onClick: () => setPinGateFor(null),
       className: "ent-pill-btn ghost w-full py-2 text-sm"
-    }, "ביטול")));
+    }, "ביטול"), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs mt-3 leading-relaxed",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, "שכחת את הקוד? התנתקו, התחברו מחדש עם הסיסמה של ", pinGateFor.name, ", ותוך 10 דקות אפשר להסיר או לשנות את הקוד בעריכת הפרופיל — בלי הקוד הישן.")));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-root min-h-screen flex flex-col items-center justify-center px-4",
@@ -2051,7 +2438,7 @@ function ProfileScreen({
     style: {
       color: 'var(--cyan)'
     }
-  }, "מצב ילד/ה"), p.role === 'parent' && p.pin && /*#__PURE__*/React.createElement("span", {
+  }, "מצב ילד/ה"), p.role === 'parent' && p.hasPin && /*#__PURE__*/React.createElement("span", {
     className: "text-xs flex items-center gap-1",
     style: {
       color: 'var(--bronze)'
@@ -2123,7 +2510,11 @@ function EditProfileModal({
 }) {
   const [status, setStatus] = useState(member.status || '');
   const [photoUrl, setPhotoUrl] = useState(member.photoUrl || '');
-  const [pin, setPin] = useState(member.pin || '');
+  const [pin, setPin] = useState('');
+  const [currentPin, setCurrentPin] = useState('');
+  const [removePin, setRemovePin] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const hasPin = !!member.hasPin;
   const [pinErr, setPinErr] = useState('');
   const [showPhotoHelp, setShowPhotoHelp] = useState(false);
   const [photoErr, setPhotoErr] = useState('');
@@ -2158,17 +2549,29 @@ function EditProfileModal({
     reader.onerror = () => setPhotoErr('שגיאה בקריאת הקובץ');
     reader.readAsDataURL(file);
   };
-  const save = () => {
+  const save = async () => {
     if (pin && !/^[0-9]{4,6}$/.test(pin)) {
       setPinErr('PIN חייב להיות 4-6 ספרות');
+      return;
+    }
+    // מסד ישן (לפני pin.sql): הקוד עוד גלוי, בודקים אותו כאן
+    if (member.pin && (pin || removePin) && currentPin !== member.pin) {
+      setPinErr(PIN_MESSAGES.wrong_pin);
       return;
     }
     const updates = {
       status,
       photoUrl
     };
-    if (member.role === 'parent') updates.pin = pin;
-    onSave(updates);
+    if (member.role === 'parent' && (pin || removePin)) {
+      updates.pin = removePin ? '' : pin;
+      updates.currentPin = currentPin;
+    }
+    setSaving(true);
+    setPinErr('');
+    const res = await onSave(updates);
+    setSaving(false);
+    if (res && res !== 'ok') setPinErr(PIN_MESSAGES[res] || PIN_MESSAGES.error);
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center px-4 z-50",
@@ -2236,14 +2639,37 @@ function EditProfileModal({
     value: status,
     onChange: e => setStatus(e.target.value),
     maxLength: 40
-  }), member.role === 'parent' && /*#__PURE__*/React.createElement("input", {
+  }), member.role === 'parent' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, hasPin && /*#__PURE__*/React.createElement("input", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
-    type: "text",
+    type: "password",
     inputMode: "numeric",
-    placeholder: "קוד PIN אישי (4-6 ספרות, השאר ריק לביטול)",
+    autoComplete: "off",
+    placeholder: "קוד PIN נוכחי (נדרש כדי לשנות או להסיר)",
+    value: currentPin,
+    onChange: e => setCurrentPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
+  }), !removePin && /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    type: "password",
+    inputMode: "numeric",
+    autoComplete: "off",
+    placeholder: hasPin ? "קוד PIN חדש (השאירו ריק כדי לא לשנות)" : "קוד PIN אישי (4-6 ספרות, אופציונלי)",
     value: pin,
     onChange: e => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
-  }), pinErr && /*#__PURE__*/React.createElement("p", {
+  }), hasPin && /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: removePin,
+    onChange: e => {
+      setRemovePin(e.target.checked);
+      setPin('');
+    }
+  }), "הסרת קוד ה-PIN")), pinErr && /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
     style: {
       color: 'var(--neg-soft)'
@@ -2252,8 +2678,12 @@ function EditProfileModal({
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: save,
-    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex-1"
-  }, "שמירה"), /*#__PURE__*/React.createElement("button", {
+    disabled: saving,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex-1",
+    style: {
+      opacity: saving ? 0.6 : 1
+    }
+  }, saving ? 'שומר…' : 'שמירה'), /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
     className: "ent-pill-btn ghost px-5 py-2 text-sm flex-1"
   }, "ביטול")))));
@@ -2399,6 +2829,19 @@ function App() {
     unsupported: 'הדפדפן הזה לא תומך בהתראות'
   }[pushState];
   const pushToggleable = pushState === 'on' || pushState === 'off' || pushState === 'busy';
+  const [showTour, setShowTour] = useState(false);
+  useEffect(() => {
+    if (authStage !== 'app' || !currentProfile || currentProfile.role === 'child') return;
+    try {
+      if (!localStorage.getItem('homey_tour_' + currentProfile.id)) setShowTour(true);
+    } catch (_e) {}
+  }, [authStage, currentProfile]);
+  const closeTour = () => {
+    setShowTour(false);
+    try {
+      localStorage.setItem('homey_tour_' + (currentProfile ? currentProfile.id : 'x'), '1');
+    } catch (_e) {}
+  };
 
   useEffect(() => {
     if (authStage !== 'app' || currentProfile?.role === 'child') return;
@@ -4905,11 +5348,11 @@ function App() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-1 p-1 rounded-full mb-5 w-fit",
+    className: "flex flex-wrap gap-1 p-1 rounded-2xl mb-5 w-fit",
     style: {
       background: 'var(--navy-panel-2)'
     }
-  }, [['guide', 'מדריך שימוש'], ['privacy', 'מדיניות פרטיות'], ['community', 'קהילה']].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
+  }, [['guide', 'מדריך שימוש'], ['privacy', 'מדיניות פרטיות'], ['terms', 'תנאי שימוש'], ['a11y', 'נגישות'], ['community', 'קהילה']].map(([id, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => setHelpTab(id),
     className: "ent-pill-btn px-4 py-1.5 text-xs",
@@ -4927,7 +5370,10 @@ function App() {
     style: {
       color: 'var(--text)'
     }
-  }, "מדריך שימוש"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "מדריך שימוש"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowTour(true),
+    className: "ent-pill-btn ghost px-4 py-2 text-xs"
+  }, "▶ הצגת ההדרכה מחדש"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -4937,7 +5383,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל — כך ילדים לא ייכנסו לאזורים הכספיים. פרופיל ילד רואה רק פתקים, טיולים ומתנות.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל — כך ילדים לא ייכנסו בטעות לאזורים הכספיים. הקוד נשמר מוצפן ונבדק בשרת, ואחרי 5 ניסיונות שגויים הכניסה ננעלת ל-5 דקות. כדי לשנות או להסיר קוד צריך את הקוד הנוכחי; שכחתם? התחברו מחדש עם הסיסמה, ותוך 10 דקות אפשר לשנות אותו בלי הקוד הישן. פרופיל ילד רואה רק פתקים, טיולים ומתנות.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -4957,7 +5403,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "בהגדרות אפשר להוסיף קטגוריות הוצאה משלכם (עם אייקון ותתי-קטגוריות), מעבר לברירת המחדל — דיור, מזון, בגדים, קניות, תחבורה, בריאות ופנאי.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -4972,62 +5418,13 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "העיגול שבראש המסך"), /*#__PURE__*/React.createElement("p", null, "כחול = מחובר, כל שינוי נשמר בענן. אדום = אין אינטרנט, שינויים לא יישמרו. אפור = מצב דמו."))), helpTab === 'privacy' && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-4 text-sm leading-relaxed",
-    style: {
-      color: 'var(--text-2)'
-    }
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold",
-    style: {
-      color: 'var(--text)'
-    }
-  }, "מדיניות פרטיות"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "בהתאם לחוק הגנת הפרטיות, התשמ\"א-1981, ולתיקון 13 לחוק (בתוקף מאוגוסט 2025)."), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "אילו נתונים נאספים"), /*#__PURE__*/React.createElement("p", null, "כתובת אימייל וסיסמה (מוצפנת) לצורך התחברות; שם מלא ותמונת פרופיל אם בחרתם להוסיף; והנתונים הפיננסיים והמשפחתיים שאתם מזינים בעצמכם — הוצאות, הכנסות, חיובים, חסכונות, נכסים, פתקים, טיולים ומתנות.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "מטרת השימוש"), /*#__PURE__*/React.createElement("p", null, "הנתונים משמשים אך ורק להצגת המידע שלכם באפליקציה ולחישוב התחזיות והסיכומים. אין שימוש מסחרי, אין פרסום, ואין מכירה או העברה של מידע לצדדים שלישיים.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "מי רואה את המידע"), /*#__PURE__*/React.createElement("p", null, "רק בני המשפחה שחולקים את אותו קוד קבוצה. הפרדה זו נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק בממשק — כלומר משפחה אחת אינה יכולה טכנית לגשת לנתוני משפחה אחרת.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "היכן הנתונים מאוחסנים"), /*#__PURE__*/React.createElement("p", null, "בשרתי Supabase, ספק תשתית ענן. הגישה מוצפנת (HTTPS) והסיסמאות נשמרות בגיבוב חד-כיווני ואינן ניתנות לשחזור.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "הזכויות שלכם"), /*#__PURE__*/React.createElement("p", null, "זכות לעיין במידע, לתקן אותו ולמחוק אותו — כל אלה זמינים ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו\"איפוס כל הנתונים\" בהגדרות. למחיקת חשבון מלאה ניתן לפנות למנהל המשפחה.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "תקופת שמירה"), /*#__PURE__*/React.createElement("p", null, "הנתונים נשמרים כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית ואינה ניתנת לשחזור.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, "אירוע אבטחה"), /*#__PURE__*/React.createElement("p", null, "במקרה של חשד לדליפת מידע, המשתמשים יעודכנו והרשות להגנת הפרטיות תיידע בהתאם לחובות הדיווח שבתיקון 13.")), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs pt-2",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "הערה: זהו נוסח בסיסי המותאם לשימוש משפחתי פרטי. אם האפליקציה תופץ לציבור הרחב או תשמש למטרה מסחרית, מומלץ להתייעץ עם עורך/ת דין בתחום הגנת הפרטיות. איננו עורכי דין וזה אינו ייעוץ משפטי.")), helpTab === 'community' && /*#__PURE__*/React.createElement("div", {
+  }, "העיגול שבראש המסך"), /*#__PURE__*/React.createElement("p", null, "כחול = מחובר, כל שינוי נשמר בענן. אדום = אין אינטרנט, שינויים לא יישמרו. אפור = מצב דמו."))), helpTab === 'privacy' && /*#__PURE__*/React.createElement(LegalDoc, {
+    doc: 'privacy'
+  }), helpTab === 'terms' && /*#__PURE__*/React.createElement(LegalDoc, {
+    doc: 'terms'
+  }), helpTab === 'a11y' && /*#__PURE__*/React.createElement(LegalDoc, {
+    doc: 'a11y'
+  }), helpTab === 'community' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
     style: {
       color: 'var(--text-2)'
@@ -5322,7 +5719,12 @@ function App() {
     }
   }, familyInfo.groupCode)))))), toast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
-  }, toast));
+  }, toast), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
+    onClose: closeTour,
+    pushState: pushState,
+    pushHint: pushHint,
+    onEnablePush: togglePush
+  }));
 }
 function NewCategoryForm({
   onAdd
