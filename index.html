@@ -566,6 +566,50 @@ body[data-compact="1"] main { gap: .75rem; }
   body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-progress-track { box-shadow: inset 0 1px 2px rgba(16,32,46,.12); }
   @media (prefers-reduced-motion: reduce) { .ent-stat, .ent-progress-fill { transition: none; } .ent-stat.cursor-pointer:hover { transform: none; } }
 
+  /* ===== תנועה (4) — רק למי שלא ביקש להפחית תנועה ===== */
+  @media (prefers-reduced-motion: no-preference) {
+    .ent-card, .ent-mini-card { animation: ent-rise .38s cubic-bezier(.2,.7,.2,1) backwards; }
+    .ent-progress-fill { transform-origin: right center; animation: ent-fill .8s cubic-bezier(.2,.7,.2,1) backwards; }
+    .ent-bar { transform-origin: bottom; animation: ent-grow .7s cubic-bezier(.2,.7,.2,1) backwards; }
+    .ent-donut-seg { animation: ent-fade .6s ease-out backwards; }
+    .ent-pill-btn:active, .ent-icon-btn:active { transform: scale(.96); }
+  }
+  @keyframes ent-rise { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes ent-fill { from { transform: scaleX(0); } }
+  @keyframes ent-grow { from { transform: scaleY(0); } }
+  @keyframes ent-fade { from { opacity: 0; } }
+  .ent-skel { border-radius: 10px; background: linear-gradient(90deg, var(--navy-panel-2) 0%, color-mix(in srgb, var(--navy-panel-2) 80%, var(--text) 12%) 50%, var(--navy-panel-2) 100%); background-size: 200% 100%; animation: ent-shimmer 1.3s linear infinite; }
+  @keyframes ent-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .ent-skel { animation: none; } }
+
+  /* ===== גרפים (5) ===== */
+  .ent-donut-wrap { position: relative; width: 170px; height: 170px; flex-shrink: 0; }
+  .ent-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+  .ent-donut-seg { transition: stroke-width .15s ease, opacity .15s ease; cursor: pointer; }
+  .ent-legend-row { display: flex; align-items: center; gap: .5rem; font-size: .75rem; padding: 3px 6px; margin-bottom: 2px; border-radius: 8px; cursor: pointer; transition: background .15s ease; }
+  .ent-legend-row.on { background: var(--navy-panel-2); }
+  .ent-bar { transition: filter .15s ease; }
+  .ent-bar:hover { filter: brightness(1.15); }
+  .ent-bars-grid { position: absolute; inset: 14px 0 26px 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+  .ent-bars-grid span { border-top: 1px dashed var(--line); }
+
+  /* ===== אזור הילדים (6) — צבעים משלו, עגול יותר, כפתורים "לחיצים" ===== */
+  .ent-kid { --bronze: #FF8A3D; --cyan: #8B5CF6; --on-accent: #1B1030; }
+  .ent-kid .ent-card { border-radius: 26px; }
+  .ent-kid .ent-mini-card { border-radius: 20px; }
+  .ent-kid .ent-pill-btn { font-size: .95rem; }
+  .ent-kid .ent-pill-btn.solid-bronze { box-shadow: 0 4px 0 color-mix(in srgb, var(--bronze) 55%, #000); }
+  .ent-kid .ent-pill-btn.solid-bronze:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--bronze) 55%, #000); }
+  .ent-kid .ent-progress-track { height: 14px; }
+  .ent-kid .ent-progress-fill { background: linear-gradient(90deg, #8B5CF6, #FF8A3D); }
+  .ent-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 120; overflow: hidden; }
+  .ent-confetti i { position: absolute; top: -14px; width: 9px; height: 14px; border-radius: 2px; animation: ent-confetti-fall linear forwards; }
+  @keyframes ent-confetti-fall { to { transform: translateY(105vh) rotate(720deg); opacity: .9; } }
+
+  /* ===== מסכים ריקים (7) ===== */
+  .ent-empty-art { width: 120px; height: 90px; color: var(--text-dim); }
+  .ent-empty-art .acc { color: var(--bronze); }
+
 </style>
 </head>
 <body>
@@ -1538,21 +1582,52 @@ const monthLabel = dateStr => {
   });
 };
 function EmptyState({
-  text
+  text,
+  hint
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col items-center justify-center py-10 ent-empty"
-  }, /*#__PURE__*/React.createElement(IInbox, {
-    size: 28
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2"
-  }, text));
+    className: "flex flex-col items-center justify-center py-8 ent-empty text-center"
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "ent-empty-art",
+    viewBox: "0 0 120 90",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M14 80h92",
+    opacity: ".5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l26-10 26 10v26l-26 10-26-10z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l26 10 26-10M60 56v26"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l-8-10 26-10 8 10M86 46l8-10-26-10-8 10",
+    opacity: ".7"
+  }), /*#__PURE__*/React.createElement("g", {
+    className: "acc"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M60 6v8M56 10h8M94 18v6M91 21h6M26 20v5M23.5 22.5h5"
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-3",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, text), hint && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1"
+  }, hint));
 }
 function DonutChart({
   data,
   currency = '₪'
 }) {
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  // מעבר עכבר / לחיצה על פלח או שורה במקרא מבליטים אותו ומציגים סכום ואחוז במרכז
+  const [active, setActive] = useState(null);
+  const sum = data.reduce((s, d) => s + d.value, 0);
+  const total = sum || 1;
+  const gap = data.length > 1 ? 0.8 : 0;
   let cumulative = 0;
   const segments = data.map((d, i) => {
     const pct = d.value / total * 100;
@@ -1565,12 +1640,18 @@ function DonutChart({
     cumulative += pct;
     return seg;
   });
+  const act = segments.find(s => s.name === active);
+  const toggle = name => setActive(active === name ? null : name);
   return /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-6 flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-donut-wrap"
   }, /*#__PURE__*/React.createElement("svg", {
-    width: "150",
-    height: "150",
-    viewBox: "0 0 42 42"
+    width: "170",
+    height: "170",
+    viewBox: "0 0 42 42",
+    role: "img",
+    "aria-label": "התפלגות"
   }, /*#__PURE__*/React.createElement("circle", {
     cx: "21",
     cy: "21",
@@ -1579,23 +1660,57 @@ function DonutChart({
     style: {
       stroke: 'var(--navy-panel-2)'
     },
-    strokeWidth: "6"
-  }), segments.map(s => /*#__PURE__*/React.createElement("circle", {
+    strokeWidth: "5"
+  }), /*#__PURE__*/React.createElement("g", {
+    transform: "rotate(-90 21 21)"
+  }, segments.map(s => {
+    const len = Math.max(s.pct - gap, 0.01);
+    return /*#__PURE__*/React.createElement("circle", {
+      key: s.name,
+      className: "ent-donut-seg",
+      cx: "21",
+      cy: "21",
+      r: "15.9",
+      fill: "transparent",
+      stroke: s.color,
+      strokeWidth: active === s.name ? 6.5 : 5,
+      opacity: active && active !== s.name ? 0.35 : 1,
+      strokeDasharray: `${len} ${100 - len}`,
+      strokeDashoffset: s.offset,
+      onMouseEnter: () => setActive(s.name),
+      onMouseLeave: () => setActive(null),
+      onClick: () => toggle(s.name)
+    }, /*#__PURE__*/React.createElement("title", null, `${s.name}: ${currency}${s.value.toLocaleString()} (${Math.round(s.pct)}%)`));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-donut-center"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, act ? act.name : 'סה״כ'), /*#__PURE__*/React.createElement("span", {
+    className: "ent-num text-lg",
+    style: {
+      color: act ? act.color : 'var(--text)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-cur"
+  }, currency), (act ? act.value : sum).toLocaleString()), act && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, Math.round(act.pct), "%"))), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, segments.map(s => /*#__PURE__*/React.createElement("div", {
     key: s.name,
-    cx: "21",
-    cy: "21",
-    r: "15.9",
-    fill: "transparent",
-    stroke: s.color,
-    strokeWidth: "6",
-    strokeDasharray: `${s.pct} ${100 - s.pct}`,
-    strokeDashoffset: s.offset
-  }))), /*#__PURE__*/React.createElement("div", null, segments.map(s => /*#__PURE__*/React.createElement("div", {
-    key: s.name,
-    className: "flex items-center gap-2 text-xs mb-1.5",
+    className: `ent-legend-row${active === s.name ? ' on' : ''}`,
     style: {
       color: 'var(--text-2)'
-    }
+    },
+    onMouseEnter: () => setActive(s.name),
+    onMouseLeave: () => setActive(null),
+    onClick: () => toggle(s.name)
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-sm",
     style: {
@@ -1605,42 +1720,68 @@ function DonutChart({
     style: {
       color: 'var(--text-dim)'
     }
-  }, currency, s.value.toLocaleString())))));
+  }, currency, s.value.toLocaleString(), " · ", Math.round(s.pct), "%")))));
 }
 function TrendBars({
   data
 }) {
   const max = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
-  return /*#__PURE__*/React.createElement("div", {
-    className: "flex items-end gap-5 h-48 px-2"
+  const [hover, setHover] = useState(null);
+  const bar = (value, color, delay, label) => /*#__PURE__*/React.createElement("div", {
+    className: "ent-bar",
+    title: `${label}: ${Math.round(value).toLocaleString()}`,
+    style: {
+      width: 16,
+      height: `${value / max * 136}px`,
+      background: `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 55%, transparent))`,
+      borderRadius: '6px 6px 2px 2px',
+      animationDelay: delay
+    }
+  });
+  const legend = (color, label) => /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-sm",
+    style: {
+      background: color
+    }
+  }), label);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-bars-grid"
+  }, /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null)), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-end gap-5 h-48 px-2 relative"
   }, data.map(d => /*#__PURE__*/React.createElement("div", {
     key: d.month,
-    className: "flex flex-col items-center gap-1.5 flex-1"
+    className: "flex flex-col items-center gap-1.5 flex-1",
+    onMouseEnter: () => setHover(d.month),
+    onMouseLeave: () => setHover(null),
+    onClick: () => setHover(hover === d.month ? null : d.month)
   }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px]",
+    style: {
+      height: 14,
+      whiteSpace: 'nowrap',
+      color: 'var(--text-muted)',
+      visibility: hover === d.month ? 'visible' : 'hidden'
+    }
+  }, "+", Math.round(d.income).toLocaleString(), " / −", Math.round(d.expense).toLocaleString()), /*#__PURE__*/React.createElement("div", {
     className: "flex items-end gap-1",
     style: {
-      height: '150px'
+      height: '136px'
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 16,
-      height: `${d.income / max * 150}px`,
-      background: 'var(--pos)',
-      borderRadius: '4px 4px 0 0'
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 16,
-      height: `${d.expense / max * 150}px`,
-      background: 'var(--neg)',
-      borderRadius: '4px 4px 0 0'
-    }
-  })), /*#__PURE__*/React.createElement("span", {
+  }, bar(d.income, 'var(--pos)', '0s', 'הכנסות'), bar(d.expense, 'var(--neg)', '.08s', 'הוצאות')), /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
+    style: {
+      color: hover === d.month ? 'var(--text)' : 'var(--text-muted)'
+    }
+  }, d.month))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-4 mt-3 text-xs",
     style: {
       color: 'var(--text-muted)'
     }
-  }, d.month))));
+  }, legend('var(--pos)', 'הכנסות'), legend('var(--neg)', 'הוצאות')));
 }
 function friendlyAuthError(e) {
   const m = (e && e.message ? e.message : '').toLowerCase();
@@ -1663,14 +1804,88 @@ function generateFamilyCode(name) {
   return prefix + digits;
 }
 /* ---- סכום כספי: ₪ קטן ובהיר מהמספר, ספרות ברוחב אחיד ---- */
-const Money = ({
+const reducedMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch (_e) {
+    return false;
+  }
+};
+// מספר שעולה לערך שלו (≈0.7 שנ'). בלי אנימציה למי שביקש פחות תנועה או כשהלשונית מוסתרת.
+function useCountUp(target, ms = 700) {
+  const skip = () => reducedMotion() || document.visibilityState === 'hidden';
+  const [val, setVal] = useState(() => skip() ? target : 0);
+  const prev = React.useRef(skip() ? target : 0);
+  useEffect(() => {
+    const from = prev.current;
+    prev.current = target;
+    if (skip() || from === target) {
+      setVal(target);
+      return;
+    }
+    let raf,
+      start;
+    const step = t => {
+      if (!start) start = t;
+      const p = Math.min(1, (t - start) / ms);
+      setVal(Math.round(from + (target - from) * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    const safety = setTimeout(() => setVal(target), ms + 150);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(safety);
+    };
+  }, [target]);
+  return val;
+}
+function Money({
   v,
   currency
-}) => /*#__PURE__*/React.createElement("span", {
-  className: "ent-num"
-}, /*#__PURE__*/React.createElement("span", {
-  className: "ent-cur"
-}, currency), Number(v || 0).toLocaleString());
+}) {
+  const n = useCountUp(Math.round(Number(v) || 0));
+  return /*#__PURE__*/React.createElement("span", {
+    className: "ent-num"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-cur"
+  }, currency), n.toLocaleString());
+}
+// שלד טעינה במקום "טוען…"
+const Skeleton = ({
+  rows = 3
+}) => /*#__PURE__*/React.createElement("div", {
+  className: "space-y-2",
+  "aria-busy": "true",
+  "aria-label": "טוען"
+}, ...Array.from({
+  length: rows
+}, (_, i) => /*#__PURE__*/React.createElement("div", {
+  key: i,
+  className: "ent-skel",
+  style: {
+    height: 14,
+    width: `${[92, 76, 84, 64][i % 4]}%`
+  }
+})));
+// קונפטי קטן כשילד מגיע ליעד
+function celebrate() {
+  if (reducedMotion()) return;
+  const box = document.createElement('div');
+  box.className = 'ent-confetti';
+  box.setAttribute('aria-hidden', 'true');
+  const colors = ['#FF8A3D', '#8B5CF6', '#3DD68C', '#4FD8FF', '#FFD166', '#FF6B9A'];
+  for (let i = 0; i < 70; i++) {
+    const p = document.createElement('i');
+    p.style.left = Math.random() * 100 + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDuration = 1.4 + Math.random() * 1.2 + 's';
+    p.style.animationDelay = Math.random() * 0.35 + 's';
+    box.appendChild(p);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3200);
+}
 
 /* ---- PIN: נשמר מוצפן ונבדק בשרת (supabase/pin.sql). אם ה-SQL עוד לא הורץ — נופל חזרה להתנהגות הישנה ---- */
 const isMissingRpc = e => !!e && (e.code === 'PGRST202' || /could not find the function/i.test(e.message || ''));
@@ -2502,11 +2717,19 @@ function ProfileScreen({
     size: 48
   }), /*#__PURE__*/React.createElement("h1", {
     className: "ent-heading text-2xl font-bold mt-4 mb-8"
-  }, "מי משתמש עכשיו?"), loading ? /*#__PURE__*/React.createElement("p", {
+  }, "מי משתמש עכשיו?"), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap justify-center gap-6",
+    "aria-busy": "true",
+    "aria-label": "טוען"
+  }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "ent-skel",
     style: {
-      color: 'var(--text-muted)'
+      width: 96,
+      height: 96,
+      borderRadius: 16
     }
-  }, "טוען...") : /*#__PURE__*/React.createElement("div", {
+  }))) :/*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap justify-center gap-6 max-w-xl"
   }, members.map(p => /*#__PURE__*/React.createElement("div", {
     key: p.id,
@@ -4399,12 +4622,9 @@ function App() {
     className: "ent-heading font-bold mb-3 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(ITrendingUp, {
     size: 18
-  }), " חדשות כלכלה ושווקים"), newsState === 'loading' && /*#__PURE__*/React.createElement("p", {
-    className: "text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "טוען..."), newsState === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }), " חדשות כלכלה ושווקים"), newsState === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
+    rows: 4
+  }),newsState === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, news.map((n, i) => /*#__PURE__*/React.createElement("a", {
     key: i,
@@ -6108,6 +6328,7 @@ function KidMoney({
       });
       setDepositFor(null);
       setDepositAmt('');
+      if (saved >= Number(g.target) && Number(g.saved || 0) < Number(g.target)) celebrate();
       showToast(saved >= Number(g.target) ? '🎉 הגעת ליעד! כל הכבוד!' : 'הכסף הועבר לחיסכון 🐷');
     } catch (_e) {
       showToast('שגיאה בשמירה');
@@ -6189,16 +6410,18 @@ function KidMoney({
     size: 20
   }), isChild ? ' הכסף שלי' : ' הכסף של הילדים');
   if (kids && kids.length === 0) return /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-3"
+    className: "ent-card p-6 space-y-3 ent-kid"
   }, heading, muted('עוד אין פרופילי ילדים במשפחה.'), muted('מוסיפים ילד במסך "מי משתמש עכשיו?" (החלפת פרופיל) ← כפתור ה-+. לילד לא צריך אימייל או סיסמה.'));
   const formList = form === 'income' ? KID_INCOME : form === 'expense' ? KID_EXPENSE : KID_GOALS;
   return /*#__PURE__*/React.createElement("div", {
-    className: "space-y-6"
+    className: "space-y-6 ent-kid"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, heading, !isChild && kids && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, kids.map(k => chip(k.name, '🧒', k.id === kidId, () => setKidId(k.id)))), status === 'loading' && muted('טוען…'), status === 'error' && muted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && /*#__PURE__*/React.createElement("div", {
+  }, kids.map(k => chip(k.name, '🧒', k.id === kidId, () => setKidId(k.id)))), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
+    rows: 3
+  }), status === 'error' && muted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-1",
     style: {
       background: 'var(--navy-panel-2)'
@@ -6265,7 +6488,10 @@ function KidMoney({
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold"
-  }, "🎯 יעדי חיסכון"), goals.length === 0 ? muted('עוד אין יעדים. מה הדבר הבא שתרצו? אייפון, רישיון, טיול עם חברים…') : /*#__PURE__*/React.createElement("div", {
+  }, "🎯 יעדי חיסכון"), goals.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    text: 'עוד אין יעדי חיסכון',
+    hint: 'מה הדבר הבא שתרצו? אייפון, רישיון, טיול עם חברים…'
+  }) : /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
   }, goals.map(g => {
     const target = Number(g.target || 0);
@@ -6326,7 +6552,10 @@ function KidMoney({
     className: "ent-card p-6 space-y-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-2"
-  }, "📒 מה נכנס ומה יצא"), entries.length === 0 ? muted('עוד אין תנועות. התחילו מ"כסף נכנס" — למשל דמי כיס.') : entries.slice(0, 40).map(e => {
+  }, "📒 מה נכנס ומה יצא"), entries.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    text: 'עוד אין תנועות',
+    hint: 'התחילו מ"כסף נכנס" — למשל דמי כיס'
+  }) : entries.slice(0, 40).map(e => {
     const isIn = e.type === 'income';
     const transfer = e.category === KID_TO_GOAL || e.category === KID_FROM_GOAL;
     const d = String(e.date || '').slice(0, 10).split('-');
@@ -6539,6 +6768,7 @@ function PersonalGoals({
     save(g, {
       done: !g.done
     });
+    if (!g.done && ownerKind !== 'parent') celebrate();
     if (!g.done) showToast(ownerKind === 'parent' ? 'כל הכבוד! היעד הושג' : '🎉 כל הכבוד! היעד הושג');
   };
   const remove = async g => {
@@ -6569,7 +6799,9 @@ function PersonalGoals({
     }
   }, lock && /*#__PURE__*/React.createElement(ILock, {
     size: 12
-  }), note), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
+  }), note), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
+    rows: 2
+  }), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-3",
     style: {
       background: 'var(--navy-panel-2)'
@@ -6600,7 +6832,10 @@ function PersonalGoals({
   }, "שמירה"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setAdding(false),
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
-  }, "ביטול"))), status === 'ok' && goals.length === 0 && !adding && goalMuted('עוד אין יעדים אישיים. מה הדבר הבא שתרצו להשיג?'), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && !adding && /*#__PURE__*/React.createElement(EmptyState, {
+    text: 'עוד אין יעדים אישיים',
+    hint: 'מה הדבר הבא שתרצו להשיג?'
+  }), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
   }, goals.map(g => {
     const steps = g.steps || [];
@@ -6847,7 +7082,9 @@ function GoalsPanel({
     className: "ent-heading text-xl font-bold flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(ITarget, {
     size: 20
-  }), " יעדים משפחתיים"), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }), " יעדים משפחתיים"), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
+    rows: 2
+  }), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
   }, FAMILY_GOAL_TYPES.map(([id, Ic, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
@@ -6902,7 +7139,10 @@ function GoalsPanel({
   }, "שמירה"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setForm(null),
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
-  }, "ביטול"))), status === 'ok' && goals.length === 0 && !form && goalMuted('עוד אין יעדים. בחרו סוג יעד למעלה כדי להתחיל.'), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && !form && /*#__PURE__*/React.createElement(EmptyState, {
+    text: 'עוד אין יעדים משפחתיים',
+    hint: 'בחרו סוג יעד למעלה כדי להתחיל'
+  }), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
   }, goals.map(g => {
     const m = measure(g);
