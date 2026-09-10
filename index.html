@@ -633,6 +633,23 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-ring { from { stroke-dashoffset: var(--ring-len); } }
   @keyframes ent-twinkle { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
 
+  /* ===== תלת-ממד: הטיה + ברק לכרטיסים, מטבע מסתובב, אייקונים מבריקים ===== */
+  .ent-tilt { position: relative; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .25s ease-out; }
+  .ent-tilt::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.10), transparent 45%); opacity: 0; transition: opacity .25s ease; }
+  .ent-tilt:hover::after { opacity: 1; }
+  .ent-stat.ent-tilt.cursor-pointer:hover { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-2px); }
+  @media (prefers-reduced-motion: reduce) { .ent-tilt, .ent-stat.ent-tilt.cursor-pointer:hover { transform: none; } }
+  .ent-stat-icon { background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 38%, transparent), color-mix(in srgb, var(--accent) 12%, transparent)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 4px rgba(0,0,0,.18), 0 6px 14px -6px color-mix(in srgb, var(--accent) 65%, transparent); }
+  .ent-icon-badge { background: linear-gradient(145deg, color-mix(in srgb, var(--bronze) 38%, transparent), color-mix(in srgb, var(--bronze) 12%, transparent)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -2px 5px rgba(0,0,0,.2), 0 8px 18px -8px color-mix(in srgb, var(--bronze) 70%, transparent); }
+  .ent-coin-wrap { display: inline-block; perspective: 420px; }
+  .ent-coin { position: relative; display: inline-block; transform-style: preserve-3d; }
+  .ent-coin > span { position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: 'Rubik', sans-serif; color: #7A4E00; background: radial-gradient(circle at 34% 28%, #FFF1C2 0%, #F6C453 38%, #D9981F 70%, #B97A0E 100%); box-shadow: inset 0 0 0 3px rgba(255,255,255,.35), inset 0 -4px 8px rgba(0,0,0,.25); backface-visibility: hidden; }
+  .ent-coin > span.edge { background: #B97A0E; box-shadow: none; backface-visibility: visible; }
+  .ent-coin > span.front { transform: translateZ(1.6px); }
+  .ent-coin > span.back { transform: rotateY(180deg) translateZ(1.6px); }
+  @media (prefers-reduced-motion: no-preference) { .ent-coin { animation: ent-spin 7s linear infinite; } }
+  @keyframes ent-spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+
 </style>
 </head>
 <body>
@@ -1909,6 +1926,66 @@ function celebrate() {
   document.body.appendChild(box);
   setTimeout(() => box.remove(), 3200);
 }
+// מטבע תלת-ממדי מסתובב (CSS בלבד)
+const Coin3D = ({
+  size = 48,
+  symbol = '₪'
+}) => /*#__PURE__*/React.createElement("span", {
+  className: "ent-coin-wrap",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "ent-coin",
+  style: {
+    width: size,
+    height: size,
+    fontSize: Math.round(size * 0.42)
+  }
+}, ...[-1.2, -0.6, 0, 0.6, 1.2].map((z, i) => /*#__PURE__*/React.createElement("span", {
+  key: 'e' + i,
+  className: "edge",
+  style: {
+    transform: `translateZ(${z}px)`
+  }
+})), /*#__PURE__*/React.createElement("span", {
+  key: "b",
+  className: "back"
+}, symbol), /*#__PURE__*/React.createElement("span", {
+  key: "f",
+  className: "front"
+}, symbol)));
+// הטיה תלת-ממדית + ברק לכרטיסים עם ent-tilt — עכבר בלבד, ולא למי שביקש פחות תנועה
+(function initTilt() {
+  let cur = null;
+  const reset = el => {
+    el.style.setProperty('--rx', '0deg');
+    el.style.setProperty('--ry', '0deg');
+  };
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || reducedMotion()) return;
+    const el = e.target && e.target.closest ? e.target.closest('.ent-tilt') : null;
+    if (cur && cur !== el) {
+      reset(cur);
+      cur = null;
+    }
+    if (!el) return;
+    cur = el;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width,
+      y = (e.clientY - r.top) / r.height;
+    el.style.setProperty('--ry', ((x - 0.5) * 10).toFixed(2) + 'deg');
+    el.style.setProperty('--rx', ((0.5 - y) * 8).toFixed(2) + 'deg');
+    el.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+    el.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+  }, {
+    passive: true
+  });
+  document.addEventListener('mouseleave', () => {
+    if (cur) {
+      reset(cur);
+      cur = null;
+    }
+  });
+})();
 
 /* ---- זיהוי פנים / טביעת אצבע (WebAuthn): לכל פרופיל הורה, בכל מכשיר בנפרד, רק אחרי הזנת PIN נכון.
    זו נעילת מסך במכשיר (כמו ה-PIN) — הטלפון מאשר כל פנים/אצבע שרשומות בו. ---- */
@@ -4627,7 +4704,7 @@ function App() {
   }, [[IDollar, 'יתרה נוכחית', balance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
     key: label,
     onClick: tab ? () => setActiveTab(tab) : undefined,
-    className: `ent-card ent-stat p-6 relative overflow-hidden${tab ? ' cursor-pointer' : ''}`,
+    className: `ent-card ent-stat ent-tilt p-6 relative overflow-hidden${tab ? ' cursor-pointer' : ''}`,
     style: {
       '--accent': accent
     }
@@ -4697,12 +4774,20 @@ function App() {
       color: 'var(--text-muted)'
     }
   }, "הוסיפו הכנסות והוצאות כדי לראות תחזית לסוף החודש.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "p-5 rounded-2xl mb-4 text-center",
+    className: "p-5 rounded-2xl mb-4 text-center relative overflow-hidden",
     style: {
       background: `radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'} 16%, transparent), transparent 70%), var(--navy-panel-2)`,
       border: `1px solid ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'}`
     }
-  }, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 14,
+      left: 16
+    }
+  }, /*#__PURE__*/React.createElement(Coin3D, {
+    size: 40
+  })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs mb-1",
     style: {
       color: 'var(--text-muted)'
@@ -6902,8 +6987,8 @@ function KidDashboard({
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-6 ent-kid"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-card ent-kid-hero p-6"
-  }, [['10%', '14%', '#FF8A3D', '0s'], ['72%', '10%', '#8B5CF6', '.7s'], ['58%', '78%', '#FF8A3D', '1.4s'], ['88%', '62%', '#8B5CF6', '.35s']].map(([l, t, c, d], i) => /*#__PURE__*/React.createElement("span", {
+    className: "ent-card ent-kid-hero ent-tilt p-6"
+  },[['10%', '14%', '#FF8A3D', '0s'], ['72%', '10%', '#8B5CF6', '.7s'], ['58%', '78%', '#FF8A3D', '1.4s'], ['88%', '62%', '#8B5CF6', '.35s']].map(([l, t, c, d], i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     className: "ent-sparkle",
     "aria-hidden": "true",
@@ -6941,10 +7026,14 @@ function KidDashboard({
     currency: currency
   }))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, chip('🐷 בחיסכון ', money(saved)), chip('⬇️ נכנס החודש ', money(monthIn)))), /*#__PURE__*/React.createElement("span", {
-    className: "ent-kid-float",
+  }, chip('🐷 בחיסכון ', money(saved)), chip('⬇️ נכנס החודש ', money(monthIn)))), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center gap-3",
     "aria-hidden": "true"
-  }, "🐷"))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Coin3D, {
+    size: 46
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "ent-kid-float"
+  }, "🐷")))),/*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-3"
   }, action('💰', 'קיבלתי כסף', 'income', true), action('🛍️', 'הוצאתי כסף', 'expense'), action('🎯', 'יעד חדש', 'goal')), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-6"
@@ -6999,7 +7088,7 @@ function KidDashboard({
     return /*#__PURE__*/React.createElement("button", {
       key: g.id,
       onClick: () => go(null),
-      className: "ent-mini-card p-4 flex flex-col items-center gap-2 text-center"
+      className: "ent-mini-card ent-tilt p-4 flex flex-col items-center gap-2 text-center"
     }, /*#__PURE__*/React.createElement(KidRing, {
       pct: pct,
       emoji: kidEmoji(KID_GOALS, g.category)

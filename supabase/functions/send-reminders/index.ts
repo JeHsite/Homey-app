@@ -47,8 +47,13 @@ Deno.serve(async (req) => {
   const messages = new Map<string, { title: string; body: string }>(); // family_id -> הודעה
 
   if (input.test) {
-    const { data: subs } = await supabase.from("push_subscriptions").select("family_id");
-    for (const s of subs ?? []) messages.set(s.family_id, { title: "Homey", body: "בדיקה — ההתראות עובדות 🎉" });
+    // הודעה ידנית (מוגנת ב-CRON_SECRET): כותרת וטקסט אופציונליים, ואפשר להגביל למשפחה אחת עם family_id
+    let q = supabase.from("push_subscriptions").select("family_id");
+    if (input.family_id) q = q.eq("family_id", input.family_id);
+    const { data: subs } = await q;
+    const title = String(input.title || "Homey").slice(0, 60);
+    const body = String(input.body || "בדיקה — ההתראות עובדות 🎉").slice(0, 180);
+    for (const s of subs ?? []) messages.set(s.family_id, { title, body });
   } else {
     const upcoming = upcomingDueDays();
     const { data: bills, error } = await supabase
