@@ -539,6 +539,33 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-progress-track { background: var(--navy-panel-2); border-radius: 999px; height: 10px; overflow: hidden; }
   .ent-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--bronze)); }
 
+  /* ===== שדרוג נראות: מספרים, עומק, אייקונים ===== */
+  .ent-root { font-variant-numeric: tabular-nums; background:
+      radial-gradient(900px 420px at 88% -120px, color-mix(in srgb, var(--cyan) 10%, transparent), transparent 70%),
+      radial-gradient(760px 400px at 8% -100px, color-mix(in srgb, var(--bronze) 9%, transparent), transparent 70%),
+      var(--navy); }
+  .ent-header { background: color-mix(in srgb, var(--navy) 84%, transparent); }
+  .ent-card { background: linear-gradient(180deg, color-mix(in srgb, var(--navy-panel) 94%, var(--text) 6%) 0%, var(--navy-panel) 42%); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent), 0 18px 40px -28px rgba(0,0,0,.75); }
+  .ent-mini-card { background: linear-gradient(180deg, color-mix(in srgb, var(--navy-panel-2) 92%, var(--text) 8%) 0%, var(--navy-panel-2) 55%); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent); }
+  .ent-stat { background: radial-gradient(130% 100% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 58%), var(--navy-panel); transition: transform .18s ease, box-shadow .18s ease; }
+  .ent-stat.cursor-pointer:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent), 0 22px 44px -26px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .ent-stat-label { display: flex; align-items: center; gap: .55rem; font-size: .82rem; color: var(--text-muted); }
+  .ent-stat-icon { width: 30px; height: 30px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .ent-num { font-family: 'Rubik', sans-serif; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .ent-cur { font-size: .62em; font-weight: 600; opacity: .7; margin-inline-end: .12em; }
+  .ent-hero-num { font-size: clamp(40px, 8vw, 58px); line-height: 1.15; }
+  .ent-progress-track { box-shadow: inset 0 1px 2px rgba(0,0,0,.25); }
+  .ent-progress-fill { box-shadow: 0 0 12px -2px color-mix(in srgb, var(--cyan) 55%, transparent); transition: width .5s ease; }
+  .ent-icon-badge { width: 44px; height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bronze) 16%, transparent); color: var(--bronze); }
+  .ent-sidebar { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent; }
+  .ent-sidebar::-webkit-scrollbar { width: 6px; }
+  .ent-sidebar::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 18%, transparent); border-radius: 6px; }
+  body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-card:not(.ent-stat) { background: var(--navy-panel); }
+  body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-mini-card { background: var(--navy-panel-2); }
+  body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-card { box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(16,32,46,.05), 0 12px 32px -22px rgba(16,32,46,.35); }
+  body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-progress-track { box-shadow: inset 0 1px 2px rgba(16,32,46,.12); }
+  @media (prefers-reduced-motion: reduce) { .ent-stat, .ent-progress-fill { transition: none; } .ent-stat.cursor-pointer:hover { transform: none; } }
+
 </style>
 </head>
 <body>
@@ -705,6 +732,26 @@ const IBus = p => /*#__PURE__*/React.createElement(Icon, {
     rx: "2"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M3 11h18M7 17v3M17 17v3M7.5 14h.01M16.5 14h.01"
+  }))
+});
+const IReceipt = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M6 2h12v20l-3-2-3 2-3-2-3 2V2z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M9 7h6M9 11h6M9 15h4"
+  }))
+});
+const IPhone = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+    x: "6",
+    y: "2",
+    width: "12",
+    height: "20",
+    rx: "2.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M11 18h2"
   }))
 });
 const IDollar = p => /*#__PURE__*/React.createElement(Icon, {
@@ -1615,6 +1662,16 @@ function generateFamilyCode(name) {
   const digits = String(Math.floor(10 + Math.random() * 90));
   return prefix + digits;
 }
+/* ---- סכום כספי: ₪ קטן ובהיר מהמספר, ספרות ברוחב אחיד ---- */
+const Money = ({
+  v,
+  currency
+}) => /*#__PURE__*/React.createElement("span", {
+  className: "ent-num"
+}, /*#__PURE__*/React.createElement("span", {
+  className: "ent-cur"
+}, currency), Number(v || 0).toLocaleString());
+
 /* ---- PIN: נשמר מוצפן ונבדק בשרת (supabase/pin.sql). אם ה-SQL עוד לא הורץ — נופל חזרה להתנהגות הישנה ---- */
 const isMissingRpc = e => !!e && (e.code === 'PGRST202' || /could not find the function/i.test(e.message || ''));
 async function checkPinServer(profileId, pin) {
@@ -1753,12 +1810,12 @@ function OnboardingTour({
     className: "list-decimal pr-5 space-y-1"
   }, ...items);
   const installBody = standalone ? [LP('✓ Homey כבר מותקנת על המכשיר הזה — מעולה!')] : isIOS ? [ol(li('פתחו את Homey ב', LB('ספארי')), li('לחצו על כפתור ', LB('השיתוף'), ' (ריבוע עם חץ למעלה)'), li('בחרו ', LB('"הוסף למסך הבית"'), ' ← ', LB('"הוסף"')), li('מעכשיו פתחו את Homey ', LB('מהאייקון')))] : isAndroid ? [ol(li('פתחו את Homey ב', LB('כרום')), li('לחצו על ', LB('⋮'), ' (שלוש הנקודות למעלה)'), li('בחרו ', LB('"התקן אפליקציה"'), ' או ', LB('"הוספה למסך הבית"')))] : [LP(LB('אייפון:'), ' ספארי ← שתף ← "הוסף למסך הבית".'), LP(LB('אנדרואיד:'), ' כרום ← ⋮ ← "התקן אפליקציה".'), LP(LB('מחשב:'), ' בכרום או באדג׳ — אייקון ההתקנה בשורת הכתובת.')];
-  const updateNote = LP('🔄 ', LB('עדכונים מגיעים לבד'), ' — גרסה חדשה נטענת בפתיחה הבאה. אם משהו נראה ישן, סגרו את האפליקציה לגמרי ופתחו מחדש.');
+  const updateNote = LP(LB('עדכונים מגיעים לבד'), ' — גרסה חדשה נטענת בפתיחה הבאה. אם משהו נראה ישן, סגרו את האפליקציה לגמרי ופתחו מחדש.');
   const pushBody = [LP('Homey יכולה לשלוח לכם תזכורת בבוקר — עד יומיים לפני כל חיוב שעוד לא שולם.'), pushState === 'on' ? LP('✓ ', LB('ההתראות פעילות'), ' במכשיר הזה.') : pushState === 'off' || pushState === 'busy' ? /*#__PURE__*/React.createElement("button", {
     onClick: onEnablePush,
     disabled: pushState === 'busy',
     className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
-  }, pushState === 'busy' ? 'רגע…' : '🔔 הפעלת התראות') : LP(pushHint || ''), /*#__PURE__*/React.createElement("p", {
+  }, pushState === 'busy' ? 'רגע…' : 'הפעלת התראות') : LP(pushHint || ''), /*#__PURE__*/React.createElement("p", {
     style: {
       color: 'var(--text-dim)'
     }
@@ -1826,9 +1883,13 @@ function OnboardingTour({
     style: {
       maxHeight: '88vh'
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, !kid && TOUR_ICONS[s.emoji] ? /*#__PURE__*/React.createElement("div", {
+    className: "ent-icon-badge mb-3"
+  }, /*#__PURE__*/React.createElement(TOUR_ICONS[s.emoji], {
+    size: 22
+  })) : /*#__PURE__*/React.createElement("div", {
     className: "text-4xl mb-3"
-  }, s.emoji), /*#__PURE__*/React.createElement("h2", {
+  }, s.emoji),/*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-xl font-bold mb-3",
     style: {
       color: 'var(--text)'
@@ -2164,7 +2225,7 @@ function LoginScreen({
       border: '1px solid var(--line)',
       color: 'var(--text-muted)'
     }
-  }, "👨‍👩‍👧 ההרשמה להורים ומבוגרים. ", /*#__PURE__*/React.createElement("b", {
+  }, "ההרשמה להורים ומבוגרים. ",/*#__PURE__*/React.createElement("b", {
     style: {
       color: 'var(--text)'
     }
@@ -2851,7 +2912,7 @@ function App() {
       } else {
         await P.enable(sb, familyId);
         setPushState('on');
-        showToast('התראות התשלום הופעלו 🔔');
+        showToast('התראות התשלום הופעלו');
       }
     } catch (_e) {
       const denied = typeof Notification !== 'undefined' && Notification.permission === 'denied';
@@ -4161,86 +4222,28 @@ function App() {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('expenses'),
-    className: "ent-card p-6 relative overflow-hidden cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-0 left-0 w-1 h-full",
+  }, [[IDollar, 'יתרה נוכחית', balance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
+    key: label,
+    onClick: tab ? () => setActiveTab(tab) : undefined,
+    className: `ent-card ent-stat p-6 relative overflow-hidden${tab ? ' cursor-pointer' : ''}`,
     style: {
-      background: 'var(--cyan)'
+      '--accent': accent
     }
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm flex items-center gap-2",
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "ent-stat-label"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-stat-icon"
+  }, /*#__PURE__*/React.createElement(Ic, {
+    size: 16
+  })), label), /*#__PURE__*/React.createElement("h3", {
+    className: "text-2xl mt-3",
     style: {
-      color: 'var(--text-muted)'
+      color: accent
     }
-  }, /*#__PURE__*/React.createElement(IDollar, {
-    size: 15
-  }), " יתרה נוכחית"), /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading text-2xl font-bold mt-2",
-    style: {
-      color: 'var(--cyan)'
-    }
-  }, currency, balance.toLocaleString())), /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('savings'),
-    className: "ent-card p-6 relative overflow-hidden cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-0 left-0 w-1 h-full",
-    style: {
-      background: 'var(--bronze)'
-    }
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm flex items-center gap-2",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(IPiggyBank, {
-    size: 15
-  }), " סה\"כ חסכונות"), /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading text-2xl font-bold mt-2",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, currency, totalSavings.toLocaleString())), /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('investments'),
-    className: "ent-card p-6 relative overflow-hidden cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-0 left-0 w-1 h-full",
-    style: {
-      background: 'var(--pos-soft)'
-    }
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm flex items-center gap-2",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(ITrendingUp, {
-    size: 15
-  }), " השקעות ונכסים"), /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading text-2xl font-bold mt-2",
-    style: {
-      color: 'var(--pos-soft)'
-    }
-  }, currency, totalAssets.toLocaleString())), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 relative overflow-hidden"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "absolute top-0 left-0 w-1 h-full",
-    style: {
-      background: 'var(--text)'
-    }
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm flex items-center gap-2",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(ITrophy, {
-    size: 15
-  }), " שווי נטו כולל"), /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading text-2xl font-bold mt-2",
-    style: {
-      color: 'var(--text)'
-    }
-  }, currency, netWorth.toLocaleString()))), alerts.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: value,
+    currency: currency
+  }))))), alerts.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, alerts.slice(0, 4).map(a => {
     const c = a.level === 'danger' ? 'var(--neg)' : a.level === 'good' ? 'var(--pos)' : 'var(--bronze)';
@@ -4294,7 +4297,7 @@ function App() {
   }, "הוסיפו הכנסות והוצאות כדי לראות תחזית לסוף החודש.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "p-5 rounded-2xl mb-4 text-center",
     style: {
-      background: 'var(--navy-panel-2)',
+      background: `radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'} 16%, transparent), transparent 70%), var(--navy-panel-2)`,
       border: `1px solid ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'}`
     }
   }, /*#__PURE__*/React.createElement("p", {
@@ -4303,12 +4306,14 @@ function App() {
       color: 'var(--text-muted)'
     }
   }, "נשאר להוציא החודש"), /*#__PURE__*/React.createElement("p", {
-    className: "ent-heading font-bold",
+    className: "ent-hero-num",
     style: {
-      fontSize: 38,
       color: forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'
     }
-  }, currency, Math.round(forecast.available).toLocaleString()), forecast.daysLeft > 0 && /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: Math.round(forecast.available),
+    currency: currency
+  })), forecast.daysLeft > 0 && /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1.5",
     style: {
       color: 'var(--text-muted)'
@@ -4327,7 +4332,10 @@ function App() {
     style: {
       color: 'var(--pos)'
     }
-  }, currency, forecast.expectedIncome.toLocaleString())), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: forecast.expectedIncome,
+    currency: currency
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "ent-mini-card p-3.5"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
@@ -4339,7 +4347,10 @@ function App() {
     style: {
       color: 'var(--neg)'
     }
-  }, currency, forecast.spentSoFar.toLocaleString())), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: forecast.spentSoFar,
+    currency: currency
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "ent-mini-card p-3.5"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
@@ -4351,7 +4362,10 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, currency, forecast.billsUnpaid.toLocaleString()))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Money, {
+    v: forecast.billsUnpaid,
+    currency: currency
+  })))), /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl",
     style: {
       background: 'var(--navy-panel-2)'
@@ -5511,7 +5525,7 @@ function App() {
     style: {
       marginRight: 8
     }
-  }, "✏️ עדכון השאלון האישי"),/*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "עדכון השאלון האישי"),/*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -6194,7 +6208,7 @@ function KidMoney({
     style: {
       color: 'var(--text)'
     }
-  }, "🛠️ האזור הזה כמעט מוכן"), muted(isChild ? 'בקשו מההורה להשלים את ההגדרה — ואז אפשר להתחיל לנהל את הכסף שלכם.' : 'צריך להריץ פעם אחת את קובץ ההגדרה supabase/kids.sql ב-Supabase (SQL Editor).')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }, "האזור הזה כמעט מוכן"), muted(isChild ? 'בקשו מההורה להשלים את ההגדרה — ואז אפשר להתחיל לנהל את הכסף שלכם.' : 'צריך להריץ פעם אחת את קובץ ההגדרה supabase/kids.sql ב-Supabase (SQL Editor).')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 lg:grid-cols-4 gap-3"
   }, stat('💳 בארנק', money(balance), balance >= 0 ? 'var(--pos)' : 'var(--neg-soft)'), stat('⬇️ נכנס החודש', money(monthIn), 'var(--pos)'), stat('⬆️ יצא החודש', money(monthOut), 'var(--neg-soft)'), stat('🐷 בחיסכון', money(savedTotal), 'var(--bronze)')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
@@ -6421,7 +6435,9 @@ function PersonalGoals({
   ownerKind,
   showToast,
   title,
-  note
+  note,
+  icon,
+  lock
 }) {
   const [goals, setGoals] = useState([]);
   const [status, setStatus] = useState('loading');
@@ -6497,7 +6513,7 @@ function PersonalGoals({
     setT('');
     setArea('');
     setDeadline('');
-    showToast('🌱 יעד אישי נוסף');
+    showToast('היעד האישי נוסף');
   };
   const addStep = g => {
     const text = (stepDraft[g.id] || '').trim();
@@ -6523,7 +6539,7 @@ function PersonalGoals({
     save(g, {
       done: !g.done
     });
-    if (!g.done) showToast('🎉 כל הכבוד! היעד הושג');
+    if (!g.done) showToast(ownerKind === 'parent' ? 'כל הכבוד! היעד הושג' : '🎉 כל הכבוד! היעד הושג');
   };
   const remove = async g => {
     if (!window.confirm(`למחוק את "${g.title}"?`)) return;
@@ -6540,16 +6556,20 @@ function PersonalGoals({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold"
-  }, title), status === 'ok' && /*#__PURE__*/React.createElement("button", {
+    className: "ent-heading font-bold flex items-center gap-2"
+  }, icon && /*#__PURE__*/React.createElement(icon, {
+    size: 18
+  }), title), status === 'ok' && /*#__PURE__*/React.createElement("button", {
     onClick: () => setAdding(!adding),
     className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
   }, "+ יעד אישי")), note && /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
+    className: "text-xs flex items-center gap-1.5",
     style: {
       color: 'var(--text-dim)'
     }
-  }, note), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('🛠️ האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
+  }, lock && /*#__PURE__*/React.createElement(ILock, {
+    size: 12
+  }), note), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-3",
     style: {
       background: 'var(--navy-panel-2)'
@@ -6562,7 +6582,7 @@ function PersonalGoals({
     onChange: e => setT(e.target.value)
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, PERSONAL_AREAS.map(([l, e]) => goalChip(e + ' ' + l, area === l, () => setArea(l), l))), /*#__PURE__*/React.createElement("label", {
+  }, PERSONAL_AREAS.map(([l, e]) => goalChip(ownerKind === 'parent' ? l : e + ' ' + l, area === l, () => setArea(l), l))), /*#__PURE__*/React.createElement("label", {
     className: "block text-xs space-y-1",
     style: {
       color: 'var(--text-muted)'
@@ -6598,7 +6618,10 @@ function PersonalGoals({
       style: {
         textDecoration: g.done ? 'line-through' : 'none'
       }
-    }, kidEmoji(PERSONAL_AREAS, g.area), ' ', g.title), g.deadline && /*#__PURE__*/React.createElement("p", {
+    }, ownerKind === 'parent' ? /*#__PURE__*/React.createElement(PERSONAL_AREA_ICON[g.area] || ITarget, {
+      size: 16,
+      style: INLINE_ICON
+    }) : kidEmoji(PERSONAL_AREAS, g.area), ' ', g.title), g.deadline && /*#__PURE__*/React.createElement("p", {
       className: "text-xs",
       style: {
         color: 'var(--text-dim)'
@@ -6645,7 +6668,31 @@ function PersonalGoals({
     }, g.done ? '↺ החזרה לפעיל' : '✓ הושג!'));
   })));
 }
-const FAMILY_GOAL_TYPES = [['spending_cap', '🧾', 'תקרת הוצאה חודשית'], ['net_worth', '🏦', 'יעד שווי (הון נקי)'], ['monthly_saving', '📆', 'חיסכון חודשי קבוע']];
+const FAMILY_GOAL_TYPES = [['spending_cap', IReceipt, 'תקרת הוצאה חודשית'], ['net_worth', IBank, 'יעד שווי (הון נקי)'], ['monthly_saving', ICalendar, 'חיסכון חודשי קבוע']];
+// אצל מבוגרים: אייקוני קו בלבד. אימוג'י נשארים בכוונה רק באזור הילדים.
+const INLINE_ICON = {
+  display: 'inline-block',
+  verticalAlign: '-3px',
+  color: 'var(--bronze)'
+};
+const PERSONAL_AREA_ICON = {
+  'לימודים': IGraduationCap,
+  'כושר ובריאות': IHealth,
+  'קריירה ועבודה': IBriefcase,
+  'משפחה וזוגיות': IUsers,
+  'תחביב': ISparkles,
+  'אחר': ITarget
+};
+const suggIcon = s => s.kind === 'pot' ? IPiggyBank : s.kind === 'personal' ? ITarget : s.type === 'spending_cap' ? IReceipt : s.type === 'net_worth' ? IBank : ICalendar;
+const TOUR_ICONS = {
+  '👋': ISparkles,
+  '📊': ITrendingUp,
+  '➕': IPlus,
+  '🎯': ITarget,
+  '👨‍👩‍👧': IUsers,
+  '📲': IPhone,
+  '🔔': IBell
+};
 function GoalsPanel({
   familyId,
   isDemo,
@@ -6726,7 +6773,7 @@ function GoalsPanel({
     if (g.type === 'net_worth') {
       const pct = tgt ? netWorth / tgt : 0;
       let text = `${money(netWorth)} מתוך ${money(tgt)}`;
-      if (netWorth >= tgt) text += ' · 🎉 הושג!';else if (g.deadline) {
+      if (netWorth >= tgt) text += ' · הושג ✓';else if (g.deadline) {
         const m = monthsLeft(g.deadline);
         text += m > 0 ? ` · עוד ${m} חודשים (בערך ${money(Math.ceil((tgt - netWorth) / m))} בחודש)` : ' · תאריך היעד עבר';
       }
@@ -6741,7 +6788,7 @@ function GoalsPanel({
     return {
       pct,
       color: pct >= 1 ? 'var(--pos)' : 'var(--bronze)',
-      text: `${money(v)} מתוך ${money(tgt)} החודש` + (v >= tgt ? ' · 🎉 עמדתם ביעד!' : '')
+      text: `${money(v)} מתוך ${money(tgt)} החודש` + (v >= tgt ? ' · עמדתם ביעד ✓' : '')
     };
   };
   const openForm = t => {
@@ -6781,7 +6828,7 @@ function GoalsPanel({
     }
     setBusy(false);
     setForm(null);
-    showToast('🎯 היעד נוסף');
+    showToast('היעד נוסף');
   };
   const remove = async g => {
     if (!window.confirm(`למחוק את "${g.title}"?`)) return;
@@ -6800,13 +6847,15 @@ function GoalsPanel({
     className: "ent-heading text-xl font-bold flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(ITarget, {
     size: 20
-  }), " יעדים משפחתיים"), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('🛠️ האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }), " יעדים משפחתיים"), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, FAMILY_GOAL_TYPES.map(([id, em, label]) => /*#__PURE__*/React.createElement("button", {
+  }, FAMILY_GOAL_TYPES.map(([id, Ic, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => openForm(id),
-    className: `ent-pill-btn px-4 py-2 text-sm ${form === id ? 'solid-bronze' : 'ghost'}`
-  }, em, " ", label))), status === 'ok' && form && /*#__PURE__*/React.createElement("div", {
+    className: `ent-pill-btn px-4 py-2 text-sm flex items-center gap-1.5 ${form === id ? 'solid-bronze' : 'ghost'}`
+  }, /*#__PURE__*/React.createElement(Ic, {
+    size: 15
+  }), label))),status === 'ok' && form && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-3",
     style: {
       background: 'var(--navy-panel-2)'
@@ -6865,7 +6914,10 @@ function GoalsPanel({
       className: "flex items-start justify-between gap-2"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
       className: "ent-heading font-bold"
-    }, type[1], " ", g.title), /*#__PURE__*/React.createElement("p", {
+    }, /*#__PURE__*/React.createElement(type[1], {
+      size: 16,
+      style: INLINE_ICON
+    }), " ", g.title), /*#__PURE__*/React.createElement("p", {
       className: "text-xs",
       style: {
         color: 'var(--text-dim)'
@@ -6888,11 +6940,13 @@ function GoalsPanel({
     ownerId: currentProfile.id,
     ownerKind: "parent",
     showToast: showToast,
-    title: '🌱 היעדים האישיים שלי',
-    note: '🔒 רק את/ה רואה את היעדים האלה.'
+    title: 'היעדים האישיים שלי',
+    icon: ITarget,
+    lock: true,
+    note: 'רק את/ה רואה את היעדים האלה.'
   }) : /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
-  }, goalMuted(`🔒 היעדים האישיים של ${currentProfile?.name || 'הפרופיל'} זמינים רק כשמתחברים מהחשבון שלו/ה.`)));
+  }, goalMuted(`היעדים האישיים של${currentProfile?.name || 'הפרופיל'} זמינים רק כשמתחברים מהחשבון שלו/ה.`)));
 }
 
 /* ---- שאלון פתיחה ---- */
@@ -7378,7 +7432,11 @@ function SetupWizard({
     body = [/*#__PURE__*/React.createElement("div", {
       key: "e",
       className: "text-4xl"
-    }, "🎯"), h2('היעדים שלך'), sugg.length ? goalMuted('לפי התשובות שלך הכנו כמה יעדים. סמנו מה מתאים — ואפשר לשנות סכומים:') : goalMuted('לא מצאנו יעד מתאים כרגע — אפשר תמיד להוסיף יעדים באפליקציה.'), /*#__PURE__*/React.createElement("div", {
+    }, isKid ? "🎯" : /*#__PURE__*/React.createElement("span", {
+      className: "ent-icon-badge"
+    }, /*#__PURE__*/React.createElement(ITarget, {
+      size: 22
+    }))), h2('היעדים שלך'),sugg.length ? goalMuted('לפי התשובות שלך הכנו כמה יעדים. סמנו מה מתאים — ואפשר לשנות סכומים:') : goalMuted('לא מצאנו יעד מתאים כרגע — אפשר תמיד להוסיף יעדים באפליקציה.'), /*#__PURE__*/React.createElement("div", {
       key: "l",
       className: "space-y-2"
     }, sugg.map(s => /*#__PURE__*/React.createElement("div", {
@@ -7397,7 +7455,10 @@ function SetupWizard({
       style: {
         color: 'var(--text)'
       }
-    }, s.emoji, " ", s.label), s.amount != null && /*#__PURE__*/React.createElement("input", {
+    }, isKid ? s.emoji : /*#__PURE__*/React.createElement(suggIcon(s), {
+      size: 16,
+      style: INLINE_ICON
+    }), " ", s.label), s.amount != null && /*#__PURE__*/React.createElement("input", {
       className: "ent-input px-3 py-1.5 rounded-lg text-sm outline-none",
       style: {
         width: 110
@@ -7434,7 +7495,11 @@ function SetupWizard({
     body = [/*#__PURE__*/React.createElement("div", {
       key: "e",
       className: "text-4xl"
-    }, "👋"), h2(`היי ${profile.name}!`), goalMuted(isKid ? 'כמה שאלות קצרות וכיפיות — ובסוף נציע לך יעדי חיסכון משלך 🐷' : 'כמה שאלות קצרות (כדקה) כדי להתאים לך את Homey — ובסוף נציע לך יעדים מוכנים.'), small(isKid ? '🔒 התשובות גלויות רק לך ולהורים.' : '🔒 התשובות גלויות רק לך.'), /*#__PURE__*/React.createElement("button", {
+    }, isKid ? "👋" : /*#__PURE__*/React.createElement("span", {
+      className: "ent-icon-badge"
+    }, /*#__PURE__*/React.createElement(ISparkles, {
+      size: 22
+    }))), h2(`היי ${profile.name}!`),goalMuted(isKid ? 'כמה שאלות קצרות וכיפיות — ובסוף נציע לך יעדי חיסכון משלך 🐷' : 'כמה שאלות קצרות (כדקה) כדי להתאים לך את Homey — ובסוף נציע לך יעדים מוכנים.'), small(isKid ? '🔒 התשובות גלויות רק לך ולהורים.' : 'התשובות גלויות רק לך.'), /*#__PURE__*/React.createElement("button", {
       key: "go",
       onClick: () => setStep(1),
       className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mt-2"
