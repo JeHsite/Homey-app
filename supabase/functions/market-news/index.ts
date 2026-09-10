@@ -1,5 +1,5 @@
 // Homey — חדשות כלכלה (Finnhub). המפתח נשמר כסוד FINNHUB_KEY ב-Supabase.
-// האפליקציה קוראת לפונקציה דרך sb.functions.invoke, כך ש-"Verify JWT" יכול להישאר דלוק.
+// "Verify JWT with legacy secret" כבוי (ההמלצה של Supabase; טוקנים חדשים לא נחתמים במפתח הישן).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const CORS = {
