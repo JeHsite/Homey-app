@@ -487,6 +487,28 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-icon-btn:hover { color: var(--neg-soft); }
   .ent-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--navy-panel); border: 1px solid rgba(79,216,255,0.4); color: var(--text); padding: 10px 20px; border-radius: 999px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 100; animation: ent-toast-in .2s ease; }
   @keyframes ent-toast-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  /* תפריט צד: במחשב נצמד לגלילה; בטלפון פס קבוע בצד ימין עם כל האפשרויות, ☰ פותח עם שמות מלאים */
+  .ent-sidebar { width: 16rem; flex-shrink: 0; padding: 1rem; border-left: 1px solid var(--line); }
+  .ent-nav-short { display: none; }
+  .ent-app-body > main { min-width: 0; }
+  @media (min-width: 768px) {
+    .ent-sidebar { position: sticky; top: 82px; align-self: flex-start; max-height: calc(100vh - 98px); overflow-y: auto; }
+  }
+  @media (max-width: 767px) {
+    .ent-sidebar { position: fixed; top: 66px; bottom: 0; right: 0; z-index: 40; width: 68px; padding: 6px 4px; overflow-y: auto; background: var(--navy); transition: width .25s ease; }
+    .ent-sidebar.open { width: 16rem; padding: 1rem; box-shadow: -8px 0 24px rgba(0,0,0,.35); }
+    .ent-sidebar:not(.open) .ent-nav-btn { flex-direction: column; gap: 3px; padding: 8px 2px; border-radius: 14px; }
+    .ent-sidebar:not(.open) .ent-nav-full { display: none; }
+    .ent-sidebar:not(.open) .ent-nav-short { display: block; font-size: 10px; line-height: 1.15; text-align: center; }
+    .ent-app-body { padding-right: 76px !important; }
+  }
+  /* מחלקות עזר שלא קיימות ב-CSS המקומפל (Tailwind כאן מוכן מראש, לא JIT) */
+  .max-w-md { max-width: 28rem; } .max-w-lg { max-width: 32rem; }
+  .list-disc { list-style: disc; } .list-decimal { list-style: decimal; }
+  .min-w-0 { min-width: 0; } .shrink-0 { flex-shrink: 0; } .overflow-y-auto { overflow-y: auto; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .underline { text-decoration: underline; } .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+  .pr-5 { padding-right: 1.25rem; } .mt-5 { margin-top: 1.25rem; } .h-1\.5 { height: .375rem; }
   .ent-empty { color: var(--text-dim); }
   .ent-table th { text-align: right; padding: 10px 12px; font-size: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--line); }
   .ent-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--line); }
@@ -1245,7 +1267,7 @@ const NAV_ITEMS_ALL = [{
   parentOnly: true
 }, {
   id: 'savings',
-  label: 'חסכונות',
+  label: 'חסכונות ויעדים',
   icon: IPiggyBank,
   parentOnly: true
 }, {
@@ -1647,7 +1669,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -1683,6 +1705,7 @@ function LegalModal({
 
 /* ---- הדרכה למשתמש חדש (פעם אחת לכל פרופיל הורה; אפשר לפתוח שוב מ"מדריך ומידע") ---- */
 function OnboardingTour({
+  kid,
   onClose,
   pushState,
   pushHint,
@@ -1708,7 +1731,7 @@ function OnboardingTour({
       color: 'var(--text-dim)'
     }
   }, 'אפשר לשנות את זה בכל רגע בהגדרות ← "התראות תשלום".')];
-  const steps = [{
+  const parentSteps = [{
     emoji: '👋',
     title: 'ברוכים הבאים ל-Homey',
     body: [LP('כל הכסף של הבית במקום אחד — לכל המשפחה.'), LP('בכמה צעדים קצרים נראה איך הכל עובד. אפשר לדלג בכל שלב, ולחזור להדרכה מ', LB('"מדריך ומידע"'), '.')]
@@ -1720,6 +1743,10 @@ function OnboardingTour({
     emoji: '➕',
     title: 'הוספת הוצאות וחיובים',
     body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה — למשל מזון ← סופר, או רכב ← דלק.'), LP('חיובים קבועים (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"חיובים והתחייבויות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הם חוזרים אוטומטית ל"לא שולם".')]
+  }, {
+    emoji: '🎯',
+    title: 'יעדים',
+    body: [LP('ב', LB('"חסכונות ויעדים"'), ' מגדירים קופות חיסכון, ', LB('תקרת הוצאה'), ' לכל קטגוריה, ', LB('יעד שווי'), ' ו', LB('חיסכון חודשי'), ' — וההתקדמות מחושבת לבד מהנתונים.'), LP('יש גם ', LB('יעדים אישיים'), ' (קורס, כושר, עבודה חדשה) עם שלבים לסימון — שרק את/ה רואה.')]
   }, {
     emoji: '👨‍👩‍👧',
     title: 'כל המשפחה ביחד',
@@ -1733,6 +1760,24 @@ function OnboardingTour({
     title: 'תזכורות לפני כל תשלום',
     body: pushBody
   }];
+  const kidSteps = [{
+    emoji: '👋',
+    title: 'ברוכים הבאים ל-Homey',
+    body: [LP('כאן מנהלים את הכסף שלך — כמו גדולים 😎'), LP('בכמה צעדים קצרים נראה לך איך זה עובד.')]
+  }, {
+    emoji: '🐷',
+    title: 'הכסף שלי',
+    body: [LP('בלשונית ', LB('"הכסף שלי"'), ' מוסיפים דמי כיס וכסף שקיבלת, ורושמים על מה הוצאת.'), LP('ככה תמיד רואים כמה יש בארנק.')]
+  }, {
+    emoji: '🎯',
+    title: 'יעדים',
+    body: [LP('צרו ', LB('יעד חיסכון'), ' — אייפון, רישיון, טיול עם חברים — והפקידו אליו מהארנק.'), LP('יש גם ', LB('יעדים אישיים'), ' כמו ללמוד משהו חדש או ספורט, עם שלבים לסימון.')]
+  }, {
+    emoji: '📲',
+    title: 'התקנה למסך הבית',
+    body: [...installBody, updateNote]
+  }];
+  const steps = kid ? kidSteps : parentSteps;
   const s = steps[step];
   const last = step === steps.length - 1;
   return /*#__PURE__*/React.createElement("div", {
@@ -2793,12 +2838,60 @@ function App() {
   }[pushState];
   const pushToggleable = pushState === 'on' || pushState === 'off' || pushState === 'busy';
   const [showTour, setShowTour] = useState(false);
+  // שאלון פתיחה: פעם אחת לכל פרופיל, לפני ההדרכה (supabase/goals.sql). בלי הטבלה — מדלגים בשקט.
+  const [setupState, setSetupState] = useState('idle'); // idle | checking | needed | done | unavailable
+  const [setupAnswers, setSetupAnswers] = useState(null);
+  const [setupEditing, setSetupEditing] = useState(false);
   useEffect(() => {
-    if (authStage !== 'app' || !currentProfile || currentProfile.role === 'child') return;
+    if (authStage !== 'app' || !currentProfile) {
+      setSetupState('idle');
+      return;
+    }
+    let cancelled = false;
+    setSetupState('checking');
+    (async () => {
+      if (isDemo) {
+        let done = false;
+        try {
+          done = !!localStorage.getItem('homey_setup_demo_' + currentProfile.id);
+        } catch (_e) {}
+        if (!cancelled) setSetupState(done ? 'done' : 'needed');
+        return;
+      }
+      if (currentProfile.role !== 'child') {
+        // הורה שנבחר בטלפון של בן/בת הזוג — התשובות שלו נגישות רק מהחשבון שלו
+        const {
+          data: {
+            session
+          }
+        } = await sb.auth.getSession();
+        if (session?.user?.id !== currentProfile.id) {
+          if (!cancelled) setSetupState('unavailable');
+          return;
+        }
+      }
+      const {
+        data,
+        error
+      } = await sb.from('profile_setup').select('answers').eq('owner_id', currentProfile.id).maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setSetupState('unavailable');
+        return;
+      }
+      setSetupAnswers(data ? data.answers : null);
+      setSetupState(data ? 'done' : 'needed');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authStage, currentProfile, isDemo]);
+  useEffect(() => {
+    if (authStage !== 'app' || !currentProfile || !(setupState === 'done' || setupState === 'unavailable')) return;
     try {
       if (!localStorage.getItem('homey_tour_' + currentProfile.id)) setShowTour(true);
     } catch (_e) {}
-  }, [authStage, currentProfile]);
+  }, [authStage, currentProfile, setupState]);
   const closeTour = () => {
     setShowTour(false);
     try {
@@ -2837,6 +2930,8 @@ function App() {
   const [fontScale, setFontScale] = useState(() => localStorage.getItem('homey_fontscale') || 'md');
   useEffect(() => {
     localStorage.setItem('homey_brightness', String(brightness));
+    // על <html> ולא על עטיפת האפליקציה: filter על אב יוצר containing block ושובר position:fixed (תפריט, חלונות קופצים)
+    document.documentElement.style.filter = brightness === 100 ? '' : `brightness(${brightness}%)`;
   }, [brightness]);
   useEffect(() => {
     localStorage.setItem('homey_theme', theme);
@@ -3909,6 +4004,29 @@ function App() {
       setAuthStage('login');
     }
   });
+  if (authStage === 'app' && currentProfile && setupState === 'checking') return /*#__PURE__*/React.createElement("div", {
+    className: "ent-root min-h-screen flex items-center justify-center",
+    dir: "rtl"
+  }, /*#__PURE__*/React.createElement(HomeyMark, {
+    size: 48
+  }));
+  if (authStage === 'app' && currentProfile && (setupState === 'needed' || setupEditing)) return /*#__PURE__*/React.createElement(SetupWizard, {
+    familyId: familyId,
+    isDemo: isDemo,
+    profile: currentProfile,
+    transactions: transactions,
+    assets: assets,
+    savingsPots: savingsPots,
+    initialAnswers: setupEditing ? setupAnswers : null,
+    onPotCreated: row => setSavingsPots(prev => [...prev, row]),
+    onCancel: setupEditing ? () => setSetupEditing(false) : null,
+    onDone: answers => {
+      setSetupAnswers(answers);
+      setSetupState('done');
+      setSetupEditing(false);
+      setShowTour(true);
+    }
+  });
   const isChild = currentProfile?.role === 'child';
   const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
@@ -3917,10 +4035,7 @@ function App() {
   const parentOnlyIds = NAV_ITEMS_ALL.filter(i => i.parentOnly).map(i => i.id);
   return /*#__PURE__*/React.createElement("div", {
     dir: "rtl",
-    className: "ent-root min-h-screen",
-    style: {
-      filter: `brightness(${brightness}%)`
-    }
+    className: "ent-root min-h-screen"
   }, /*#__PURE__*/React.createElement("header", {
     className: "ent-header sticky top-0 z-50"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3983,13 +4098,9 @@ function App() {
   })))), /*#__PURE__*/React.createElement("div", {
     className: "ent-horizon"
   })), /*#__PURE__*/React.createElement("div", {
-    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8"
+    className: "ent-app-body max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8"
   }, /*#__PURE__*/React.createElement("aside", {
-    className: `fixed md:static inset-y-0 right-0 z-40 w-64 p-4 space-y-2 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} top-16 md:top-auto`,
-    style: {
-      background: mobileMenuOpen ? 'var(--navy)' : 'transparent',
-      borderLeft: '1px solid var(--line)'
-    }
+    className: `ent-sidebar${mobileMenuOpen ? ' open' : ''}`
   }, /*#__PURE__*/React.createElement("nav", {
     className: "space-y-1.5"
   }, navItems.map(item => {
@@ -4001,10 +4112,15 @@ function App() {
         setActiveTab(item.id);
         setMobileMenuOpen(false);
       },
+      title: item.label,
       className: `ent-nav-btn ent-pill-btn w-full flex items-center gap-3 px-4 py-3 text-sm ${isActive ? 'active' : ''}`
     }, /*#__PURE__*/React.createElement(IconC, {
       size: 19
-    }), /*#__PURE__*/React.createElement("span", null, item.label));
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "ent-nav-full"
+    }, item.label), /*#__PURE__*/React.createElement("span", {
+      className: "ent-nav-short"
+    }, item.id === 'kidmoney' && !isChild ? 'ילדים' : NAV_SHORT[item.id] || item.label));
   }))), /*#__PURE__*/React.createElement("main", {
     className: "flex-1 space-y-6"
   }, activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement("div", {
@@ -4745,7 +4861,7 @@ function App() {
     className: "ent-heading text-xl font-bold flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(IPiggyBank, {
     size: 20
-  }), " חסכונות"), /*#__PURE__*/React.createElement("button", {
+  }), " קופות חיסכון"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpenForm(openForm === 'savings' ? null : 'savings'),
     className: "ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm"
   }, /*#__PURE__*/React.createElement(IPlus, {
@@ -4870,7 +4986,17 @@ function App() {
       onClick: () => setDepositForId(p.id),
       className: "ent-pill-btn ghost w-full mt-3 py-1.5 text-xs"
     }, "+ הוסף הפקדה"));
-  })))), activeTab === 'investments' && !isChild && /*#__PURE__*/React.createElement("div", {
+  })))), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement(GoalsPanel, {
+    familyId: familyId,
+    isDemo: isDemo,
+    currentProfile: currentProfile,
+    currency: currency,
+    showToast: showToast,
+    transactions: transactions,
+    assets: assets,
+    savingsPots: savingsPots,
+    categories: Object.keys(allExpenseCategories)
+  }), activeTab === 'investments' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
@@ -5345,7 +5471,13 @@ function App() {
   }, "מדריך שימוש"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowTour(true),
     className: "ent-pill-btn ghost px-4 py-2 text-xs"
-  }, "▶ הצגת ההדרכה מחדש"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "▶ הצגת ההדרכה מחדש"), setupState === 'done' && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSetupEditing(true),
+    className: "ent-pill-btn ghost px-4 py-2 text-xs",
+    style: {
+      marginRight: 8
+    }
+  }, "✏️ עדכון השאלון האישי"),/*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -5375,7 +5507,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('התפריט', 'במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון יש פס קבוע בצד ימין עם כל האפשרויות; כפתור ☰ למעלה פותח אותו עם השמות המלאים.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -5692,6 +5824,7 @@ function App() {
   }, familyInfo.groupCode)))))), toast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
   }, toast), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
+    kid: currentProfile?.role === 'child',
     onClose: closeTour,
     pushState: pushState,
     pushHint: pushHint,
@@ -6181,7 +6314,1176 @@ function KidMoney({
     }, /*#__PURE__*/React.createElement(ITrash, {
       size: 14
     }))));
+  })), status === 'ok' && /*#__PURE__*/React.createElement(PersonalGoals, {
+    familyId: familyId,
+    isDemo: isDemo,
+    ownerId: kidId,
+    ownerKind: "child",
+    showToast: showToast,
+    title: isChild ? '🌱 היעדים האישיים שלי' : '🌱 יעדים אישיים',
+    note: isChild ? 'ללמוד משהו חדש, ספורט, רישיון — עם שלבים לסימון.' : 'היעדים האישיים של הילד/ה.'
+  }));
+}
+
+/* ---- יעדים, שאלון פתיחה ויעדים מוצעים (supabase/goals.sql) ---- */
+const isMissingTable = e => !!e && ['PGRST205', '42P01'].includes(e.code);
+const GOALS_DEMO = {
+  family: null,
+  personal: {}
+};
+const NAV_SHORT = {
+  dashboard: 'בית',
+  kidmoney: 'הכסף שלי',
+  expenses: 'הוצאות',
+  bills: 'חיובים',
+  savings: 'יעדים',
+  investments: 'השקעות',
+  notes: 'פתקים',
+  trips: 'טיולים',
+  gifts: 'מתנות',
+  settings: 'הגדרות',
+  help: 'מדריך'
+};
+const GS = (title, text) => /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  className: "ent-heading font-bold mb-1.5",
+  style: {
+    color: 'var(--bronze)'
+  }
+}, title), /*#__PURE__*/React.createElement("p", null, text));
+const addMonths = n => {
+  const d = new Date();
+  d.setMonth(d.getMonth() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const monthsLeft = d => {
+  const t = new Date(d),
+    n = new Date();
+  return Math.max(0, (t.getFullYear() - n.getFullYear()) * 12 + t.getMonth() - n.getMonth());
+};
+const fmtShortDate = d => {
+  const p = String(d || '').slice(0, 10).split('-');
+  return p.length === 3 ? `${p[2]}.${p[1]}.${p[0].slice(2)}` : '';
+};
+const roundUp = (v, step) => Math.ceil(v / step) * step;
+const goalInputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
+const goalChip = (label, selected, onClick, key) => /*#__PURE__*/React.createElement("button", {
+  key: key || label,
+  type: "button",
+  onClick,
+  className: "ent-pill-btn px-3 py-1.5 text-xs",
+  style: {
+    background: selected ? 'var(--bronze)' : 'var(--navy-panel)',
+    color: selected ? 'var(--on-accent)' : 'var(--text-2)',
+    border: '1px solid var(--line)'
+  }
+}, label);
+const goalMuted = (text, extra) => /*#__PURE__*/React.createElement("p", {
+  className: "text-sm " + (extra || ''),
+  style: {
+    color: 'var(--text-muted)'
+  }
+}, text);
+const goalBar = (pct, color) => /*#__PURE__*/React.createElement("div", {
+  className: "ent-progress-track"
+}, /*#__PURE__*/React.createElement("div", {
+  className: "ent-progress-fill",
+  style: {
+    width: `${Math.max(0, Math.min(100, pct * 100))}%`,
+    background: color
+  }
+}));
+const PERSONAL_AREAS = [['לימודים', '📚'], ['כושר ובריאות', '💪'], ['קריירה ועבודה', '💼'], ['משפחה וזוגיות', '❤️'], ['תחביב', '🎨'], ['אחר', '🎯']];
+function PersonalGoals({
+  familyId,
+  isDemo,
+  ownerId,
+  ownerKind,
+  showToast,
+  title,
+  note
+}) {
+  const [goals, setGoals] = useState([]);
+  const [status, setStatus] = useState('loading');
+  const [adding, setAdding] = useState(false);
+  const [t, setT] = useState('');
+  const [area, setArea] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [stepDraft, setStepDraft] = useState({});
+  useEffect(() => {
+    if (isDemo) {
+      setGoals(GOALS_DEMO.personal[ownerId] || []);
+      setStatus('ok');
+      return;
+    }
+    let cancelled = false;
+    setStatus('loading');
+    sb.from('personal_goals').select('*').eq('owner_id', ownerId).order('created_at').then(({
+      data,
+      error
+    }) => {
+      if (cancelled) return;
+      if (error) {
+        setStatus(isMissingTable(error) ? 'setup' : 'error');
+        return;
+      }
+      setGoals(data || []);
+      setStatus('ok');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, isDemo]);
+  const commit = next => {
+    setGoals(next);
+    if (isDemo) GOALS_DEMO.personal[ownerId] = next;
+  };
+  const save = async (g, changes) => {
+    if (!isDemo) {
+      const {
+        error
+      } = await sb.from('personal_goals').update(changes).eq('id', g.id);
+      if (error) return showToast('שגיאה בשמירה');
+    }
+    commit(goals.map(x => x.id === g.id ? {
+      ...x,
+      ...changes
+    } : x));
+  };
+  const add = async () => {
+    if (!t.trim()) return showToast('כתבו מה היעד');
+    const row = {
+      family_id: familyId,
+      owner_id: ownerId,
+      owner_kind: ownerKind,
+      title: t.trim(),
+      area: area || 'אחר',
+      deadline: deadline || null,
+      steps: [],
+      done: false
+    };
+    if (isDemo) commit([...goals, {
+      id: 'pg' + Date.now(),
+      ...row
+    }]);else {
+      const {
+        data,
+        error
+      } = await sb.from('personal_goals').insert(row).select().single();
+      if (error) return showToast('שגיאה בשמירה');
+      commit([...goals, data]);
+    }
+    setAdding(false);
+    setT('');
+    setArea('');
+    setDeadline('');
+    showToast('🌱 יעד אישי נוסף');
+  };
+  const addStep = g => {
+    const text = (stepDraft[g.id] || '').trim();
+    if (!text) return;
+    save(g, {
+      steps: [...(g.steps || []), {
+        text,
+        done: false
+      }]
+    });
+    setStepDraft({
+      ...stepDraft,
+      [g.id]: ''
+    });
+  };
+  const toggleStep = (g, i) => save(g, {
+    steps: (g.steps || []).map((s, j) => j === i ? {
+      ...s,
+      done: !s.done
+    } : s)
+  });
+  const toggleDone = g => {
+    save(g, {
+      done: !g.done
+    });
+    if (!g.done) showToast('🎉 כל הכבוד! היעד הושג');
+  };
+  const remove = async g => {
+    if (!window.confirm(`למחוק את "${g.title}"?`)) return;
+    if (!isDemo) {
+      const {
+        error
+      } = await sb.from('personal_goals').delete().eq('id', g.id);
+      if (error) return showToast('שגיאה במחיקה');
+    }
+    commit(goals.filter(x => x.id !== g.id));
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold"
+  }, title), status === 'ok' && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAdding(!adding),
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+  }, "+ יעד אישי")), note && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, note), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('🛠️ האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
+    className: "p-4 rounded-xl space-y-3",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: goalInputCls,
+    maxLength: 80,
+    placeholder: "מה היעד? למשל: לסיים קורס צילום",
+    value: t,
+    onChange: e => setT(e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, PERSONAL_AREAS.map(([l, e]) => goalChip(e + ' ' + l, area === l, () => setArea(l), l))), /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs space-y-1",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (אופציונלי)"), /*#__PURE__*/React.createElement("input", {
+    className: goalInputCls,
+    type: "date",
+    value: deadline,
+    onChange: e => setDeadline(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: add,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, "שמירה"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAdding(false),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && !adding && goalMuted('עוד אין יעדים אישיים. מה הדבר הבא שתרצו להשיג?'), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, goals.map(g => {
+    const steps = g.steps || [];
+    const doneSteps = steps.filter(s => s.done).length;
+    return /*#__PURE__*/React.createElement("div", {
+      key: g.id,
+      className: "ent-mini-card p-4 space-y-2",
+      style: {
+        opacity: g.done ? 0.75 : 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-start justify-between gap-2"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "ent-heading font-bold",
+      style: {
+        textDecoration: g.done ? 'line-through' : 'none'
+      }
+    }, kidEmoji(PERSONAL_AREAS, g.area), ' ', g.title), g.deadline && /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, "עד ", fmtShortDate(g.deadline))), /*#__PURE__*/React.createElement("button", {
+      className: "ent-icon-btn",
+      onClick: () => remove(g),
+      "aria-label": "מחיקת יעד"
+    }, /*#__PURE__*/React.createElement(ITrash, {
+      size: 15
+    }))), steps.length > 0 && goalBar(doneSteps / steps.length, 'var(--cyan)'), steps.length > 0 && /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, doneSteps, "/", steps.length, " שלבים"), steps.map((s, i) => /*#__PURE__*/React.createElement("button", {
+      key: i,
+      type: "button",
+      onClick: () => toggleStep(g, i),
+      className: "flex items-center gap-2 text-sm w-full",
+      style: {
+        color: s.done ? 'var(--text-dim)' : 'var(--text-2)',
+        textDecoration: s.done ? 'line-through' : 'none',
+        textAlign: 'right'
+      }
+    }, s.done ? '☑' : '☐', " ", s.text)), !g.done && /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-2"
+    }, /*#__PURE__*/React.createElement("input", {
+      className: goalInputCls,
+      maxLength: 80,
+      placeholder: "+ שלב (למשל: להירשם לקורס)",
+      value: stepDraft[g.id] || '',
+      onChange: e => setStepDraft({
+        ...stepDraft,
+        [g.id]: e.target.value
+      }),
+      onKeyDown: e => e.key === 'Enter' && addStep(g)
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => addStep(g),
+      className: "ent-pill-btn ghost px-3 py-2 text-sm"
+    }, "+")), /*#__PURE__*/React.createElement("button", {
+      onClick: () => toggleDone(g),
+      className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+    }, g.done ? '↺ החזרה לפעיל' : '✓ הושג!'));
   })));
+}
+const FAMILY_GOAL_TYPES = [['spending_cap', '🧾', 'תקרת הוצאה חודשית'], ['net_worth', '🏦', 'יעד שווי (הון נקי)'], ['monthly_saving', '📆', 'חיסכון חודשי קבוע']];
+function GoalsPanel({
+  familyId,
+  isDemo,
+  currentProfile,
+  currency,
+  showToast,
+  transactions,
+  assets,
+  savingsPots,
+  categories
+}) {
+  const [goals, setGoals] = useState(() => isDemo ? GOALS_DEMO.family || (GOALS_DEMO.family = [{
+    id: 'fg1',
+    type: 'spending_cap',
+    title: 'תקרה: מזון',
+    category: 'מזון',
+    target: 2500
+  }, {
+    id: 'fg2',
+    type: 'net_worth',
+    title: 'יעד שווי',
+    target: 600000,
+    deadline: addMonths(18)
+  }]) : []);
+  const [status, setStatus] = useState(isDemo ? 'ok' : 'loading');
+  const [canPersonal, setCanPersonal] = useState(isDemo);
+  const [form, setForm] = useState(null);
+  const [cat, setCat] = useState('');
+  const [target, setTarget] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [title, setTitle] = useState('');
+  const [busy, setBusy] = useState(false);
+  const money = v => `${currency}${Math.round(Number(v || 0)).toLocaleString()}`;
+  useEffect(() => {
+    if (isDemo) return;
+    let cancelled = false;
+    (async () => {
+      const [{
+        data,
+        error
+      }, {
+        data: {
+          session
+        }
+      }] = await Promise.all([sb.from('family_goals').select('*').eq('family_id', familyId).order('created_at'), sb.auth.getSession()]);
+      if (cancelled) return;
+      setCanPersonal(session?.user?.id === currentProfile?.id);
+      if (error) {
+        setStatus(isMissingTable(error) ? 'setup' : 'error');
+        return;
+      }
+      setGoals(data || []);
+      setStatus('ok');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, isDemo, currentProfile]);
+  const commit = next => {
+    setGoals(next);
+    if (isDemo) GOALS_DEMO.family = next;
+  };
+  const mk = kidToday().slice(0, 7);
+  const monthTx = transactions.filter(t => String(t.date).startsWith(mk));
+  const sumBy = (type, c) => monthTx.filter(t => t.type === type && (!c || t.category === c)).reduce((s, t) => s + Number(t.amount || 0), 0);
+  const netWorth = assets.reduce((s, a) => s + Number(a.value || 0), 0) + savingsPots.reduce((s, p) => s + Number(p.current || 0), 0);
+  const measure = g => {
+    const tgt = Number(g.target || 0);
+    if (g.type === 'spending_cap') {
+      const v = sumBy('expense', g.category);
+      const pct = tgt ? v / tgt : 0;
+      return {
+        pct,
+        color: pct > 1 ? 'var(--neg)' : pct >= 0.8 ? 'var(--bronze)' : 'var(--pos)',
+        text: `${money(v)} מתוך ${money(tgt)} החודש` + (v > tgt ? ` · חריגה של ${money(v - tgt)}` : ` · נשארו ${money(tgt - v)}`)
+      };
+    }
+    if (g.type === 'net_worth') {
+      const pct = tgt ? netWorth / tgt : 0;
+      let text = `${money(netWorth)} מתוך ${money(tgt)}`;
+      if (netWorth >= tgt) text += ' · 🎉 הושג!';else if (g.deadline) {
+        const m = monthsLeft(g.deadline);
+        text += m > 0 ? ` · עוד ${m} חודשים (בערך ${money(Math.ceil((tgt - netWorth) / m))} בחודש)` : ' · תאריך היעד עבר';
+      }
+      return {
+        pct,
+        color: 'var(--cyan)',
+        text
+      };
+    }
+    const v = Math.max(0, sumBy('income') - sumBy('expense'));
+    const pct = tgt ? v / tgt : 0;
+    return {
+      pct,
+      color: pct >= 1 ? 'var(--pos)' : 'var(--bronze)',
+      text: `${money(v)} מתוך ${money(tgt)} החודש` + (v >= tgt ? ' · 🎉 עמדתם ביעד!' : '')
+    };
+  };
+  const openForm = t => {
+    setForm(form === t ? null : t);
+    setCat('');
+    setTarget('');
+    setDeadline('');
+    setTitle('');
+  };
+  const add = async () => {
+    const amt = Number(target);
+    if (form === 'spending_cap' && !cat) return showToast('בחרו קטגוריה');
+    if (!(amt > 0)) return showToast('הזינו סכום יעד');
+    const defTitle = form === 'spending_cap' ? `תקרה: ${cat}` : form === 'net_worth' ? 'יעד שווי' : 'חיסכון חודשי';
+    const row = {
+      family_id: familyId,
+      type: form,
+      title: title.trim() || defTitle,
+      category: form === 'spending_cap' ? cat : null,
+      target: amt,
+      deadline: form === 'net_worth' && deadline ? deadline : null
+    };
+    setBusy(true);
+    if (isDemo) commit([...goals, {
+      id: 'fg' + Date.now(),
+      ...row
+    }]);else {
+      const {
+        data,
+        error
+      } = await sb.from('family_goals').insert(row).select().single();
+      if (error) {
+        setBusy(false);
+        return showToast('שגיאה בשמירה');
+      }
+      commit([...goals, data]);
+    }
+    setBusy(false);
+    setForm(null);
+    showToast('🎯 היעד נוסף');
+  };
+  const remove = async g => {
+    if (!window.confirm(`למחוק את "${g.title}"?`)) return;
+    if (!isDemo) {
+      const {
+        error
+      } = await sb.from('family_goals').delete().eq('id', g.id);
+      if (error) return showToast('שגיאה במחיקה');
+    }
+    commit(goals.filter(x => x.id !== g.id));
+  };
+  const formHint = form === 'spending_cap' ? 'בחרו קטגוריה וכמה מקסימום להוציא עליה בחודש:' : form === 'net_worth' ? `נכסים + חסכונות היום: ${money(netWorth)}. לאן רוצים להגיע?` : 'כמה לחסוך בכל חודש? (נמדד כהכנסות פחות הוצאות של החודש)';
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ITarget, {
+    size: 20
+  }), " יעדים משפחתיים"), status === 'loading' && goalMuted('טוען…'), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('🛠️ האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, FAMILY_GOAL_TYPES.map(([id, em, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    onClick: () => openForm(id),
+    className: `ent-pill-btn px-4 py-2 text-sm ${form === id ? 'solid-bronze' : 'ghost'}`
+  }, em, " ", label))), status === 'ok' && form && /*#__PURE__*/React.createElement("div", {
+    className: "p-4 rounded-xl space-y-3",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text)'
+    }
+  }, formHint), form === 'spending_cap' && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, categories.map(c => goalChip(c, cat === c, () => setCat(c)))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: goalInputCls,
+    type: "number",
+    inputMode: "decimal",
+    min: "0",
+    placeholder: form === 'spending_cap' ? `תקרה בחודש ${currency}` : form === 'net_worth' ? `שווי יעד ${currency}` : `סכום בחודש ${currency}`,
+    value: target,
+    onChange: e => setTarget(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    className: goalInputCls,
+    maxLength: 50,
+    placeholder: "שם היעד (אופציונלי)",
+    value: title,
+    onChange: e => setTitle(e.target.value)
+  })), form === 'net_worth' && /*#__PURE__*/React.createElement("label", {
+    className: "block text-xs space-y-1",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (אופציונלי — נחשב כמה צריך לחסוך בחודש)"), /*#__PURE__*/React.createElement("input", {
+    className: goalInputCls,
+    type: "date",
+    value: deadline,
+    onChange: e => setDeadline(e.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: add,
+    disabled: busy,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, "שמירה"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setForm(null),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && !form && goalMuted('עוד אין יעדים. בחרו סוג יעד למעלה כדי להתחיל.'), status === 'ok' && goals.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, goals.map(g => {
+    const m = measure(g);
+    const type = FAMILY_GOAL_TYPES.find(x => x[0] === g.type) || FAMILY_GOAL_TYPES[0];
+    return /*#__PURE__*/React.createElement("div", {
+      key: g.id,
+      className: "ent-mini-card p-4 space-y-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-start justify-between gap-2"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "ent-heading font-bold"
+    }, type[1], " ", g.title), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, type[2], g.deadline ? ' · עד ' + fmtShortDate(g.deadline) : '')), /*#__PURE__*/React.createElement("button", {
+      className: "ent-icon-btn",
+      onClick: () => remove(g),
+      "aria-label": "מחיקת יעד"
+    }, /*#__PURE__*/React.createElement(ITrash, {
+      size: 15
+    }))), goalBar(m.pct, m.color), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, m.text));
+  }))), canPersonal ? /*#__PURE__*/React.createElement(PersonalGoals, {
+    familyId: familyId,
+    isDemo: isDemo,
+    ownerId: currentProfile.id,
+    ownerKind: "parent",
+    showToast: showToast,
+    title: '🌱 היעדים האישיים שלי',
+    note: '🔒 רק את/ה רואה את היעדים האלה.'
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, goalMuted(`🔒 היעדים האישיים של ${currentProfile?.name || 'הפרופיל'} זמינים רק כשמתחברים מהחשבון שלו/ה.`)));
+}
+
+/* ---- שאלון פתיחה ---- */
+const SETUP_AGE_Q = {
+  id: 'age',
+  q: 'בן/בת כמה את/ה?',
+  type: 'number',
+  placeholder: 'למשל 12'
+};
+const SETUP_Q = {
+  parent: [{
+    id: 'age',
+    q: 'בן/בת כמה את/ה?',
+    type: 'single',
+    options: ['18-25', '26-35', '36-45', '46-55', '56+']
+  }, {
+    id: 'work',
+    q: 'במה את/ה עוסק/ת?',
+    type: 'single',
+    options: ['שכיר/ה', 'עצמאי/ת', 'בעל/ת עסק', 'סטודנט/ית', 'פנסיונר/ית', 'אחר'],
+    text: 'תיאור קצר (אופציונלי)'
+  }, {
+    id: 'income',
+    q: 'מה הכנסת משק הבית בחודש, בערך?',
+    type: 'single',
+    optional: true,
+    hint: 'אופציונלי · רק את/ה רואה את זה',
+    options: ['עד ₪10,000', '₪10,000-20,000', '₪20,000-35,000', 'מעל ₪35,000']
+  }, {
+    id: 'priorities',
+    q: 'מה הכי חשוב לך כלכלית בשנה הקרובה?',
+    type: 'multi',
+    hint: 'אפשר לבחור כמה',
+    options: ['קרן חירום', 'לצאת מהמינוס', 'דירה', 'רכב', 'חופשה', 'להשקיע', 'להפחית הוצאות', 'חינוך הילדים']
+  }, {
+    id: 'monthlySave',
+    q: 'כמה היית רוצה לחסוך בכל חודש?',
+    type: 'number',
+    optional: true,
+    placeholder: 'למשל 2000'
+  }, {
+    id: 'fiveYears',
+    q: 'לאן היית רוצה להגיע בעוד 5 שנים?',
+    type: 'multi',
+    optional: true,
+    options: ['דירה בבעלות', 'חופש כלכלי', 'עסק משלי', 'קריירה חדשה'],
+    text: 'במילים שלך (אופציונלי)'
+  }, {
+    id: 'personal',
+    q: 'מטרה אישית אחת לשנה הקרובה?',
+    type: 'single',
+    optional: true,
+    options: ['ללמוד משהו חדש', 'כושר ובריאות', 'קידום בעבודה', 'עבודה חדשה', 'יותר זמן משפחה'],
+    text: 'או במילים שלך, למשל: קורס צילום'
+  }],
+  kid: [{
+    id: 'fun',
+    q: 'מה הכי כיף לך לעשות?',
+    type: 'multi',
+    options: ['ספורט', 'משחקים', 'יצירה', 'חברים', 'מוזיקה']
+  }, {
+    id: 'pocket',
+    q: 'כמה דמי כיס את/ה מקבל/ת?',
+    type: 'single',
+    options: ['אין לי', 'עד ₪20 בשבוע', '₪20-50 בשבוע', 'יותר']
+  }, {
+    id: 'saveFor',
+    q: 'בשביל מה היית רוצה לחסוך?',
+    type: 'multi',
+    optional: true,
+    options: ['משחק', 'טלפון', 'אופניים', 'מתנה למישהו', 'טיול עם חברים']
+  }, {
+    id: 'learn',
+    q: 'משהו שהיית רוצה ללמוד השנה?',
+    type: 'single',
+    optional: true,
+    options: ['ספורט חדש', 'כלי נגינה', 'ציור ויצירה', 'שפה חדשה', 'תכנות'],
+    text: 'או משהו אחר'
+  }, {
+    id: 'style',
+    q: 'איך את/ה עם כסף?',
+    type: 'single',
+    options: ['חוסך/ת 🐷', 'באמצע ⚖️', 'מבזבז/ת מהר 💨']
+  }, {
+    id: 'dream',
+    q: 'מה החלום שלך כשתהיה גדול/ה?',
+    type: 'text',
+    optional: true,
+    placeholder: 'למשל: וטרינר/ית, כדורגלן/ית, מתכנת/ת'
+  }],
+  teen: [{
+    id: 'doing',
+    q: 'מה את/ה עושה עכשיו?',
+    type: 'multi',
+    options: ['תיכון', 'עבודה חלקית', 'צבא / שירות', 'לימודים']
+  }, {
+    id: 'moneyFrom',
+    q: 'מאיפה מגיע אליך כסף?',
+    type: 'multi',
+    options: ['דמי כיס', 'עבודה', 'מתנות']
+  }, {
+    id: 'saveFor',
+    q: 'בשביל מה את/ה חוסך/ת?',
+    type: 'multi',
+    optional: true,
+    options: ['רישיון נהיגה', 'טלפון / מחשב', 'טיול אחרי י״ב', 'רכב ראשון', 'לימודים', 'השקעה']
+  }, {
+    id: 'yearGoal',
+    q: 'מטרה לשנה הקרובה?',
+    type: 'single',
+    optional: true,
+    options: ['רישיון', 'עבודה ראשונה', 'בגרויות', 'כושר'],
+    text: 'או משהו אחר'
+  }, {
+    id: 'monthlySave',
+    q: 'כמה היית רוצה לחסוך בחודש?',
+    type: 'number',
+    optional: true,
+    placeholder: 'למשל 200'
+  }, {
+    id: 'fiveYears',
+    q: 'לאן היית רוצה להגיע בעוד 5 שנים?',
+    type: 'single',
+    optional: true,
+    options: ['לימודים / מקצוע', 'טיול גדול', 'דירה ראשונה', 'עסק משלי'],
+    text: 'במילים שלך (אופציונלי)'
+  }]
+};
+const KID_GOAL_MAP = {
+  'משחק': ['מחשב / קונסולה', 300],
+  'טלפון': ['אייפון / טלפון חדש', 2500],
+  'אופניים': ['אופניים / קורקינט', 1200],
+  'מתנה למישהו': ['מתנת יומולדת', 150],
+  'טיול עם חברים': ['טיול עם חברים', 500],
+  'רישיון נהיגה': ['רישיון נהיגה', 6000],
+  'טלפון / מחשב': ['אייפון / טלפון חדש', 3000],
+  'טיול אחרי י״ב': ['טיול עם חברים', 8000],
+  'רכב ראשון': ['אחר', 40000],
+  'לימודים': ['אחר', 10000],
+  'השקעה': ['השקעה לעתיד', 1000]
+};
+const POT_ICON = {
+  'קרן חירום': 0,
+  'חינוך הילדים': 1,
+  'רכב': 2,
+  'הון עצמי לדירה': 3,
+  'חופשה': 4
+};
+const PERSONAL_AREA_OF = {
+  'ללמוד משהו חדש': 'לימודים',
+  'כושר ובריאות': 'כושר ובריאות',
+  'קידום בעבודה': 'קריירה ועבודה',
+  'עבודה חדשה': 'קריירה ועבודה',
+  'יותר זמן משפחה': 'משפחה וזוגיות',
+  'כושר': 'כושר ובריאות',
+  'עבודה ראשונה': 'קריירה ועבודה'
+};
+function setupSuggestions(audience, a, ctx) {
+  const out = [];
+  const pick = v => Array.isArray(v) ? v : v ? [v] : [];
+  const personalOf = (opt, txt) => {
+    const title = (txt || '').trim() || opt;
+    if (title) out.push({
+      key: 'personal',
+      kind: 'personal',
+      emoji: '🌱',
+      label: 'יעד אישי: ' + title,
+      title,
+      area: PERSONAL_AREA_OF[opt] || (audience === 'parent' ? 'אחר' : 'לימודים'),
+      deadline: addMonths(12),
+      amount: null
+    });
+  };
+  if (audience === 'parent') {
+    const pr = pick(a.priorities);
+    const mk = kidToday().slice(0, 7);
+    const months = {};
+    ctx.transactions.forEach(t => {
+      if (t.type !== 'expense') return;
+      const m = String(t.date).slice(0, 7);
+      if (m === mk) return;
+      months[m] = (months[m] || 0) + Number(t.amount || 0);
+    });
+    const recent = Object.keys(months).sort().slice(-3).map(k => months[k]);
+    const incomeMid = {
+      'עד ₪10,000': 8000,
+      '₪10,000-20,000': 15000,
+      '₪20,000-35,000': 27000,
+      'מעל ₪35,000': 40000
+    }[a.income];
+    const monthlyExp = recent.length ? recent.reduce((s, v) => s + v, 0) / recent.length : incomeMid ? incomeMid * 0.8 : 8000;
+    if (pr.includes('קרן חירום') || !pr.length) out.push({
+      key: 'emergency',
+      kind: 'pot',
+      emoji: '🛟',
+      label: 'קרן חירום (3 חודשי הוצאות)',
+      name: 'קרן חירום',
+      amount: Math.max(10000, roundUp(monthlyExp * 3, 1000))
+    });
+    [['דירה', 'הון עצמי לדירה', 150000, '🏠'], ['רכב', 'רכב', 40000, '🚗'], ['חופשה', 'חופשה', 10000, '✈️'], ['חינוך הילדים', 'חינוך הילדים', 20000, '🎓']].forEach(([p, name, amt, em]) => {
+      if (pr.includes(p)) out.push({
+        key: 'pot-' + name,
+        kind: 'pot',
+        emoji: em,
+        label: 'קופת חיסכון: ' + name,
+        name,
+        amount: amt
+      });
+    });
+    const ms = Number(a.monthlySave);
+    if (ms > 0) out.push({
+      key: 'monthly',
+      kind: 'family',
+      type: 'monthly_saving',
+      emoji: '📆',
+      label: 'חיסכון חודשי קבוע',
+      title: 'חיסכון חודשי',
+      amount: ms
+    });
+    if (pr.includes('להפחית הוצאות') || pr.includes('לצאת מהמינוס')) {
+      const last = Object.keys(months).sort().pop();
+      const byCat = {};
+      if (last) ctx.transactions.forEach(t => {
+        if (t.type === 'expense' && String(t.date).startsWith(last)) byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0);
+      });
+      const top = Object.entries(byCat).sort((x, y) => y[1] - x[1])[0];
+      const c = top ? top[0] : 'מזון';
+      out.push({
+        key: 'cap',
+        kind: 'family',
+        type: 'spending_cap',
+        emoji: '🧾',
+        label: `תקרת הוצאה: ${c} בחודש`,
+        title: `תקרה: ${c}`,
+        category: c,
+        amount: top ? roundUp(top[1] * 0.9, 100) : 3000
+      });
+    }
+    if (pr.includes('להשקיע') || pick(a.fiveYears).includes('חופש כלכלי')) out.push({
+      key: 'networth',
+      kind: 'family',
+      type: 'net_worth',
+      emoji: '🏦',
+      label: 'יעד שווי לעוד שנה',
+      title: 'יעד שווי',
+      amount: roundUp(Math.max(ctx.netWorth * 1.25, ctx.netWorth + 50000), 10000),
+      deadline: addMonths(12)
+    });
+    personalOf(a.personal, a.personal_text);
+  } else {
+    pick(a.saveFor).forEach(s => {
+      const m = KID_GOAL_MAP[s];
+      if (m) out.push({
+        key: 'kg-' + s,
+        kind: 'kidgoal',
+        emoji: kidEmoji(KID_GOALS, m[0]),
+        label: 'יעד חיסכון: ' + s,
+        title: s,
+        category: m[0],
+        amount: m[1]
+      });
+    });
+    if (!out.length && a.pocket && a.pocket !== 'אין לי') out.push({
+      key: 'kg-box',
+      kind: 'kidgoal',
+      emoji: '🐷',
+      label: 'קופת חיסכון',
+      title: 'קופת חיסכון',
+      category: 'קופת חיסכון',
+      amount: 200
+    });
+    if (audience === 'kid') personalOf(a.learn, a.learn_text);else personalOf(a.yearGoal, a.yearGoal_text);
+  }
+  return out.slice(0, 6);
+}
+function SetupWizard({
+  familyId,
+  isDemo,
+  profile,
+  transactions,
+  assets,
+  savingsPots,
+  initialAnswers,
+  onPotCreated,
+  onDone,
+  onCancel
+}) {
+  const isKid = profile.role === 'child';
+  const [answers, setAnswers] = useState(initialAnswers || {});
+  const [step, setStep] = useState(initialAnswers ? 1 : 0); // 0 = פתיחה
+  const [phase, setPhase] = useState('questions'); // questions | suggest
+  const [sugg, setSugg] = useState([]);
+  const [chosen, setChosen] = useState({});
+  const [amounts, setAmounts] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const age = Number(answers.age);
+  const audience = !isKid ? 'parent' : age >= 15 ? 'teen' : 'kid';
+  const qs = isKid ? [SETUP_AGE_Q, ...SETUP_Q[audience]] : SETUP_Q.parent;
+  const total = qs.length;
+  const q = step >= 1 ? qs[step - 1] : null;
+  const val = q ? answers[q.id] : null;
+  const set = (id, v) => setAnswers(prev => ({
+    ...prev,
+    [id]: v
+  }));
+  const answered = !q || (isKid && q.id === 'age' ? age >= 4 && age <= 25 : q.optional || (q.type === 'multi' ? (val || []).length > 0 : !!val));
+  const finishQuestions = () => {
+    const netWorth = assets.reduce((s, x) => s + Number(x.value || 0), 0) + savingsPots.reduce((s, p) => s + Number(p.current || 0), 0);
+    const list = setupSuggestions(audience, answers, {
+      transactions,
+      netWorth
+    });
+    const ch = {},
+      am = {};
+    list.forEach(s => {
+      ch[s.key] = !initialAnswers;
+      am[s.key] = s.amount;
+    });
+    setSugg(list);
+    setChosen(ch);
+    setAmounts(am);
+    setPhase('suggest');
+  };
+  const next = () => step < total ? setStep(step + 1) : finishQuestions();
+  const createSuggested = async (s, amount) => {
+    if (s.kind === 'pot') {
+      const row = {
+        name: s.name,
+        iconIdx: POT_ICON[s.name] ?? 6,
+        target: amount,
+        current: 0
+      };
+      if (isDemo) return onPotCreated({
+        id: 'sp' + Date.now() + s.key,
+        ...row
+      });
+      const {
+        data,
+        error
+      } = await sb.from('savings_pots').insert({
+        family_id: familyId,
+        name: row.name,
+        icon_idx: row.iconIdx,
+        target: row.target,
+        current: 0
+      }).select().single();
+      if (error) throw error;
+      return onPotCreated({
+        id: data.id,
+        ...row
+      });
+    }
+    if (s.kind === 'family') {
+      const row = {
+        family_id: familyId,
+        type: s.type,
+        title: s.title,
+        category: s.category || null,
+        target: amount,
+        deadline: s.deadline || null
+      };
+      if (isDemo) {
+        GOALS_DEMO.family = [...(GOALS_DEMO.family || []), {
+          id: 'fg' + Date.now() + s.key,
+          ...row
+        }];
+        return;
+      }
+      const {
+        error
+      } = await sb.from('family_goals').insert(row);
+      if (error) throw error;
+      return;
+    }
+    if (s.kind === 'personal') {
+      const row = {
+        family_id: familyId,
+        owner_id: profile.id,
+        owner_kind: isKid ? 'child' : 'parent',
+        title: s.title,
+        area: s.area || 'אחר',
+        deadline: s.deadline || null,
+        steps: [],
+        done: false
+      };
+      if (isDemo) {
+        GOALS_DEMO.personal[profile.id] = [...(GOALS_DEMO.personal[profile.id] || []), {
+          id: 'pg' + Date.now(),
+          ...row
+        }];
+        return;
+      }
+      const {
+        error
+      } = await sb.from('personal_goals').insert(row);
+      if (error) throw error;
+      return;
+    }
+    const row = {
+      family_id: familyId,
+      child_id: profile.id,
+      title: s.title,
+      category: s.category,
+      target: amount,
+      saved: 0
+    };
+    if (isDemo) {
+      if (!KID_DEMO_STORE[profile.id]) KID_DEMO_STORE[profile.id] = {
+        entries: [],
+        goals: []
+      };
+      KID_DEMO_STORE[profile.id].goals.push({
+        id: 'g' + Date.now() + s.key,
+        ...row
+      });
+      return;
+    }
+    const {
+      error
+    } = await sb.from('kid_goals').insert(row);
+    if (error) throw error;
+  };
+  const finish = async withGoals => {
+    setBusy(true);
+    setErr('');
+    try {
+      if (isDemo) {
+        try {
+          localStorage.setItem('homey_setup_demo_' + profile.id, '1');
+        } catch (_e) {}
+      } else {
+        const {
+          error
+        } = await sb.from('profile_setup').upsert({
+          owner_id: profile.id,
+          family_id: familyId,
+          owner_kind: isKid ? 'child' : 'parent',
+          audience,
+          answers,
+          completed_at: new Date().toISOString()
+        }, {
+          onConflict: 'owner_id'
+        });
+        if (error) throw error;
+      }
+      if (withGoals) for (const s of sugg) {
+        if (!chosen[s.key]) continue;
+        await createSuggested(s, Number(amounts[s.key]) || s.amount);
+      }
+      setBusy(false);
+      onDone(answers);
+    } catch (_e) {
+      setBusy(false);
+      setErr('משהו לא נשמר — בדקו חיבור לאינטרנט ונסו שוב.');
+    }
+  };
+  const bigChip = (label, selected, onClick) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    type: "button",
+    onClick,
+    className: "ent-pill-btn px-4 py-2 text-sm",
+    style: {
+      background: selected ? 'var(--bronze)' : 'var(--navy-panel-2)',
+      color: selected ? 'var(--on-accent)' : 'var(--text-2)',
+      border: '1px solid var(--line)'
+    }
+  }, label);
+  const h2 = text => /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, text);
+  const small = text => /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, text);
+  let body;
+  if (phase === 'suggest') {
+    body = [/*#__PURE__*/React.createElement("div", {
+      key: "e",
+      className: "text-4xl"
+    }, "🎯"), h2('היעדים שלך'), sugg.length ? goalMuted('לפי התשובות שלך הכנו כמה יעדים. סמנו מה מתאים — ואפשר לשנות סכומים:') : goalMuted('לא מצאנו יעד מתאים כרגע — אפשר תמיד להוסיף יעדים באפליקציה.'), /*#__PURE__*/React.createElement("div", {
+      key: "l",
+      className: "space-y-2"
+    }, sugg.map(s => /*#__PURE__*/React.createElement("div", {
+      key: s.key,
+      className: "ent-mini-card p-3 flex items-center gap-3"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      checked: !!chosen[s.key],
+      onChange: e => setChosen({
+        ...chosen,
+        [s.key]: e.target.checked
+      }),
+      "aria-label": s.label
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm flex-1",
+      style: {
+        color: 'var(--text)'
+      }
+    }, s.emoji, " ", s.label), s.amount != null && /*#__PURE__*/React.createElement("input", {
+      className: "ent-input px-3 py-1.5 rounded-lg text-sm outline-none",
+      style: {
+        width: 110
+      },
+      type: "number",
+      min: "0",
+      value: amounts[s.key],
+      onChange: e => setAmounts({
+        ...amounts,
+        [s.key]: e.target.value
+      }),
+      "aria-label": "סכום"
+    })))), err && /*#__PURE__*/React.createElement("p", {
+      key: "err",
+      className: "text-xs",
+      style: {
+        color: 'var(--neg-soft)'
+      }
+    }, err), /*#__PURE__*/React.createElement("div", {
+      key: "b",
+      className: "flex gap-2 pt-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => finish(true),
+      disabled: busy,
+      className: "ent-pill-btn solid-bronze px-5 py-2.5 text-sm flex-1",
+      style: {
+        opacity: busy ? 0.6 : 1
+      }
+    }, busy ? 'שומר…' : sugg.some(s => chosen[s.key]) ? 'צור והמשך' : 'המשך'), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setPhase('questions'),
+      className: "ent-pill-btn ghost px-4 py-2.5 text-sm"
+    }, "הקודם"))];
+  } else if (step === 0) {
+    body = [/*#__PURE__*/React.createElement("div", {
+      key: "e",
+      className: "text-4xl"
+    }, "👋"), h2(`היי ${profile.name}!`), goalMuted(isKid ? 'כמה שאלות קצרות וכיפיות — ובסוף נציע לך יעדי חיסכון משלך 🐷' : 'כמה שאלות קצרות (כדקה) כדי להתאים לך את Homey — ובסוף נציע לך יעדים מוכנים.'), small(isKid ? '🔒 התשובות גלויות רק לך ולהורים.' : '🔒 התשובות גלויות רק לך.'), /*#__PURE__*/React.createElement("button", {
+      key: "go",
+      onClick: () => setStep(1),
+      className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mt-2"
+    }, "יאללה, מתחילים")];
+  } else {
+    const opts = q.options || [];
+    body = [/*#__PURE__*/React.createElement("div", {
+      key: "p",
+      className: "space-y-1"
+    }, small(`שאלה ${step} מתוך ${total}`), goalBar(step / total, 'var(--bronze)')), h2(q.q), (q.hint || q.optional) && small(q.hint || 'אופציונלי'), opts.length > 0 && /*#__PURE__*/React.createElement("div", {
+      key: "o",
+      className: "flex flex-wrap gap-2"
+    }, opts.map(o => q.type === 'multi' ? bigChip(o, (val || []).includes(o), () => set(q.id, (val || []).includes(o) ? val.filter(x => x !== o) : [...(val || []), o])) : bigChip(o, val === o, () => set(q.id, val === o ? null : o)))), q.type === 'number' && /*#__PURE__*/React.createElement("input", {
+      key: "n",
+      className: goalInputCls,
+      type: "number",
+      inputMode: "numeric",
+      min: "0",
+      autoFocus: true,
+      placeholder: q.placeholder,
+      value: val || '',
+      onChange: e => set(q.id, e.target.value),
+      onKeyDown: e => e.key === 'Enter' && answered && next()
+    }), q.type === 'text' && /*#__PURE__*/React.createElement("input", {
+      key: "t",
+      className: goalInputCls,
+      maxLength: 80,
+      placeholder: q.placeholder,
+      value: val || '',
+      onChange: e => set(q.id, e.target.value)
+    }), q.text && /*#__PURE__*/React.createElement("input", {
+      key: "x",
+      className: goalInputCls,
+      maxLength: 80,
+      placeholder: q.text,
+      value: answers[q.id + '_text'] || '',
+      onChange: e => set(q.id + '_text', e.target.value)
+    }), /*#__PURE__*/React.createElement("div", {
+      key: "b",
+      className: "flex gap-2 pt-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: next,
+      disabled: !answered,
+      className: "ent-pill-btn solid-bronze px-5 py-2.5 text-sm flex-1",
+      style: {
+        opacity: answered ? 1 : 0.45
+      }
+    }, step < total ? 'הבא' : 'סיום'), step > 1 && /*#__PURE__*/React.createElement("button", {
+      onClick: () => setStep(step - 1),
+      className: "ent-pill-btn ghost px-4 py-2.5 text-sm"
+    }, "הקודם"), onCancel && /*#__PURE__*/React.createElement("button", {
+      onClick: onCancel,
+      className: "ent-pill-btn ghost px-4 py-2.5 text-sm"
+    }, "ביטול"))];
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-root min-h-screen flex items-center justify-center px-4 py-8",
+    dir: "rtl"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 w-full max-w-lg space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(HomeyMark, {
+    size: 28
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הגדרת הפרופיל")), ...body));
 }
 function NewCategoryForm({
   onAdd
