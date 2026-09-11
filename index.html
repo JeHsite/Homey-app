@@ -649,11 +649,56 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-coin > span.back { transform: rotateY(180deg) translateZ(1.6px); }
   @media (prefers-reduced-motion: no-preference) { .ent-coin { animation: ent-spin 7s linear infinite; } }
   @keyframes ent-spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+  @media (prefers-reduced-motion: no-preference) { .ent-empty-coin { animation: ent-bob 2.6s ease-in-out infinite; } }
+  @keyframes ent-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+  /* ===== מסך פתיחה ===== */
+  #ent-splash { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: radial-gradient(600px 400px at 50% 40%, rgba(79,216,255,.12), transparent 70%), #0A0D13; transition: opacity .4s ease; }
+  #ent-splash.hide { opacity: 0; pointer-events: none; }
+  .ent-splash-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; perspective: 600px; }
+  .ent-splash-inner img { border-radius: 22px; box-shadow: 0 20px 50px -20px rgba(79,216,255,.5); }
+  .ent-splash-word { font: 700 28px 'Rubik', sans-serif; background: linear-gradient(90deg, #4FD8FF, #CBA05A); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ent-splash-inner img { animation: ent-splash-pop .7s cubic-bezier(.2,1.4,.4,1) backwards; }
+    .ent-splash-word { animation: ent-rise .6s ease-out .15s backwards; }
+  }
+  @keyframes ent-splash-pop { from { transform: scale(.6) rotateY(90deg); opacity: 0; } }
+
+  /* ===== קווי מגמה ===== */
+  .ent-trend-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .ent-trend-hit { fill: transparent; cursor: pointer; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ent-trend-line { stroke-dasharray: 1200; animation: ent-draw 1.1s cubic-bezier(.2,.7,.2,1) backwards; }
+    .ent-trend-area { animation: ent-fade .9s ease-out backwards; }
+  }
+  @keyframes ent-draw { from { stroke-dashoffset: 1200; } to { stroke-dashoffset: 0; } }
 
 </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="ent-splash" aria-hidden="true"><div class="ent-splash-inner"><img src="icon-512.png" alt="" width="84" height="84"><div class="ent-splash-word">Homey</div></div></div>
+<script>
+// מסך פתיחה קצר (עד ~0.65 שנ' אחרי הטעינה) + רטט קל בלחיצות (אנדרואיד; באייפון אין תמיכה)
+(function () {
+  var s = document.getElementById('ent-splash');
+  if (!s) return;
+  try { if (['light', 'sand', 'sky'].indexOf(localStorage.getItem('homey_theme')) >= 0) s.style.background = '#F5F7FA'; } catch (_e) {}
+  var t0 = Date.now(), done = false;
+  function hide() {
+    if (done) return; done = true;
+    setTimeout(function () { s.classList.add('hide'); setTimeout(function () { s.remove(); }, 450); }, Math.max(0, 650 - (Date.now() - t0)));
+  }
+  if (document.readyState === 'complete') hide(); else window.addEventListener('load', hide);
+  setTimeout(hide, 2500);
+})();
+document.addEventListener('click', function (e) {
+  try {
+    if (!navigator.vibrate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (e.target.closest && e.target.closest('.ent-pill-btn, .ent-nav-btn, .ent-icon-btn')) navigator.vibrate(8);
+  } catch (_e) {}
+}, { passive: true });
+</script>
 <script>
 const {
   useState,
@@ -1630,27 +1675,85 @@ function EmptyState({
   }, /*#__PURE__*/React.createElement("svg", {
     className: "ent-empty-art",
     viewBox: "0 0 120 90",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+    id: "eaTop",
+    x1: "0",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, EA_STOP(0, 0.95), EA_STOP(1, 0.6)), /*#__PURE__*/React.createElement("linearGradient", {
+    id: "eaL",
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "1"
+  }, EA_STOP(0, 0.6), EA_STOP(1, 0.32)), /*#__PURE__*/React.createElement("linearGradient", {
+    id: "eaR",
+    x1: "1",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, EA_STOP(0, 0.38), EA_STOP(1, 0.16))), /*#__PURE__*/React.createElement("ellipse", {
+    cx: "60",
+    cy: "83",
+    rx: "34",
+    ry: "4.5",
+    style: {
+      fill: 'var(--text)',
+      opacity: 0.09
+    }
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l26 10v26l-26-10z",
+    fill: "url(#eaL)"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M86 46l-26 10v26l26-10z",
+    fill: "url(#eaR)"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l26-10 26 10-26 10z",
+    fill: "url(#eaTop)",
+    opacity: ".85"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l-9-11 26-9 9 10z",
+    fill: "url(#eaL)",
+    opacity: ".9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M86 46l9-11-26-9-9 10z",
+    fill: "url(#eaR)",
+    opacity: ".9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M34 46l26 10 26-10M60 56v26",
+    fill: "none",
+    stroke: "#fff",
+    strokeOpacity: ".3",
+    strokeWidth: "1.2"
+  }), /*#__PURE__*/React.createElement("g", {
+    className: "ent-empty-coin"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "60",
+    cy: "17",
+    r: "9",
+    fill: "#E9AE2F"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "60",
+    cy: "16",
+    r: "8",
+    fill: "#F6C453"
+  }), /*#__PURE__*/React.createElement("ellipse", {
+    cx: "56.8",
+    cy: "12.8",
+    rx: "3",
+    ry: "1.8",
+    fill: "#FFF1C2"
+  })), /*#__PURE__*/React.createElement("g", {
+    className: "acc",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    "aria-hidden": "true"
+    strokeWidth: "1.8",
+    strokeLinecap: "round"
   }, /*#__PURE__*/React.createElement("path", {
-    d: "M14 80h92",
-    opacity: ".5"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M34 46l26-10 26 10v26l-26 10-26-10z"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M34 46l26 10 26-10M60 56v26"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M34 46l-8-10 26-10 8 10M86 46l8-10-26-10-8 10",
-    opacity: ".7"
-  }), /*#__PURE__*/React.createElement("g", {
-    className: "acc"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M60 6v8M56 10h8M94 18v6M91 21h6M26 20v5M23.5 22.5h5"
-  }))), /*#__PURE__*/React.createElement("p", {
+    d: "M94 18v6M91 21h6M26 20v5M23.5 22.5h5"
+  }))),/*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-3",
     style: {
       color: 'var(--text-muted)'
@@ -1665,6 +1768,13 @@ function DonutChart({
 }) {
   // מעבר עכבר / לחיצה על פלח או שורה במקרא מבליטים אותו ומציגים סכום ואחוז במרכז
   const [active, setActive] = useState(null);
+  // מגע: נגיעה/החלקה בוחרת את הפלח שמתחת לאצבע (בלי "הדלקה-כיבוי" של click אחרי נגיעה)
+  const touchRef = React.useRef(false);
+  const pickAt = e => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const name = el && el.getAttribute ? el.getAttribute('data-seg') : null;
+    if (name) setActive(name);
+  };
   const sum = data.reduce((s, d) => s + d.value, 0);
   const total = sum || 1;
   const gap = data.length > 1 ? 0.8 : 0;
@@ -1691,8 +1801,19 @@ function DonutChart({
     height: "170",
     viewBox: "0 0 42 42",
     role: "img",
-    "aria-label": "התפלגות"
-  }, /*#__PURE__*/React.createElement("circle", {
+    "aria-label": "התפלגות",
+    style: {
+      touchAction: 'none'
+    },
+    onPointerDown: e => {
+      if (e.pointerType === 'mouse') return;
+      touchRef.current = true;
+      pickAt(e);
+    },
+    onPointerMove: e => {
+      if (e.pointerType !== 'mouse' && e.buttons) pickAt(e);
+    }
+  },/*#__PURE__*/React.createElement("circle", {
     cx: "21",
     cy: "21",
     r: "15.9",
@@ -1711,16 +1832,24 @@ function DonutChart({
       cx: "21",
       cy: "21",
       r: "15.9",
-      fill: "transparent",
+      fill: "none",
+      pointerEvents: "visibleStroke",
       stroke: s.color,
       strokeWidth: active === s.name ? 6.5 : 5,
       opacity: active && active !== s.name ? 0.35 : 1,
       strokeDasharray: `${len} ${100 - len}`,
       strokeDashoffset: s.offset,
-      onMouseEnter: () => setActive(s.name),
-      onMouseLeave: () => setActive(null),
-      onClick: () => toggle(s.name)
-    }, /*#__PURE__*/React.createElement("title", null, `${s.name}: ${currency}${s.value.toLocaleString()} (${Math.round(s.pct)}%)`));
+      "data-seg": s.name,
+      onPointerEnter: e => e.pointerType === 'mouse' && setActive(s.name),
+      onPointerLeave: e => e.pointerType === 'mouse' && setActive(null),
+      onClick: () => {
+        if (touchRef.current) {
+          touchRef.current = false;
+          return;
+        }
+        toggle(s.name);
+      }
+    },/*#__PURE__*/React.createElement("title", null, `${s.name}: ${currency}${s.value.toLocaleString()} (${Math.round(s.pct)}%)`));
   }))), /*#__PURE__*/React.createElement("div", {
     className: "ent-donut-center"
   }, /*#__PURE__*/React.createElement("span", {
@@ -1748,8 +1877,8 @@ function DonutChart({
     style: {
       color: 'var(--text-2)'
     },
-    onMouseEnter: () => setActive(s.name),
-    onMouseLeave: () => setActive(null),
+    onPointerEnter: e => e.pointerType === 'mouse' && setActive(s.name),
+    onPointerLeave: e => e.pointerType === 'mouse' && setActive(null),
     onClick: () => toggle(s.name)
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-sm",
@@ -1911,6 +2040,9 @@ const Skeleton = ({
 // קונפטי קטן כשילד מגיע ליעד
 function celebrate() {
   if (reducedMotion()) return;
+  try {
+    if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+  } catch (_e) {}
   const box = document.createElement('div');
   box.className = 'ent-confetti';
   box.setAttribute('aria-hidden', 'true');
@@ -2153,7 +2285,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): שלחו בקשה מהאימייל הרשום אל ', LMAIL(), '. נטפל בה תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -4949,9 +5081,10 @@ function App() {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-3"
-  }, "מגמת הכנסות מול הוצאות"), /*#__PURE__*/React.createElement(TrendBars, {
-    data: monthlyTrend
-  }))), /*#__PURE__*/React.createElement("div", {
+  }, "מגמת הכנסות מול הוצאות"), /*#__PURE__*/React.createElement(TrendLines, {
+    rows: transactions,
+    currency: currency
+  }))),/*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
   }, /*#__PURE__*/React.createElement("div", {
     onClick: () => setActiveTab('bills'),
@@ -5046,6 +5179,13 @@ function App() {
   }, "האזור הזה זמין רק להורים")), activeTab === 'expenses' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold mb-3"
+  }, "מגמת הוצאות והכנסות"), /*#__PURE__*/React.createElement(TrendLines, {
+    rows: transactions,
+    currency: currency
+  })), /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between"
@@ -5991,7 +6131,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('המסך הראשי של הילד', 'ילד שנכנס לפרופיל שלו רואה מסך משלו: כמה יש בארנק, רמת חיסכון עם תגים, טבעות התקדמות ליעדים, טיפ ומשפט מוטיבציה שמתחלפים כל יום, וכפתורים מהירים להוספת כסף, הוצאה ויעד.'), GS('זיהוי פנים / טביעת אצבע', 'להורה עם קוד PIN: אחרי הזנת הקוד הנכון Homey מציעה להפעיל כניסה עם זיהוי פנים או טביעת אצבע באותו מכשיר. שימו לב — הטלפון מאשר כל פנים או אצבע שרשומות בו, אז אם גם ילד רשום במכשיר, עדיף להישאר עם קוד. שינוי הקוד מבטל את זיהוי הפנים עד שמזינים את הקוד החדש.'), GS('התפריט','במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה — התפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('המסך הראשי של הילד', 'ילד שנכנס לפרופיל שלו רואה מסך משלו: כמה יש בארנק, רמת חיסכון עם תגים, טבעות התקדמות ליעדים, טיפ ומשפט מוטיבציה שמתחלפים כל יום, וכפתורים מהירים להוספת כסף, הוצאה ויעד.'), GS('זיהוי פנים / טביעת אצבע', 'להורה עם קוד PIN: אחרי הזנת הקוד הנכון Homey מציעה להפעיל כניסה עם זיהוי פנים או טביעת אצבע באותו מכשיר. שימו לב — הטלפון מאשר כל פנים או אצבע שרשומות בו, אז אם גם ילד רשום במכשיר, עדיף להישאר עם קוד. שינוי הקוד מבטל את זיהוי הפנים עד שמזינים את הקוד החדש.'), GS('קווי מגמה', 'בדף הבית, בהוצאות והכנסות ובמסך של הילד יש גרף מגמה עם מתג "שבועי / חודשי": 8 שבועות או 6 חודשים אחרונים, קו להכנסות וקו להוצאות, והשוואה לתקופה הקודמת. נגיעה או מעבר עכבר על נקודה מציגים את הסכומים שלה.'), GS('מחיקת חשבון', 'בהגדרות ← "מחיקת חשבון": מוחקת לצמיתות את החשבון שלך (פרופיל, קוד PIN, יעדים אישיים, שאלון והתראות). אם את/ה האחרון/ה במשפחה — גם כל נתוני המשפחה נמחקים. צריך להזין סיסמה ולהקליד "מחיקה" לאישור. אין דרך לשחזר.'), GS('התפריט','במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה — התפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -6281,7 +6421,14 @@ function App() {
       borderColor: 'var(--neg)',
       color: 'var(--neg)'
     }
-  }, "איפוס כל הנתונים")), familyInfo && /*#__PURE__*/React.createElement("div", {
+  }, "איפוס כל הנתונים")), !isDemo && /*#__PURE__*/React.createElement(DeleteAccountCard, {
+    onDeleted: () => {
+      setCurrentProfile(null);
+      setFamilyId(null);
+      setAuthStage('login');
+      showToast('החשבון נמחק. להתראות 👋');
+    }
+  }), familyInfo && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-xl font-bold mb-2 flex items-center gap-2"
@@ -6837,6 +6984,491 @@ function KidMoney({
   }));
 }
 
+/* ---- איור תלת-ממדי למסכים ריקים: עצירות צבע לפי צבע הערכה ---- */
+const EA_STOP = (offset, alpha) => /*#__PURE__*/React.createElement("stop", {
+  offset: offset,
+  style: {
+    stopColor: 'var(--bronze)',
+    stopOpacity: alpha
+  }
+});
+
+/* ---- קווי מגמה: שבועי (8 שבועות) / חודשי (6 חודשים), הכנסות מול הוצאות ---- */
+const HEB_MONTHS = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
+function buildTrend(rows, mode) {
+  const now = new Date();
+  const out = [];
+  if (mode === 'week') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay()); // שבוע מתחיל ביום ראשון
+    for (let i = 7; i >= 0; i--) {
+      const s = new Date(start);
+      s.setDate(s.getDate() - i * 7);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 7);
+      out.push({
+        s,
+        e,
+        label: `${s.getDate()}.${s.getMonth() + 1}`,
+        income: 0,
+        expense: 0
+      });
+    }
+  } else {
+    for (let i = 5; i >= 0; i--) {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const e = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      out.push({
+        s,
+        e,
+        label: HEB_MONTHS[s.getMonth()],
+        income: 0,
+        expense: 0
+      });
+    }
+  }
+  rows.forEach(r => {
+    const d = new Date(String(r.date).slice(0, 10) + 'T00:00:00');
+    const b = out.find(x => d >= x.s && d < x.e);
+    if (!b) return;
+    if (r.type === 'income') b.income += Number(r.amount) || 0;else if (r.type === 'expense') b.expense += Number(r.amount) || 0;
+  });
+  return out;
+}
+let trendUid = 0;
+function TrendLines({
+  rows,
+  currency,
+  labels = {
+    income: 'הכנסות',
+    expense: 'הוצאות'
+  },
+  exclude
+}) {
+  const [mode, setMode] = useState(() => lsGet('homey_trend_mode') || 'week');
+  const [hover, setHover] = useState(null);
+  const uid = React.useRef('tr' + ++trendUid).current;
+  const data = buildTrend(exclude ? rows.filter(r => !exclude(r)) : rows, mode);
+  const W = 320,
+    H = 150,
+    P = {
+      l: 10,
+      r: 10,
+      t: 14,
+      b: 22
+    };
+  const max = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
+  const x = i => P.l + i * (W - P.l - P.r) / (data.length - 1);
+  const y = v => P.t + (H - P.t - P.b) * (1 - v / max);
+  const line = key => data.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(' ');
+  const area = key => `${line(key)} L${x(data.length - 1).toFixed(1)},${H - P.b} L${x(0).toFixed(1)},${H - P.b} Z`;
+  const money = v => `${currency}${Math.round(v).toLocaleString()}`;
+  const last = data[data.length - 1],
+    prev = data[data.length - 2];
+  const change = prev && prev.expense ? Math.round((last.expense - prev.expense) / prev.expense * 100) : null;
+  const h = hover != null ? data[hover] : null;
+  const setM = m => {
+    setMode(m);
+    setHover(null);
+    lsSet('homey_trend_mode', m);
+  };
+  const series = [['income', 'var(--pos)'], ['expense', 'var(--neg)']];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 p-1 rounded-full",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, [['week', 'שבועי'], ['month', 'חודשי']].map(([m, l]) => /*#__PURE__*/React.createElement("button", {
+    key: m,
+    onClick: () => setM(m),
+    className: "ent-pill-btn px-3 py-1 text-xs",
+    style: {
+      background: mode === m ? 'var(--bronze)' : 'transparent',
+      color: mode === m ? 'var(--on-accent)' : 'var(--text-2)'
+    }
+  }, l))), change != null && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: change > 0 ? 'var(--neg-soft)' : 'var(--pos)'
+    }
+  }, change > 0 ? '▲' : '▼', " ", labels.expense, " ", mode === 'week' ? 'השבוע' : 'החודש', " ", change > 0 ? 'גבוהות' : 'נמוכות', " ב-", Math.abs(change), "% מ", mode === 'week' ? 'השבוע שעבר' : 'החודש שעבר')), /*#__PURE__*/React.createElement("div", {
+    dir: "ltr"
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "ent-trend-svg",
+    viewBox: `0 0 ${W} ${H}`,
+    role: "img",
+    "aria-label": `מגמה ${mode === 'week' ? 'שבועית' : 'חודשית'}: ${labels.income} מול ${labels.expense}`
+  }, /*#__PURE__*/React.createElement("defs", null, series.map(([k, c]) => /*#__PURE__*/React.createElement("linearGradient", {
+    key: k,
+    id: `${uid}-${k}`,
+    x1: "0",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0",
+    style: {
+      stopColor: c,
+      stopOpacity: 0.28
+    }
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "1",
+    style: {
+      stopColor: c,
+      stopOpacity: 0
+    }
+  })))), [0, 1, 2].map(i => /*#__PURE__*/React.createElement("line", {
+    key: i,
+    x1: P.l,
+    x2: W - P.r,
+    y1: P.t + i * (H - P.t - P.b) / 2,
+    y2: P.t + i * (H - P.t - P.b) / 2,
+    strokeDasharray: "3 4",
+    style: {
+      stroke: 'var(--line)'
+    }
+  })), series.map(([k]) => /*#__PURE__*/React.createElement("path", {
+    key: k + mode,
+    className: "ent-trend-area",
+    d: area(k),
+    fill: `url(#${uid}-${k})`
+  })), series.map(([k, c]) => /*#__PURE__*/React.createElement("path", {
+    key: k + mode + 'l',
+    className: "ent-trend-line",
+    d: line(k),
+    fill: "none",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    style: {
+      stroke: c
+    }
+  })), hover != null && /*#__PURE__*/React.createElement("line", {
+    x1: x(hover),
+    x2: x(hover),
+    y1: P.t,
+    y2: H - P.b,
+    style: {
+      stroke: 'var(--text-dim)'
+    },
+    strokeWidth: "1"
+  }), data.map((d, i) => series.map(([k, c]) => /*#__PURE__*/React.createElement("circle", {
+    key: k + i,
+    cx: x(i),
+    cy: y(d[k]),
+    r: hover === i ? 5 : 3,
+    style: {
+      fill: 'var(--navy-panel)',
+      stroke: c
+    },
+    strokeWidth: "2"
+  }))), data.map((d, i) => /*#__PURE__*/React.createElement("text", {
+    key: 't' + i,
+    x: x(i),
+    y: H - 6,
+    textAnchor: "middle",
+    fontSize: "9",
+    style: {
+      fill: hover === i ? 'var(--text)' : 'var(--text-dim)'
+    }
+  }, d.label)), data.map((d, i) => /*#__PURE__*/React.createElement("rect", {
+    key: 'h' + i,
+    className: "ent-trend-hit",
+    x: x(i) - (W - P.l - P.r) / (data.length - 1) / 2,
+    y: 0,
+    width: (W - P.l - P.r) / (data.length - 1),
+    height: H,
+    onPointerEnter: () => setHover(i),
+    onClick: () => setHover(i)
+  })))), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-center",
+    style: {
+      color: h ? 'var(--text-2)' : 'var(--text-dim)',
+      minHeight: 16
+    }
+  }, h ? `${h.label}: ${labels.income} ${money(h.income)} · ${labels.expense} ${money(h.expense)} · נטו ${money(h.income - h.expense)}` : 'נגיעה או מעבר עכבר על נקודה מציגים את הסכומים'), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center gap-4 text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, series.map(([k, c]) => /*#__PURE__*/React.createElement("span", {
+    key: k,
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-sm",
+    style: {
+      background: c
+    }
+  }), labels[k]))));
+}
+
+/* ---- חזרזיר תלת-ממדי חי (Three.js נטען רק במסך הילד); בלי WebGL — חוזרים לאימוג'י ---- */
+let threeLoading = null;
+const loadThree = () => threeLoading || (threeLoading = new Promise((res, rej) => {
+  if (window.THREE) return res(window.THREE);
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload = () => res(window.THREE);
+  s.onerror = () => {
+    threeLoading = null;
+    rej(new Error('three'));
+  };
+  document.head.appendChild(s);
+}));
+function Piggy3D({
+  size = 120
+}) {
+  const ref = React.useRef(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let raf,
+      renderer,
+      disposed = false;
+    let webgl = false;
+    try {
+      const c = document.createElement('canvas');
+      webgl = !!(c.getContext('webgl') || c.getContext('experimental-webgl'));
+    } catch (_e) {}
+    if (!webgl) {
+      setFailed(true);
+      return;
+    }
+    loadThree().then(THREE => {
+      if (disposed || !ref.current) return;
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+      camera.position.set(0, 0.7, 6.2);
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true
+      });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.setSize(size, size);
+      ref.current.appendChild(renderer.domElement);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x8866aa, 0.95));
+      const dl = new THREE.DirectionalLight(0xffffff, 0.85);
+      dl.position.set(3, 4, 5);
+      scene.add(dl);
+      const pink = new THREE.MeshStandardMaterial({
+        color: 0xff9ec4,
+        roughness: 0.45,
+        metalness: 0.05
+      });
+      const dark = new THREE.MeshStandardMaterial({
+        color: 0x5a2340,
+        roughness: 0.6
+      });
+      const add = (geo, mat, pos, rot) => {
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(...pos);
+        if (rot) m.rotation.set(...rot);
+        pig.add(m);
+        return m;
+      };
+      const pig = new THREE.Group();
+      add(new THREE.SphereGeometry(1, 32, 24), pink, [0, 0, 0]).scale.set(1.25, 1, 1);
+      add(new THREE.CylinderGeometry(0.34, 0.38, 0.3, 24), pink, [1.28, 0.05, 0], [0, 0, Math.PI / 2]);
+      [-0.1, 0.1].forEach(z => add(new THREE.SphereGeometry(0.06, 12, 12), dark, [1.44, 0.07, z]));
+      [-0.35, 0.35].forEach(z => {
+        add(new THREE.SphereGeometry(0.08, 12, 12), dark, [0.95, 0.42, z]);
+        add(new THREE.ConeGeometry(0.22, 0.4, 16), pink, [0.5, 0.95, z * 1.3], [0, 0, -0.35]);
+      });
+      [[0.6, 0.45], [0.6, -0.45], [-0.6, 0.45], [-0.6, -0.45]].forEach(([lx, lz]) => add(new THREE.CylinderGeometry(0.16, 0.14, 0.45, 16), pink, [lx, -0.95, lz]));
+      add(new THREE.BoxGeometry(0.5, 0.05, 0.12), dark, [-0.1, 1.0, 0]);
+      const coin = add(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 32), new THREE.MeshStandardMaterial({
+        color: 0xf6c453,
+        metalness: 0.6,
+        roughness: 0.3
+      }), [-0.1, 1.6, 0], [Math.PI / 2, 0, 0]);
+      pig.rotation.y = -0.6;
+      scene.add(pig);
+      const still = reducedMotion();
+      let drag = null;
+      const el = renderer.domElement;
+      el.style.touchAction = 'pan-y';
+      el.style.cursor = 'grab';
+      el.addEventListener('pointerdown', e => {
+        drag = e.clientX;
+        try {
+          el.setPointerCapture(e.pointerId);
+        } catch (_e) {}
+      });
+      el.addEventListener('pointermove', e => {
+        if (drag == null) return;
+        pig.rotation.y += (e.clientX - drag) * 0.012;
+        drag = e.clientX;
+        if (still) renderer.render(scene, camera);
+      });
+      const end = () => {
+        drag = null;
+      };
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+      const t0 = performance.now();
+      const tick = t => {
+        if (disposed) return;
+        const k = (t - t0) / 1000;
+        if (drag == null) pig.rotation.y += 0.006;
+        coin.position.y = 1.35 + Math.abs(Math.sin(k * 1.6)) * 0.5;
+        coin.rotation.z = k * 3;
+        renderer.render(scene, camera);
+        raf = requestAnimationFrame(tick);
+      };
+      if (still) renderer.render(scene, camera);else raf = requestAnimationFrame(tick);
+    }).catch(() => !disposed && setFailed(true));
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      if (renderer) {
+        renderer.dispose();
+        renderer.domElement.remove();
+      }
+    };
+  }, [size]);
+  if (failed) return /*#__PURE__*/React.createElement("span", {
+    className: "ent-kid-float",
+    "aria-hidden": "true"
+  }, "🐷");
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    style: {
+      width: size,
+      height: size,
+      flexShrink: 0
+    },
+    "aria-hidden": "true",
+    title: "גררו כדי לסובב"
+  });
+}
+
+/* ---- מחיקת חשבון עצמאית (supabase/delete_account.sql) ---- */
+function DeleteAccountCard({
+  onDeleted
+}) {
+  const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const run = async () => {
+    setErr('');
+    if (confirmText.trim() !== 'מחיקה') return setErr('כדי לאשר, הקלידו את המילה "מחיקה"');
+    if (!pw) return setErr('הזינו את הסיסמה שלכם');
+    setBusy(true);
+    try {
+      const {
+        data: {
+          session
+        }
+      } = await sb.auth.getSession();
+      const email = session?.user?.email;
+      if (!email) throw new Error('nosession');
+      // אימות מחדש עם סיסמה לפני פעולה בלתי הפיכה
+      const {
+        error: authErr
+      } = await sb.auth.signInWithPassword({
+        email,
+        password: pw
+      });
+      if (authErr) {
+        setBusy(false);
+        return setErr('הסיסמה שגויה');
+      }
+      const {
+        data,
+        error
+      } = await sb.rpc('delete_my_account');
+      if (isMissingRpc(error)) {
+        setBusy(false);
+        return setErr('האפשרות עוד לא הופעלה במערכת — אפשר לבקש מחיקה במייל ' + LEGAL_EMAIL);
+      }
+      if (error || data !== 'ok') throw error || new Error(String(data));
+      await sb.auth.signOut();
+      try {
+        Object.keys(localStorage).filter(k => k.startsWith('homey_') && !['homey_theme', 'homey_currency', 'homey_fontscale', 'homey_brightness', 'homey_compact'].includes(k)).forEach(k => localStorage.removeItem(k));
+      } catch (_e) {}
+      onDeleted();
+    } catch (_e) {
+      setBusy(false);
+      setErr('משהו השתבש — שום דבר לא נמחק. נסו שוב, או בקשו מחיקה במייל.');
+    }
+  };
+  const inputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3",
+    style: {
+      borderColor: 'color-mix(in srgb, var(--neg) 45%, var(--line))'
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold",
+    style: {
+      color: 'var(--neg)'
+    }
+  }, "מחיקת חשבון"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm leading-relaxed",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "מוחקת לצמיתות את החשבון שלך: הפרופיל, קוד ה-PIN, היעדים האישיים, תשובות השאלון וההתראות. ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, "אם את/ה האחרון/ה במשפחה"), " — כל נתוני המשפחה (הוצאות, חיובים, חסכונות, ילדים ועוד) יימחקו גם הם. אם יש עוד בני משפחה — הנתונים המשותפים נשארים אצלם. אין דרך לשחזר."), !open ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(true),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm",
+    style: {
+      borderColor: 'var(--neg)',
+      color: 'var(--neg)'
+    }
+  }, "מחיקת החשבון שלי") : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 p-4 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    type: "password",
+    autoComplete: "current-password",
+    placeholder: "הסיסמה שלך",
+    value: pw,
+    onChange: e => setPw(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    placeholder: "הקלידו: מחיקה",
+    value: confirmText,
+    onChange: e => setConfirmText(e.target.value)
+  }), err && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--neg-soft)'
+    }
+  }, err), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: run,
+    disabled: busy,
+    className: "ent-pill-btn px-5 py-2 text-sm flex-1",
+    style: {
+      background: 'var(--neg)',
+      color: '#fff',
+      opacity: busy ? 0.6 : 1
+    }
+  }, busy ? 'מוחק…' : 'מחיקה סופית'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setOpen(false);
+      setPw('');
+      setConfirmText('');
+      setErr('');
+    },
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))));
+}
+
 /* ---- המסך הראשי של הילד: ארנק, רמה, יעדים, טיפ ומשפט יומי ---- */
 const KID_TIPS = ['לפני שקונים משהו — מחכים יום אחד. אם עדיין רוצים, כנראה שזה שווה את זה.', 'כל פעם שמקבלים דמי כיס, שמים קודם חלק בחיסכון — ורק אז מבזבזים.', 'להשוות מחירים לפני קנייה זה כמו למצוא כסף ברחוב.', 'רושמים כל הוצאה, גם קטנה — הקטנות מצטברות מהר.', 'יעד שרואים בדמיון (אייפון? אופניים?) עוזר לחסוך הרבה יותר.', 'קיבלת מתנה בכסף? אפשר לחלק: חצי לחיסכון, חצי לכיף.', 'לא חייבים לקנות הכל עכשיו — גם לחכות זה סוג של ניצחון.', 'אפשר להרוויח מדברים שכבר יש לך: למכור צעצוע או ספר שכבר לא משתמשים בהם.', 'ממתק כל יום ב־₪5 זה ₪150 בחודש. מה עוד אפשר לקנות בזה?', 'לפני קנייה שואלים: אני צריך את זה, או רק רוצה את זה?', 'חיסכון קטן כל שבוע עדיף על חיסכון גדול פעם בשנה.', 'מבצע "קנה 2 קבל 1" משתלם רק אם באמת צריך 3.', 'כסף בחיסכון לא נעלם — הוא מחכה לדבר שבאמת חשוב לך.', 'שווה לשאול את ההורים איך הם חוסכים — אפשר ללמוד מהם המון.', 'הכי כיף לקנות משהו שחסכת בשבילו בעצמך.', 'עבודה קטנה (שמירה על ילדים, עזרה, מכירה) יכולה לקרב אותך מהר ליעד.', 'משחקים עם קניות בפנים — שווה לבדוק כמה זה עולה באמת בסוף החודש.', 'כשמגיעים לחצי הדרך ליעד — מגיע לך רגע של גאווה.'];
 const KID_QUOTES = ['כל שקל שחוסכים היום — הוא חלום שמתקרב מחר.', 'צעדים קטנים, יעדים גדולים.', 'מי שחוסך — בוחר בעצמו.', 'הסבלנות שלך היא כוח־על.', 'את/ה הבוס של הכסף שלך.', 'לא צריך למהר — צריך להתמיד.', 'היעד שלך מחכה לך. קדימה!', 'חיסכון זה לא לוותר — זה לבחור.', 'כל הפקדה קטנה היא ניצחון קטן.', 'היום זה עוד צעד קדימה.'];
@@ -7026,14 +7658,9 @@ function KidDashboard({
     currency: currency
   }))), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, chip('🐷 בחיסכון ', money(saved)), chip('⬇️ נכנס החודש ', money(monthIn)))), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col items-center gap-3",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement(Coin3D, {
-    size: 46
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "ent-kid-float"
-  }, "🐷")))),/*#__PURE__*/React.createElement("div", {
+  }, chip('🐷 בחיסכון ', money(saved)), chip('⬇️ נכנס החודש ', money(monthIn)))), /*#__PURE__*/React.createElement(Piggy3D, {
+    size: 124
+  }))),/*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-3"
   }, action('💰', 'קיבלתי כסף', 'income', true), action('🛍️', 'הוצאתי כסף', 'expense'), action('🎯', 'יעד חדש', 'goal')), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-6"
@@ -7104,6 +7731,18 @@ function KidDashboard({
       }
     }, Math.round(pct * 100), "% · עוד ", money(g.target - g.saved)));
   }))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold mb-3"
+  }, "📈 הכסף שלי לאורך זמן"), /*#__PURE__*/React.createElement(TrendLines, {
+    rows: entries,
+    currency: currency,
+    labels: {
+      income: 'נכנס',
+      expense: 'יצא'
+    },
+    exclude: r => r.category === KID_TO_GOAL || r.category === KID_FROM_GOAL
+  })), /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 text-center"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs mb-2",
