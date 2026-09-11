@@ -10,7 +10,23 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="Homey" />
-<meta name="theme-color" content="#0A0D13" />
+<meta name="theme-color" content="#0B0C0E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+// מראה: fintech (ברירת המחדל). classic = העיצוב הקודם, רק דרך ?look=classic
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('look');
+    if (q === 'fintech' || q === 'classic') localStorage.setItem('homey_look', q);
+    if (localStorage.getItem('homey_look') !== 'classic') localStorage.setItem('homey_look', 'fintech');
+    var t = new URLSearchParams(location.search).get('theme');
+    if (t && /^[a-z]+$/.test(t)) localStorage.setItem('homey_theme', t);
+    document.documentElement.setAttribute('data-look', localStorage.getItem('homey_look') || 'fintech');
+  } catch (_e) { document.documentElement.setAttribute('data-look', 'fintech'); }
+})();
+</script>
 
 <script>
 // Homey — פוש. המפתח הציבורי של VAPID (לא סודי; הפרטי שמור רק ב-Supabase Secrets).
@@ -653,7 +669,7 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
   /* ===== מסך פתיחה ===== */
-  #ent-splash { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: radial-gradient(600px 400px at 50% 40%, rgba(79,216,255,.12), transparent 70%), #0A0D13; transition: opacity .4s ease; }
+  #ent-splash { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: #0B0C0E; transition: opacity .4s ease; }
   #ent-splash.hide { opacity: 0; pointer-events: none; }
   .ent-splash-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; perspective: 600px; }
   .ent-splash-inner img { border-radius: 22px; box-shadow: 0 20px 50px -20px rgba(79,216,255,.5); }
@@ -673,6 +689,54 @@ body[data-compact="1"] main { gap: .75rem; }
   }
   @keyframes ent-draw { from { stroke-dashoffset: 1200; } to { stroke-dashoffset: 0; } }
 
+  /* ===== פרימיום: גופן אחד (3 משקלים), 3 רדיוסים, עומק במקום מסגרות, פוקוס ומצבי מעבר אחידים ===== */
+  :root { --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --font-ui: 'IBM Plex Sans Hebrew', 'Segoe UI', system-ui, sans-serif; }
+  body, .ent-root { font-family: var(--font-ui); line-height: 1.55; }
+  .ent-root h1, .ent-root h2, .ent-root h3, .ent-root .ent-heading, .ent-pill-btn, .homey-word, .ent-coin > span, .ent-splash-word { font-family: var(--font-ui); }
+  .ent-root h1, .ent-root h2, .ent-root h3, .ent-heading, .font-bold { font-weight: 600; letter-spacing: -0.01em; }
+  .font-semibold, .ent-pill-btn { font-weight: 500; }
+  .ent-num { font-family: var(--num-font, var(--font-ui)); font-weight: 600; }
+  .ent-card { border-radius: var(--r-lg); border-color: color-mix(in srgb, var(--text) 5%, transparent); }
+  .ent-mini-card { border: 0; border-radius: var(--r-md); }
+  .rounded-2xl, .rounded-xl { border-radius: var(--r-md); }
+  .rounded-lg, .rounded-md, .rounded-sm, .ent-input, .ent-icon-btn { border-radius: var(--r-sm); }
+  .ent-kid .ent-card { border-radius: 24px; }
+  .ent-kid .ent-mini-card { border-radius: 18px; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; }
+  .ent-input:focus, .ent-input:focus-visible { outline: none; border-color: var(--bronze); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bronze) 30%, transparent); }
+  .ent-pill-btn { transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, filter .15s ease, transform .1s ease; }
+  .ent-pill-btn:hover { transform: none; }
+  .ent-pill-btn.solid-bronze:hover { filter: brightness(1.07); }
+  .ent-pill-btn.ghost:hover, .ent-icon-btn:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
+  .hover\:brightness-110:hover { filter: none; }
+  .ent-card.cursor-pointer:hover, .ent-mini-card.cursor-pointer:hover { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent), 0 20px 44px -26px rgba(0,0,0,.8); }
+
+  /* ===== המראה הנבחר: פינטק מודרני — אפורים נקיים, צבע חד אחד ===== */
+  html[data-look="fintech"] body[data-theme="ent"], html[data-look="fintech"] body[data-theme="ent"] .ent-root {
+    --navy: #0B0C0E; --navy-panel: #141518; --navy-panel-2: #1C1E22;
+    --bronze: #7B93FF; --cyan: #5CC8B7; --line: rgba(255, 255, 255, 0.07);
+    --text: #EDEFF3; --text-2: #C7CBD4; --text-muted: #8D94A2; --text-dim: #5F6674; --on-accent: #FFFFFF;
+    --pos: #45C486; --pos-soft: #72D3A2; --neg: #F26B6B; --neg-soft: #F08787;
+    --num-font: 'IBM Plex Sans Hebrew', system-ui, sans-serif;
+  }
+  html[data-look="fintech"] body[data-theme="light"], html[data-look="fintech"] body[data-theme="light"] .ent-root {
+    --navy: #F5F6F8; --navy-panel: #FFFFFF; --navy-panel-2: #EDEFF3;
+    --bronze: #3D5AFE; --cyan: #0E8F80; --line: rgba(17, 19, 24, 0.08);
+    --text: #111318; --text-2: #2F3440; --text-muted: #5E6573; --text-dim: #8C93A1; --on-accent: #FFFFFF;
+    --pos: #148A55; --pos-soft: #2E9C68; --neg: #D93D3D; --neg-soft: #C63A3A;
+  }
+
+  /* בשני הכיוונים: בלי זוהר, בלי טקסט בצבעי מעבר, עומק שקט */
+  html[data-look="fintech"] .ent-root { background: var(--navy); }
+  html[data-look="fintech"] .ent-card { background: var(--navy-panel); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent), 0 14px 34px -26px rgba(0,0,0,.7); }
+  html[data-look="fintech"] .ent-stat-icon { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: none; }
+  html[data-look="fintech"] .ent-icon-badge { background: color-mix(in srgb, var(--bronze) 14%, transparent); box-shadow: none; }
+  html[data-look="fintech"] .ent-progress-fill { background: var(--bronze); box-shadow: none; }
+  html[data-look="fintech"] .homey-word { background: none !important; -webkit-text-fill-color: var(--text) !important; color: var(--text) !important; }
+  html[data-look="fintech"] .ent-forecast-hero { background: var(--navy-panel-2) !important; }
+  html[data-look="fintech"] .ent-horizon { background: var(--line) !important; animation: none !important; height: 1px !important; }
+
 </style>
 </head>
 <body>
@@ -683,7 +747,7 @@ body[data-compact="1"] main { gap: .75rem; }
 (function () {
   var s = document.getElementById('ent-splash');
   if (!s) return;
-  try { if (['light', 'sand', 'sky'].indexOf(localStorage.getItem('homey_theme')) >= 0) s.style.background = '#F5F7FA'; } catch (_e) {}
+  try { if (['light', 'sand', 'sky'].indexOf(localStorage.getItem('homey_theme')) >= 0) s.style.background = '#F5F6F8'; } catch (_e) {}
   var t0 = Date.now(), done = false;
   function hide() {
     if (done) return; done = true;
@@ -1361,7 +1425,7 @@ function ConnectionDot({
   const [open, setOpen] = useState(false);
   const color = isDemo ? 'var(--text-dim)' : online ? 'var(--cyan)' : 'var(--neg)';
   const title = isDemo ? 'מצב דמו' : online ? 'מחובר' : 'לא מחובר';
-  const body = isDemo ? 'אתם במצב דמו — הנתונים מוצגים לדוגמה בלבד ואינם נשמרים. התחברו עם חשבון כדי לשמור נתונים אמיתיים.' : online ? 'החיבור לענן פעיל. כל שינוי שתעשו (הוצאה, פתק, חיסכון) נשמר אוטומטית ומסתנכרן לכל בני המשפחה.' : 'אין כרגע חיבור לאינטרנט. אפשר להמשיך לצפות בנתונים שכבר נטענו, אבל שינויים חדשים לא יישמרו עד שהחיבור יחזור.';
+  const body = isDemo ? 'אתם במצב דמו. הנתונים לדוגמה בלבד ולא נשמרים. התחברו עם חשבון כדי לשמור נתונים אמיתיים.' : online ? 'החיבור לענן פעיל. כל שינוי שתעשו (הוצאה, פתק, חיסכון) נשמר אוטומטית ומסתנכרן לכל בני המשפחה.' : 'אין כרגע חיבור לאינטרנט. אפשר להמשיך לצפות בנתונים שכבר נטענו, אבל שינויים חדשים לא יישמרו עד שהחיבור יחזור.';
   return /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("button", {
@@ -1654,9 +1718,23 @@ const THEMES = [{
 }];
 // מוסיפים רק בסוף — האינדקס נשמר במסד הנתונים
 const CUSTOM_ICONS = [ITag, IGamepad, IHealth, IBag, IBriefcase, IBuilding, IHandshake, ITarget, ISparkles, IPaw, IBaby, IHeart, IBus, IGift, IPlane, IGraduationCap, IWifi, IShield, ICar, IHome, IUtensils];
-const CHART_COLORS = ['#CBA05A', '#4FD8FF', 'var(--pos-soft)', '#D9B77A', '#9BA8D8', '#C98F6B', '#E0A9E0', '#7FB3A5', '#E3C46F', '#A48BD9', '#6FB7E3', '#D98C8C', '#9FD18B', '#F0B27A', '#8FA7B3', '#C7A2FF', '#E6D3A3'];
+const CHART_COLORS = ['#7B93FF', '#5CC8B7', '#F2B35E', '#B58CFF', '#45C486', '#F07A9A', '#6FB7E3', '#E3C46F', '#9BA8D8', '#8FD0C2', '#C7A2FF', '#F0B27A', '#8FA7B3', '#D98C8C', '#9FD18B', '#A48BD9', '#E6D3A3'];
 let idCounter = 600;
 const nextId = () => ++idCounter;
+// תאריך בפורמט עברי אחיד: "10 בספט׳" (ושנה רק אם היא לא השנה הנוכחית)
+const fmtDateHe = d => {
+  if (!d) return '';
+  const x = new Date(String(d).slice(0, 10) + 'T00:00:00');
+  if (isNaN(x)) return '';
+  return x.toLocaleDateString('he-IL', x.getFullYear() === new Date().getFullYear() ? {
+    day: 'numeric',
+    month: 'short'
+  } : {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+};
 const monthLabel = dateStr => {
   if (!dateStr || dateStr === 'ללא תאריך') return 'לא צוין';
   const d = new Date(dateStr);
@@ -1849,7 +1927,7 @@ function DonutChart({
         }
         toggle(s.name);
       }
-    },/*#__PURE__*/React.createElement("title", null, `${s.name}: ${currency}${s.value.toLocaleString()} (${Math.round(s.pct)}%)`));
+    },/*#__PURE__*/React.createElement("title", null, `${s.name}: ${currency}${s.value.toLocaleString('he-IL')} (${Math.round(s.pct)}%)`));
   }))), /*#__PURE__*/React.createElement("div", {
     className: "ent-donut-center"
   }, /*#__PURE__*/React.createElement("span", {
@@ -1864,7 +1942,7 @@ function DonutChart({
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "ent-cur"
-  }, currency), (act ? act.value : sum).toLocaleString()), act && /*#__PURE__*/React.createElement("span", {
+  }, currency), (act ? act.value : sum).toLocaleString('he-IL')), act && /*#__PURE__*/React.createElement("span", {
     className: "text-xs",
     style: {
       color: 'var(--text-dim)'
@@ -1889,7 +1967,7 @@ function DonutChart({
     style: {
       color: 'var(--text-dim)'
     }
-  }, currency, s.value.toLocaleString(), " · ", Math.round(s.pct), "%")))));
+  }, currency, s.value.toLocaleString('he-IL'), " · ", Math.round(s.pct), "%")))));
 }
 function TrendBars({
   data
@@ -1898,7 +1976,7 @@ function TrendBars({
   const [hover, setHover] = useState(null);
   const bar = (value, color, delay, label) => /*#__PURE__*/React.createElement("div", {
     className: "ent-bar",
-    title: `${label}: ${Math.round(value).toLocaleString()}`,
+    title: `${label}: ${Math.round(value).toLocaleString('he-IL')}`,
     style: {
       width: 16,
       height: `${value / max * 136}px`,
@@ -1935,7 +2013,7 @@ function TrendBars({
       color: 'var(--text-muted)',
       visibility: hover === d.month ? 'visible' : 'hidden'
     }
-  }, "+", Math.round(d.income).toLocaleString(), " / −", Math.round(d.expense).toLocaleString()), /*#__PURE__*/React.createElement("div", {
+  }, "+", Math.round(d.income).toLocaleString('he-IL'), " / −", Math.round(d.expense).toLocaleString('he-IL')), /*#__PURE__*/React.createElement("div", {
     className: "flex items-end gap-1",
     style: {
       height: '136px'
@@ -1955,11 +2033,11 @@ function TrendBars({
 function friendlyAuthError(e) {
   const m = (e && e.message ? e.message : '').toLowerCase();
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'אימייל או סיסמה שגויים';
-  if (m.includes('already registered') || m.includes('already been registered')) return 'האימייל הזה כבר רשום — נסו להתחבר';
-  if (m.includes('rate') || m.includes('seconds')) return 'יותר מדי ניסיונות — נסו שוב בעוד רגע';
+  if (m.includes('already registered') || m.includes('already been registered')) return 'האימייל הזה כבר רשום. נסו להתחבר';
+  if (m.includes('rate') || m.includes('seconds')) return 'יותר מדי ניסיונות. נסו שוב בעוד רגע';
   if (m.includes('email') && m.includes('confirm')) return 'יש לאשר את כתובת המייל לפני ההתחברות';
   if (m.includes('password')) return 'הסיסמה אינה עומדת בדרישות';
-  if (m.includes('network') || m.includes('fetch')) return 'אין חיבור לאינטרנט — נסו שוב';
+  if (m.includes('network') || m.includes('fetch')) return 'אין חיבור לאינטרנט. נסו שוב';
   return 'משהו השתבש. נסו שוב בעוד רגע';
 }
 function generateFamilyCode(name) {
@@ -2018,7 +2096,7 @@ function Money({
     className: "ent-num"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ent-cur"
-  }, currency), n.toLocaleString());
+  }, currency), n.toLocaleString('he-IL'));
 }
 // שלד טעינה במקום "טוען…"
 const Skeleton = ({
@@ -2232,10 +2310,10 @@ async function savePin(profileId, newPin, currentPin) {
 }
 const PIN_MESSAGES = {
   wrong_pin: 'הקוד הנוכחי שגוי',
-  locked: 'יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות',
+  locked: 'יותר מדי ניסיונות שגויים. אפשר לנסות שוב בעוד 5 דקות',
   invalid_pin: 'PIN חייב להיות 4-6 ספרות',
   forbidden: 'אין הרשאה לשנות את הקוד הזה',
-  error: 'שגיאה בשמירת הקוד — בדקו חיבור לאינטרנט'
+  error: 'הקוד לא נשמר. בדקו את החיבור לאינטרנט'
 };
 
 /* ---- מסמכים משפטיים: פרטיות, תנאי שימוש, נגישות ---- */
@@ -2281,9 +2359,9 @@ function LegalDoc({
   }, 'עודכן לאחרונה: ' + LEGAL_UPDATED)];
   let parts;
   if (doc === 'terms') {
-    parts = [...head('תנאי שימוש'), LS('כללי', LP('השימוש ב-Homey כפוף לתנאים אלה ולמדיניות הפרטיות. השירות מופעל על ידי ', LB(LEGAL_OWNER), ' וניתן כרגע ללא תשלום. אם אינכם מסכימים לתנאים — אל תשתמשו בשירות.')), LS('מה השירות', LP('Homey היא כלי לניהול משק בית משפחתי: תיעוד הוצאות והכנסות, חיובים, חסכונות, נכסים, פתקים, טיולים ומתנות.'), LP(LB('Homey אינה ייעוץ פיננסי, השקעות, מס או משפטי.'), ' חדשות הכלכלה מוצגות לידיעה בלבד, ממקור חיצוני (Finnhub), ואינן המלצה.')), LS('החשבון והמשפחה', LUL('ההרשמה מיועדת לבני 18 ומעלה.', 'אתם אחראים לשמור על הסיסמה ועל קוד הקבוצה. כל מי שמחזיק בקוד יכול להצטרף למשפחה ולראות את הנתונים — שתפו אותו רק עם בני המשפחה.', 'ההורה אחראי לפרופילי הילדים שהוא יוצר ולמידע שמוזן בהם.', 'קוד PIN מונע כניסה מקרית לאזורים הכספיים, אבל אינו תחליף לשמירה על הטלפון עצמו.')), LS('שימוש אסור', LP('אסור לנסות לגשת לנתונים של משפחות אחרות, לעקוף מנגנוני אבטחה, לשבש את השירות, או להשתמש בו לפעילות בלתי חוקית.')), LS('זמינות ואחריות', LUL('השירות ניתן "כמות שהוא" (AS IS), בלי התחייבות לזמינות רציפה או לכך שיהיה נקי מתקלות.', 'תזכורות ותחזיות הן עזר בלבד. האחריות לשלם בזמן ולבדוק את הנתונים היא שלכם.', 'מומלץ לשמור תיעוד משלכם למידע חשוב — איננו מתחייבים לשחזר מידע שנמחק או אבד.')), LS('הגבלת אחריות', LP('במידה המרבית המותרת בדין, המפעיל לא יישא באחריות לנזק עקיף, תוצאתי או כספי שנגרם מהשימוש בשירות או מהסתמכות עליו.')), LS('קניין רוחני', LP('העיצוב, הקוד והתכנים של Homey שייכים למפעיל. המידע שאתם מזינים שייך לכם.')), LS('הפסקת שימוש', LP('אפשר להפסיק להשתמש בכל רגע ולבקש מחיקת חשבון (ראו מדיניות הפרטיות). המפעיל רשאי להשעות חשבון שמפר את התנאים, או להפסיק את השירות בהודעה מראש סבירה.')), LS('שינויים בתנאים', LP('התנאים עשויים להתעדכן, ותאריך העדכון יופיע בראש העמוד. המשך השימוש אחרי עדכון מהווה הסכמה לתנאים המעודכנים.')), LS('דין וסמכות שיפוט', LP('על התנאים חלים דיני מדינת ישראל, וסמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים בישראל.')), LS('יצירת קשר', LP(LMAIL()))];
+    parts = [...head('תנאי שימוש'), LS('כללי', LP('השימוש ב-Homey כפוף לתנאים אלה ולמדיניות הפרטיות. השירות מופעל על ידי ', LB(LEGAL_OWNER), ' וניתן כרגע ללא תשלום. אם אינכם מסכימים לתנאים, אל תשתמשו בשירות.')), LS('מה השירות', LP('Homey היא כלי לניהול משק בית משפחתי: תיעוד הוצאות והכנסות, חיובים, חסכונות, נכסים, פתקים, טיולים ומתנות.'), LP(LB('Homey אינה ייעוץ פיננסי, השקעות, מס או משפטי.'), ' חדשות הכלכלה מוצגות לידיעה בלבד, ממקור חיצוני (Finnhub), ואינן המלצה.')), LS('החשבון והמשפחה', LUL('ההרשמה מיועדת לבני 18 ומעלה.', 'אתם אחראים לשמור על הסיסמה ועל קוד הקבוצה. כל מי שמחזיק בקוד יכול להצטרף למשפחה ולראות את הנתונים, לכן שתפו אותו רק עם בני המשפחה.', 'ההורה אחראי לפרופילי הילדים שהוא יוצר ולמידע שמוזן בהם.', 'קוד PIN מונע כניסה מקרית לאזורים הכספיים, אבל אינו תחליף לשמירה על הטלפון עצמו.')), LS('שימוש אסור', LP('אסור לנסות לגשת לנתונים של משפחות אחרות, לעקוף מנגנוני אבטחה, לשבש את השירות, או להשתמש בו לפעילות בלתי חוקית.')), LS('זמינות ואחריות', LUL('השירות ניתן "כמות שהוא" (AS IS), בלי התחייבות לזמינות רציפה או לכך שיהיה נקי מתקלות.', 'תזכורות ותחזיות הן עזר בלבד. האחריות לשלם בזמן ולבדוק את הנתונים היא שלכם.', 'מומלץ לשמור תיעוד משלכם למידע חשוב. איננו מתחייבים לשחזר מידע שנמחק או אבד.')), LS('הגבלת אחריות', LP('במידה המרבית המותרת בדין, המפעיל לא יישא באחריות לנזק עקיף, תוצאתי או כספי שנגרם מהשימוש בשירות או מהסתמכות עליו.')), LS('קניין רוחני', LP('העיצוב, הקוד והתכנים של Homey שייכים למפעיל. המידע שאתם מזינים שייך לכם.')), LS('הפסקת שימוש', LP('אפשר להפסיק להשתמש בכל רגע ולבקש מחיקת חשבון (ראו מדיניות הפרטיות). המפעיל רשאי להשעות חשבון שמפר את התנאים, או להפסיק את השירות בהודעה מראש סבירה.')), LS('שינויים בתנאים', LP('התנאים עשויים להתעדכן, ותאריך העדכון יופיע בראש העמוד. המשך השימוש אחרי עדכון מהווה הסכמה לתנאים המעודכנים.')), LS('דין וסמכות שיפוט', LP('על התנאים חלים דיני מדינת ישראל, וסמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים בישראל.')), LS('יצירת קשר', LP(LMAIL()))];
   } else if (doc === 'a11y') {
-    parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים — גרפים, חלונות קופצים ובחירת אייקונים — אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
+    parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים (גרפים, חלונות קופצים ובחירת אייקונים) אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
     parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
@@ -2336,9 +2414,9 @@ function OnboardingTour({
   const ol = (...items) => /*#__PURE__*/React.createElement("ol", {
     className: "list-decimal pr-5 space-y-1"
   }, ...items);
-  const installBody = standalone ? [LP('✓ Homey כבר מותקנת על המכשיר הזה — מעולה!')] : isIOS ? [ol(li('פתחו את Homey ב', LB('ספארי')), li('לחצו על כפתור ', LB('השיתוף'), ' (ריבוע עם חץ למעלה)'), li('בחרו ', LB('"הוסף למסך הבית"'), ' ← ', LB('"הוסף"')), li('מעכשיו פתחו את Homey ', LB('מהאייקון')))] : isAndroid ? [ol(li('פתחו את Homey ב', LB('כרום')), li('לחצו על ', LB('⋮'), ' (שלוש הנקודות למעלה)'), li('בחרו ', LB('"התקן אפליקציה"'), ' או ', LB('"הוספה למסך הבית"')))] : [LP(LB('אייפון:'), ' ספארי ← שתף ← "הוסף למסך הבית".'), LP(LB('אנדרואיד:'), ' כרום ← ⋮ ← "התקן אפליקציה".'), LP(LB('מחשב:'), ' בכרום או באדג׳ — אייקון ההתקנה בשורת הכתובת.')];
-  const updateNote = LP(LB('עדכונים מגיעים לבד'), ' — גרסה חדשה נטענת בפתיחה הבאה. אם משהו נראה ישן, סגרו את האפליקציה לגמרי ופתחו מחדש.');
-  const pushBody = [LP('Homey יכולה לשלוח לכם תזכורת בבוקר — עד יומיים לפני כל חיוב שעוד לא שולם.'), pushState === 'on' ? LP('✓ ', LB('ההתראות פעילות'), ' במכשיר הזה.') : pushState === 'off' || pushState === 'busy' ? /*#__PURE__*/React.createElement("button", {
+  const installBody = standalone ? [LP('Homey כבר מותקנת על המכשיר הזה.')] : isIOS ? [ol(li('פתחו את Homey ב', LB('ספארי')), li('לחצו על כפתור ', LB('השיתוף'), ' (ריבוע עם חץ למעלה)'), li('בחרו ', LB('"הוסף למסך הבית"'), ' ← ', LB('"הוסף"')), li('מעכשיו פתחו את Homey ', LB('מהאייקון')))] : isAndroid ? [ol(li('פתחו את Homey ב', LB('כרום')), li('לחצו על ', LB('⋮'), ' (שלוש הנקודות למעלה)'), li('בחרו ', LB('"התקן אפליקציה"'), ' או ', LB('"הוספה למסך הבית"')))] : [LP(LB('אייפון:'), ' ספארי ← שתף ← "הוסף למסך הבית".'), LP(LB('אנדרואיד:'), ' כרום ← ⋮ ← "התקן אפליקציה".'), LP(LB('מחשב:'), ' בכרום או באדג׳, דרך אייקון ההתקנה בשורת הכתובת.')];
+  const updateNote = LP(LB('עדכונים מגיעים לבד'), ': גרסה חדשה נטענת בפתיחה הבאה. אם משהו נראה ישן, סגרו את האפליקציה לגמרי ופתחו מחדש.');
+  const pushBody = [LP('Homey יכולה לשלוח לכם תזכורת בבוקר, עד יומיים לפני כל חיוב שעוד לא שולם.'), pushState === 'on' ? LP('✓ ', LB('ההתראות פעילות'), ' במכשיר הזה.') : pushState === 'off' || pushState === 'busy' ? /*#__PURE__*/React.createElement("button", {
     onClick: onEnablePush,
     disabled: pushState === 'busy',
     className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
@@ -2350,23 +2428,23 @@ function OnboardingTour({
   const parentSteps = [{
     emoji: '👋',
     title: 'ברוכים הבאים ל-Homey',
-    body: [LP('כל הכסף של הבית במקום אחד — לכל המשפחה.'), LP('בכמה צעדים קצרים נראה איך הכל עובד. אפשר לדלג בכל שלב, ולחזור להדרכה מ', LB('"מדריך ומידע"'), '.')]
+    body: [LP('כל הכסף של הבית במקום אחד, לכל המשפחה.'), LP('בכמה צעדים קצרים נראה איך הכל עובד. אפשר לדלג בכל שלב, ולחזור להדרכה מ', LB('"מדריך ומידע"'), '.')]
   }, {
     emoji: '📊',
     title: 'כמה נשאר החודש?',
-    body: [LP('הדשבורד מחשב ', LB('כמה נשאר לכם להוציא החודש'), ': הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שעוד לא שולמו.'), LP('כדי שהמספר יהיה מדויק — הזינו הכנסות וחיובים קבועים.')]
+    body: [LP('הדשבורד מחשב ', LB('כמה נשאר לכם להוציא החודש'), ': הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שעוד לא שולמו.'), LP('כדי שהמספר יהיה מדויק, הזינו הכנסות וחיובים קבועים.')]
   }, {
     emoji: '➕',
     title: 'הוספת הוצאות וחיובים',
-    body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה — למשל מזון ← סופר, או רכב ← דלק.'), LP('חיובים קבועים (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"חיובים והתחייבויות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הם חוזרים אוטומטית ל"לא שולם".')]
+    body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה, למשל מזון ← סופר או רכב ← דלק.'), LP('חיובים קבועים (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"חיובים והתחייבויות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הם חוזרים אוטומטית ל"לא שולם".')]
   }, {
     emoji: '🎯',
     title: 'יעדים',
-    body: [LP('ב', LB('"חסכונות ויעדים"'), ' מגדירים קופות חיסכון, ', LB('תקרת הוצאה'), ' לכל קטגוריה, ', LB('יעד שווי'), ' ו', LB('חיסכון חודשי'), ' — וההתקדמות מחושבת לבד מהנתונים.'), LP('יש גם ', LB('יעדים אישיים'), ' (קורס, כושר, עבודה חדשה) עם שלבים לסימון — שרק את/ה רואה.')]
+    body: [LP('ב', LB('"חסכונות ויעדים"'), ' מגדירים קופות חיסכון, ', LB('תקרת הוצאה'), ' לכל קטגוריה, ', LB('יעד שווי'), ' ו', LB('חיסכון חודשי'), '. ההתקדמות מחושבת לבד מהנתונים.'), LP('יש גם ', LB('יעדים אישיים'), ' (קורס, כושר, עבודה חדשה) עם שלבים לסימון. רק את/ה רואה אותם.')]
   }, {
     emoji: '👨‍👩‍👧',
     title: 'כל המשפחה ביחד',
-    body: [LP('בהגדרות תמצאו את ', LB('קוד הקבוצה'), '. בני משפחה נרשמים עם "הצטרפות למשפחה" והקוד — ורואים את אותם נתונים.'), LP(LB('ילדים לא נרשמים'), ' — מוסיפים אותם במסך ', LB('"מי משתמש עכשיו?"'), ' ← כפתור ה-', LB('+'), '. לילד לא צריך אימייל או סיסמה. יש לו אזור ', LB('"הכסף שלי"'), ' — ארנק, הוצאות ויעדי חיסכון (אייפון, רישיון, טיול עם חברים…), בנפרד מתקציב המשפחה.'), LP('להורים מומלץ להגדיר ', LB('קוד PIN'), ' דרך אייקון העריכה שליד הפרופיל — כדי שילדים לא ייכנסו בטעות לאזורים הכספיים.')]
+    body: [LP('בהגדרות תמצאו את ', LB('קוד הקבוצה'), '. בני משפחה נרשמים עם "הצטרפות למשפחה" והקוד, ורואים את אותם נתונים.'), LP(LB('ילדים לא נרשמים'), '. מוסיפים אותם במסך ', LB('"מי משתמש עכשיו?"'), ' ← כפתור ה-', LB('+'), '. לילד לא צריך אימייל או סיסמה. יש לו אזור ', LB('"הכסף שלי"'), ': ארנק, הוצאות ויעדי חיסכון (אייפון, רישיון, טיול עם חברים), בנפרד מתקציב המשפחה.'), LP('להורים מומלץ להגדיר ', LB('קוד PIN'), ' דרך אייקון העריכה שליד הפרופיל, כדי שילדים לא ייכנסו בטעות לאזורים הכספיים.')]
   }, {
     emoji: '📲',
     title: 'התקנה למסך הבית',
@@ -2379,7 +2457,7 @@ function OnboardingTour({
   const kidSteps = [{
     emoji: '👋',
     title: 'ברוכים הבאים ל-Homey',
-    body: [LP('כאן מנהלים את הכסף שלך — כמו גדולים 😎'), LP('בכמה צעדים קצרים נראה לך איך זה עובד.')]
+    body: [LP('כאן מנהלים את הכסף שלך, כמו גדולים 😎'), LP('בכמה צעדים קצרים נראה לך איך זה עובד.')]
   }, {
     emoji: '🐷',
     title: 'הכסף שלי',
@@ -2387,7 +2465,7 @@ function OnboardingTour({
   }, {
     emoji: '🎯',
     title: 'יעדים',
-    body: [LP('צרו ', LB('יעד חיסכון'), ' — אייפון, רישיון, טיול עם חברים — והפקידו אליו מהארנק.'), LP('יש גם ', LB('יעדים אישיים'), ' כמו ללמוד משהו חדש או ספורט, עם שלבים לסימון.')]
+    body: [LP('צרו ', LB('יעד חיסכון'), ' (אייפון, רישיון, טיול עם חברים) והפקידו אליו מהארנק.'), LP('יש גם ', LB('יעדים אישיים'), ' כמו ללמוד משהו חדש או ספורט, עם שלבים לסימון.')]
   }, {
     emoji: '📲',
     title: 'התקנה למסך הבית',
@@ -2504,7 +2582,7 @@ function LoginScreen({
         if (signUpError) throw signUpError;
         const userId = authData.user?.id;
         if (!userId) {
-          setError('ההרשמה נשלחה — בדוק/י את תיבת המייל לאישור, ואז התחבר/י');
+          setError('ההרשמה נשלחה. אשרו את המייל שקיבלתם ואז התחברו');
           setLoading(false);
           return;
         }
@@ -2614,7 +2692,7 @@ function LoginScreen({
       style: {
         color: 'var(--text-muted)'
       }
-    }, "זה קוד הקבוצה שלכם — כל בן משפחה יזין אותו יחד עם האימייל והסיסמה שלו כדי להצטרף:"), /*#__PURE__*/React.createElement("div", {
+    }, "זה קוד הקבוצה שלכם. כל בן משפחה מזין אותו יחד עם האימייל והסיסמה שלו כדי להצטרף:"), /*#__PURE__*/React.createElement("div", {
       className: "my-5 py-4 rounded-2xl",
       style: {
         background: 'var(--navy-panel-2)',
@@ -2732,12 +2810,12 @@ function LoginScreen({
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
     type: "text",
     inputMode: "numeric",
-    placeholder: "קוד PIN אישי (4-6 ספרות, אופציונלי — מגן על האזור שלך)",
+    placeholder: "קוד PIN אישי (4-6 ספרות, לא חובה)",
     value: pin,
     onChange: e => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
   }), (mode === 'login' || mode === 'signup' && signupType === 'join') && /*#__PURE__*/React.createElement("input", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
-    placeholder: "קוד קבוצה (Group Code) — לדוגמה HS31",
+    placeholder: "קוד קבוצה, לדוגמה HS31",
     value: groupCode,
     onChange: e => setGroupCode(e.target.value.toUpperCase())
   }), mode === 'signup' && signupType === 'create' && /*#__PURE__*/React.createElement("p", {
@@ -2756,7 +2834,7 @@ function LoginScreen({
     style: {
       color: 'var(--text)'
     }
-  }, "ילדים לא נרשמים"), " — מוסיפים אותם מתוך האפליקציה, במסך \"מי משתמש עכשיו?\" ← כפתור ה-+. לילד לא צריך אימייל או סיסמה."), error && /*#__PURE__*/React.createElement("p", {
+  }, "ילדים לא נרשמים"), ". מוסיפים אותם מתוך האפליקציה, במסך \"מי משתמש עכשיו?\" ← כפתור ה-+. לילד לא צריך אימייל או סיסמה."), error && /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
     style: {
       color: 'var(--neg-soft)'
@@ -2938,7 +3016,7 @@ function ProfileScreen({
         onSelect(p);
       }
     } catch (_e) {
-      setPinError('הזיהוי בוטל או נכשל — אפשר להזין קוד');
+      setPinError('הזיהוי לא הצליח. אפשר להזין קוד');
     }
   };
   const attemptSelect = p => {
@@ -2960,10 +3038,10 @@ function ProfileScreen({
       return;
     }
     const res = await checkPinServer(p.id, pinInput);
-    if (res === 'ok' || res === 'none') passGate(p);else if (res === 'locked') setPinError('יותר מדי ניסיונות שגויים — נסו שוב בעוד 5 דקות');else if (res === 'wrong') {
+    if (res === 'ok' || res === 'none') passGate(p);else if (res === 'locked') setPinError('יותר מדי ניסיונות שגויים. אפשר לנסות שוב בעוד 5 דקות');else if (res === 'wrong') {
       setPinError('קוד שגוי, נסה/י שוב');
       setPinInput('');
-    } else setPinError('לא הצלחנו לבדוק את הקוד — בדקו חיבור לאינטרנט');
+    } else setPinError('לא הצלחנו לבדוק את הקוד. בדקו את החיבור לאינטרנט');
   };
   const saveProfileEdit = async (memberId, role, updates) => {
     const {
@@ -3025,7 +3103,7 @@ function ProfileScreen({
       style: {
         color: 'var(--text-dim)'
       }
-    }, "שימו לב: הטלפון מאשר כל פנים או אצבע שרשומות בו. אם גם ילד רשום במכשיר — עדיף להישאר עם קוד בלבד."), /*#__PURE__*/React.createElement("button", {
+    }, "שימו לב: הטלפון מאשר כל פנים או אצבע שרשומות בו. אם גם ילד רשום במכשיר, עדיף להישאר עם קוד בלבד."), /*#__PURE__*/React.createElement("button", {
       onClick: async () => {
         try {
           await bioEnroll(p);
@@ -3096,7 +3174,7 @@ function ProfileScreen({
       style: {
         color: 'var(--text-dim)'
       }
-    }, "שכחת את הקוד? התנתקו, התחברו מחדש עם הסיסמה של ", pinGateFor.name, ", ותוך 10 דקות אפשר להסיר או לשנות את הקוד בעריכת הפרופיל — בלי הקוד הישן.")));
+    }, "שכחת את הקוד? התנתקו, התחברו מחדש עם הסיסמה של ", pinGateFor.name, ", ותוך 10 דקות אפשר להסיר או לשנות את הקוד בעריכת הפרופיל, גם בלי הקוד הישן.")));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-root min-h-screen flex flex-col items-center justify-center px-4",
@@ -3295,7 +3373,7 @@ function EditProfileModal({
     className: "ent-card p-6 w-full max-w-sm"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-4 text-lg"
-  }, "עריכת פרופיל — ", member.name), /*#__PURE__*/React.createElement("div", {
+  }, "עריכת פרופיל: ", member.name), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center mb-1"
@@ -3326,7 +3404,7 @@ function EditProfileModal({
       border: '1px solid var(--line)',
       color: 'var(--text-2)'
     }
-  }, "בחרו תמונה מהגלריה או מהקבצים במכשיר — היא תישמר ישירות בפרופיל. התמונה נשמרת בדפדפן/במסד הנתונים של המשפחה בלבד. ניתן לבחור תמונה עד 4MB — היא תוקטן אוטומטית לגודל מתאים, כך שאין צורך לחפש תמונה קטנה."), /*#__PURE__*/React.createElement("div", {
+  }, "בחרו תמונה מהגלריה או מהקבצים במכשיר, והיא תישמר בפרופיל. התמונה נשמרת בדפדפן/במסד הנתונים של המשפחה בלבד. אפשר לבחור תמונה עד 4MB. היא תוקטן אוטומטית."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("label", {
     className: "ent-pill-btn ghost px-4 py-2 text-sm flex-1 text-center cursor-pointer"
@@ -3476,6 +3554,22 @@ function App() {
   }, []);
   useEffect(() => {
     (async () => {
+      // קישור ישיר לדמו: ?demo=parent / ?demo=kid (&tab=...) — לצילומי מסך ולהצגת האפליקציה
+      const qs = new URLSearchParams(location.search);
+      const demo = qs.get('demo');
+      if (demo) {
+        const p = FAMILY_PROFILES.find(x => demo === 'kid' ? x.role === 'child' : x.role === 'parent');
+        ['p1', 'p2', 'p3', 'p4'].forEach(id => {
+          lsSet('homey_setup_demo_' + id, '1');
+          lsSet('homey_tour_' + id, '1');
+        });
+        setFamilyId('DEMO');
+        setCurrentProfile(p);
+        if (qs.get('tab')) setActiveTabRaw(qs.get('tab'));
+        setAuthStage('app');
+        setRestoring(false);
+        return;
+      }
       try {
         const {
           data: {
@@ -3528,7 +3622,7 @@ function App() {
     } catch (_e) {
       const denied = typeof Notification !== 'undefined' && Notification.permission === 'denied';
       setPushState(denied ? 'denied' : wasOn ? 'on' : 'off');
-      showToast(denied ? 'ההתראות חסומות — יש לאשר אותן בהגדרות' : 'לא הצלחנו לעדכן את ההתראות');
+      showToast(denied ? 'ההתראות חסומות. אפשר לאשר אותן בהגדרות' : 'לא הצלחנו לעדכן את ההתראות');
     }
   };
   const pushHint = {
@@ -3536,7 +3630,7 @@ function App() {
     busy: 'רגע…',
     on: 'תזכורת בבוקר על תשלומים שמועדם היום עד בעוד יומיים',
     off: 'קבלו תזכורת בבוקר לפני מועד תשלום',
-    denied: 'ההתראות חסומות — יש לאשר אותן בהגדרות הדפדפן/הטלפון',
+    denied: 'ההתראות חסומות. אפשר לאשר אותן בהגדרות הטלפון או הדפדפן',
     'ios-install': 'באייפון: שתף ← "הוסף למסך הבית", ואז לפתוח את Homey מהאייקון',
     unsupported: 'הדפדפן הזה לא תומך בהתראות'
   }[pushState];
@@ -4145,7 +4239,7 @@ function App() {
       hasData: transactions.length > 0
     };
   }, [transactions, bills]);
-  const TIPS = ['כלל 50/30/20: 50% לצרכים, 30% לרצונות, 20% לחיסכון והחזר חובות.', 'קרן חירום מומלצת: 3-6 חודשי הוצאות. זה מה שמונע כניסה למינוס בהפתעה.', 'בדקו מנויים חוזרים אחת לרבעון — רובנו משלמים על משהו שהפסקנו להשתמש בו.', 'לפני קנייה גדולה, המתינו 48 שעות. חלק ניכר מהרצון פשוט חולף.', 'שלמו קודם לעצמכם: העבירו לחיסכון ביום המשכורת, לא בסוף החודש.', 'חוב בריבית גבוהה (אשראי, מינוס) עדיף לסגור לפני שמגדילים השקעות.', 'עקבו אחרי ההוצאות הקטנות — קפה יומי הוא כ-4,000 ₪ בשנה.', 'השוו ביטוחים אחת לשנה. אותה פוליסה יכולה לעלות פחות אצל מתחרה.', 'הגדירו יעד חיסכון עם שם ותאריך — יעדים מוגדרים מושגים יותר.', 'תקציב הוא לא הגבלה, הוא החלטה מראש איפה אתם רוצים שהכסף יהיה.'];
+  const TIPS = ['כלל 50/30/20: 50% לצרכים, 30% לרצונות, 20% לחיסכון והחזר חובות.', 'קרן חירום מומלצת: 3-6 חודשי הוצאות. זה מה שמונע כניסה למינוס בהפתעה.', 'בדקו מנויים חוזרים אחת לרבעון. רובנו משלמים על משהו שהפסקנו להשתמש בו.', 'לפני קנייה גדולה, המתינו 48 שעות. חלק ניכר מהרצון פשוט חולף.', 'שלמו קודם לעצמכם: העבירו לחיסכון ביום המשכורת, לא בסוף החודש.', 'חוב בריבית גבוהה (אשראי, מינוס) עדיף לסגור לפני שמגדילים השקעות.', 'עקבו אחרי ההוצאות הקטנות: קפה יומי הוא כ-4,000 ₪ בשנה.', 'השוו ביטוחים אחת לשנה. אותה פוליסה יכולה לעלות פחות אצל מתחרה.', 'הגדירו יעד חיסכון עם שם ותאריך. יעדים מוגדרים מושגים יותר.', 'תקציב הוא לא הגבלה, הוא החלטה מראש איפה אתם רוצים שהכסף יהיה.'];
   const todayTipIdx = new Date().getDate() % TIPS.length;
   const alerts = useMemo(() => {
     const out = [];
@@ -4154,13 +4248,13 @@ function App() {
       out.push({
         id: 'over-month',
         level: 'danger',
-        text: `החודש צפוי להסתיים בחריגה של ${currency}${Math.abs(Math.round(forecast.available)).toLocaleString()}. כדאי לצמצם הוצאות.`
+        text: `החודש צפוי להסתיים בחריגה של ${currency}${Math.abs(Math.round(forecast.available)).toLocaleString('he-IL')}. כדאי לצמצם הוצאות.`
       });
     } else if (forecast.hasData && forecast.weeklyBudget > 0 && forecast.weekSpent > forecast.weeklyBudget) {
       out.push({
         id: 'over-week',
         level: 'warn',
-        text: `חרגתם מהקצב השבועי ב-${currency}${Math.round(forecast.weekSpent - forecast.weeklyBudget).toLocaleString()}. עדיין אפשר לאזן עד סוף החודש.`
+        text: `חרגתם מהקצב השבועי ב-${currency}${Math.round(forecast.weekSpent - forecast.weeklyBudget).toLocaleString('he-IL')}. עדיין אפשר לאזן עד סוף החודש.`
       });
     }
     bills.filter(b => !b.isPaid).forEach(b => {
@@ -4168,18 +4262,18 @@ function App() {
       if (diff >= 0 && diff <= 3) out.push({
         id: 'bill-' + b.id,
         level: 'warn',
-        text: `${b.title} (${currency}${b.amount.toLocaleString()}) לתשלום ${diff === 0 ? 'היום' : `בעוד ${diff} ימים`}.`
+        text: `${b.title} (${currency}${b.amount.toLocaleString('he-IL')}) לתשלום ${diff === 0 ? 'היום' : `בעוד ${diff} ימים`}.`
       });else if (diff < 0) out.push({
         id: 'bill-late-' + b.id,
         level: 'danger',
-        text: `${b.title} (${currency}${b.amount.toLocaleString()}) עבר את מועד התשלום (${b.dueDay} לחודש).`
+        text: `${b.title} (${currency}${b.amount.toLocaleString('he-IL')}) עבר את מועד התשלום (${b.dueDay} לחודש).`
       });
     });
     savingsPots.forEach(p => {
       if (p.target > 0 && p.current >= p.target) out.push({
         id: 'goal-' + p.id,
         level: 'good',
-        text: `הגעתם ליעד "${p.name}"! ${currency}${p.current.toLocaleString()} נחסכו.`
+        text: `הגעתם ליעד "${p.name}"! ${currency}${p.current.toLocaleString('he-IL')} נחסכו.`
       });
     });
     return out.filter(a => !dismissedAlerts.includes(a.id));
@@ -4906,7 +5000,7 @@ function App() {
       color: 'var(--text-muted)'
     }
   }, "הוסיפו הכנסות והוצאות כדי לראות תחזית לסוף החודש.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "p-5 rounded-2xl mb-4 text-center relative overflow-hidden",
+    className: "ent-forecast-hero p-5 rounded-2xl mb-4 text-center relative overflow-hidden",
     style: {
       background: `radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'} 16%, transparent), transparent 70%), var(--navy-panel-2)`,
       border: `1px solid ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'}`
@@ -4937,7 +5031,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, forecast.available >= 0 ? `זה ${currency}${Math.round(forecast.dailyPace).toLocaleString()} ליום עד סוף החודש` : 'החודש צפוי להסתיים בחריגה — כדאי לצמצם')), /*#__PURE__*/React.createElement("div", {
+  }, forecast.available >= 0 ? `זה ${currency}${Math.round(forecast.dailyPace).toLocaleString('he-IL')} ליום עד סוף החודש` : 'החודש צפוי להסתיים בחריגה. כדאי לצמצם')), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-mini-card p-3.5"
@@ -4998,21 +5092,21 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, currency, Math.round(forecast.weekSpent).toLocaleString(), forecast.weeklyBudget > 0 && ` מתוך ${currency}${Math.round(forecast.weeklyBudget).toLocaleString()}`)), forecast.weeklyBudget > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, currency, Math.round(forecast.weekSpent).toLocaleString('he-IL'), forecast.weeklyBudget > 0 && ` מתוך ${currency}${Math.round(forecast.weeklyBudget).toLocaleString('he-IL')}`)), forecast.weeklyBudget > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "ent-progress-track"
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: `${Math.min(100, forecast.weekSpent / forecast.weeklyBudget * 100)}%`,
       height: '100%',
       borderRadius: 999,
-      background: forecast.weekSpent > forecast.weeklyBudget ? 'var(--neg)' : 'linear-gradient(90deg, var(--cyan), var(--bronze))'
+      background: forecast.weekSpent > forecast.weeklyBudget ? 'var(--neg)' : 'var(--bronze)'
     }
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-2",
     style: {
       color: forecast.weekSpent > forecast.weeklyBudget ? 'var(--neg)' : 'var(--text-dim)'
     }
-  }, forecast.weekSpent > forecast.weeklyBudget ? `חרגתם ב-${currency}${Math.round(forecast.weekSpent - forecast.weeklyBudget).toLocaleString()} מהקצב השבועי` : `נשארו ${currency}${Math.round(forecast.weeklyBudget - forecast.weekSpent).toLocaleString()} לשבוע הזה`))))), newsState !== 'unavailable' && /*#__PURE__*/React.createElement("div", {
+  }, forecast.weekSpent > forecast.weeklyBudget ? `חרגתם ב-${currency}${Math.round(forecast.weekSpent - forecast.weeklyBudget).toLocaleString('he-IL')} מהקצב השבועי` : `נשארו ${currency}${Math.round(forecast.weeklyBudget - forecast.weekSpent).toLocaleString('he-IL')} לשבוע הזה`))))), newsState !== 'unavailable' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-3 flex items-center gap-2"
@@ -5106,7 +5200,7 @@ function App() {
     cat: nextBill.category,
     map: BILL_CATEGORIES,
     size: 15
-  })), nextBill.title, " — ", currency, nextBill.amount) : /*#__PURE__*/React.createElement("p", {
+  })), nextBill.title, " · ", currency, nextBill.amount) : /*#__PURE__*/React.createElement("p", {
     className: "mt-1 text-sm",
     style: {
       color: 'var(--text-dim)'
@@ -5295,7 +5389,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, t.description, " • ", t.date))), /*#__PURE__*/React.createElement("div", {
+  }, t.description, " • ", fmtDateHe(t.date)))),/*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold",
@@ -5354,16 +5448,16 @@ function App() {
     style: {
       color: 'var(--text)'
     }
-  }, cat))), /*#__PURE__*/React.createElement("td", null, currency, data.total.toLocaleString())), Object.entries(data.subs).map(([sub, amt]) => /*#__PURE__*/React.createElement("tr", {
+  }, cat))), /*#__PURE__*/React.createElement("td", null, currency, data.total.toLocaleString('he-IL'))), Object.entries(data.subs).map(([sub, amt]) => /*#__PURE__*/React.createElement("tr", {
     key: sub
   }, /*#__PURE__*/React.createElement("td", {
     className: "pr-6",
     style: {
       color: 'var(--text-muted)'
     }
-  }, "↳ ", sub), /*#__PURE__*/React.createElement("td", null, currency, amt.toLocaleString()))))), /*#__PURE__*/React.createElement("tr", {
+  }, "↳ ", sub), /*#__PURE__*/React.createElement("td", null, currency, amt.toLocaleString('he-IL')))))), /*#__PURE__*/React.createElement("tr", {
     className: "total-row"
-  }, /*#__PURE__*/React.createElement("td", null, "סה\"כ הוצאות", selectedMonth !== 'all' ? ` · ${monthLabelHe(selectedMonth)}` : ''), /*#__PURE__*/React.createElement("td", null, currency, Object.values(categoryBreakdown).reduce((s, d) => s + d.total, 0).toLocaleString())))))), activeTab === 'bills' && !isChild && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("td", null, "סה\"כ הוצאות", selectedMonth !== 'all' ? ` · ${monthLabelHe(selectedMonth)}` : ''), /*#__PURE__*/React.createElement("td", null, currency, Object.values(categoryBreakdown).reduce((s, d) => s + d.total, 0).toLocaleString('he-IL'))))))), activeTab === 'bills' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between gap-3"
@@ -5589,7 +5683,7 @@ function App() {
       style: {
         color: 'var(--text-muted)'
       }
-    }, /*#__PURE__*/React.createElement("span", null, currency, p.current.toLocaleString(), " מתוך ", currency, p.target.toLocaleString()), /*#__PURE__*/React.createElement("span", null, pct, "%")), depositForId === p.id ? /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("span", null, currency, p.current.toLocaleString('he-IL'), " מתוך ", currency, p.target.toLocaleString('he-IL')), /*#__PURE__*/React.createElement("span", null, pct, "%")), depositForId === p.id ? /*#__PURE__*/React.createElement("div", {
       className: "flex gap-2 mt-3"
     }, /*#__PURE__*/React.createElement("input", {
       className: inputClass,
@@ -5695,7 +5789,7 @@ function App() {
     style: {
       color: 'var(--pos-soft)'
     }
-  }, currency, a.value.toLocaleString()), /*#__PURE__*/React.createElement("button", {
+  }, currency, a.value.toLocaleString('he-IL')), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
     style: {
       color: 'var(--text-muted)'
@@ -5716,7 +5810,7 @@ function App() {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-3"
-  }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString()), /*#__PURE__*/React.createElement(DonutChart, {
+  }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
     data: assetBreakdown,
     currency: currency
   }))), activeTab === 'notes' && /*#__PURE__*/React.createElement("div", {
@@ -5907,7 +6001,7 @@ function App() {
       style: {
         color: 'var(--text-muted)'
       }
-    }, tr.type, " • ", tr.startDate || '—', " עד ", tr.endDate || '—'))), /*#__PURE__*/React.createElement("div", {
+    }, tr.type, " • ", tr.startDate ? fmtDateHe(tr.startDate) + (tr.endDate && tr.endDate !== tr.startDate ? ' עד ' + fmtDateHe(tr.endDate) : '') : 'בלי תאריך'))),/*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-3"
     }, /*#__PURE__*/React.createElement("span", {
       className: "font-bold",
@@ -6033,7 +6127,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, g.category, " • רעיון: ", g.idea || '—', " • תאריך: ", g.date || '—'))), /*#__PURE__*/React.createElement("div", {
+  }, g.category, g.idea ? " • רעיון: " + g.idea : '', g.date ? " • " + fmtDateHe(g.date) : ''))),/*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold",
@@ -6111,12 +6205,12 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל — כך ילדים לא ייכנסו בטעות לאזורים הכספיים. הקוד נשמר מוצפן ונבדק בשרת, ואחרי 5 ניסיונות שגויים הכניסה ננעלת ל-5 דקות. כדי לשנות או להסיר קוד צריך את הקוד הנוכחי; שכחתם? התחברו מחדש עם הסיסמה, ותוך 10 דקות אפשר לשנות אותו בלי הקוד הישן. פרופיל ילד רואה פתקים, טיולים, מתנות ואת \"הכסף שלי\" — ארנק, הוצאות ויעדי חיסכון משלו, בנפרד מתקציב המשפחה. הורים רואים את כל הילדים ב\"הכסף של הילדים\".")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "פרופילים והגנת PIN"), /*#__PURE__*/React.createElement("p", null, "אחרי ההתחברות בוחרים מי משתמש עכשיו. הורה יכול להגדיר ", /*#__PURE__*/React.createElement("b", null, "קוד PIN"), " (4-6 ספרות) דרך אייקון העריכה שליד הפרופיל, כדי שילדים לא ייכנסו בטעות לאזורים הכספיים. הקוד נשמר מוצפן ונבדק בשרת, ואחרי 5 ניסיונות שגויים הכניסה ננעלת ל-5 דקות. כדי לשנות או להסיר קוד צריך את הקוד הנוכחי; שכחתם? התחברו מחדש עם הסיסמה, ותוך 10 דקות אפשר לשנות אותו בלי הקוד הישן. פרופיל ילד רואה פתקים, טיולים, מתנות ואת \"הכסף שלי\": ארנק, הוצאות ויעדי חיסכון משלו, בנפרד מתקציב המשפחה. הורים רואים את כל הילדים ב\"הכסף של הילדים\".")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
     }
-  }, "תזרים חזוי — הלב של האפליקציה"), /*#__PURE__*/React.createElement("p", null, "בניגוד לעו\"ש שמראה מה כבר קרה, הדשבורד מחשב ", /*#__PURE__*/React.createElement("b", null, "כמה נשאר לכם להוציא החודש"), ": הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שטרם שולמו. המספר מתורגם גם לקצב יומי ושבועי — כדי שתדעו מתי נכון לעצור."), /*#__PURE__*/React.createElement("p", {
+  }, "תזרים חזוי: הלב של האפליקציה"), /*#__PURE__*/React.createElement("p", null, "בניגוד לעו\"ש שמראה מה כבר קרה, הדשבורד מחשב ", /*#__PURE__*/React.createElement("b", null, "כמה נשאר לכם להוציא החודש"), ": הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שטרם שולמו. המספר מתורגם גם לקצב יומי ושבועי, כדי שתדעו מתי נכון לעצור."), /*#__PURE__*/React.createElement("p", {
     className: "mt-1.5",
     style: {
       color: 'var(--text-dim)'
@@ -6131,7 +6225,7 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות — דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) — להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים — ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות — ירוק, כתום ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים — קורס, כושר, עבודה חדשה — עם שלבים לסימון, שרק את/ה רואה.'), GS('המסך הראשי של הילד', 'ילד שנכנס לפרופיל שלו רואה מסך משלו: כמה יש בארנק, רמת חיסכון עם תגים, טבעות התקדמות ליעדים, טיפ ומשפט מוטיבציה שמתחלפים כל יום, וכפתורים מהירים להוספת כסף, הוצאה ויעד.'), GS('זיהוי פנים / טביעת אצבע', 'להורה עם קוד PIN: אחרי הזנת הקוד הנכון Homey מציעה להפעיל כניסה עם זיהוי פנים או טביעת אצבע באותו מכשיר. שימו לב — הטלפון מאשר כל פנים או אצבע שרשומות בו, אז אם גם ילד רשום במכשיר, עדיף להישאר עם קוד. שינוי הקוד מבטל את זיהוי הפנים עד שמזינים את הקוד החדש.'), GS('קווי מגמה', 'בדף הבית, בהוצאות והכנסות ובמסך של הילד יש גרף מגמה עם מתג "שבועי / חודשי": 8 שבועות או 6 חודשים אחרונים, קו להכנסות וקו להוצאות, והשוואה לתקופה הקודמת. נגיעה או מעבר עכבר על נקודה מציגים את הסכומים שלה.'), GS('מחיקת חשבון', 'בהגדרות ← "מחיקת חשבון": מוחקת לצמיתות את החשבון שלך (פרופיל, קוד PIN, יעדים אישיים, שאלון והתראות). אם את/ה האחרון/ה במשפחה — גם כל נתוני המשפחה נמחקים. צריך להזין סיסמה ולהקליד "מחיקה" לאישור. אין דרך לשחזר.'), GS('התפריט','במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה — התפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "קטגוריות מותאמות אישית"), /*#__PURE__*/React.createElement("p", null, "יש 17 קטגוריות מוכנות, לכל אחת תתי-קטגוריות: דיור, מזון, בגדים, קניות, רכב, תחבורה, בריאות, טיפוח, פנאי, מתנות, ילדים, חינוך, תקשורת, ביטוחים, חיות מחמד, חופשות ותרומות. בהגדרות אפשר להוסיף גם קטגוריות משלכם (עם אייקון ותתי-קטגוריות).")), GS('שאלון פתיחה ויעדים מוצעים', 'בכניסה הראשונה לכל פרופיל יש שאלון קצר (כדקה) להורה, לילד עד 15 ולנוער מ-15. לפי התשובות Homey מציעה יעדים מוכנים שמאשרים בלחיצה. התשובות גלויות רק לבעל הפרופיל (ולהורים, בפרופיל של ילד). אפשר לעדכן אותן בכל רגע בכפתור "עדכון השאלון האישי" למעלה.'), GS('יעדים ב"חסכונות ויעדים"', 'מעבר לקופות חיסכון יש 3 סוגי יעדים משפחתיים: תקרת הוצאה חודשית לקטגוריה (נמדדת אוטומטית מההוצאות: ירוק, כתום, ואדום כשחורגים), יעד שווי (נכסים וחסכונות מול היעד, כולל כמה צריך לחסוך בחודש כדי להגיע בזמן) וחיסכון חודשי קבוע (הכנסות פחות הוצאות של החודש). יש גם יעדים אישיים לא כספיים (קורס, כושר, עבודה חדשה) עם שלבים לסימון, שרק את/ה רואה.'), GS('המסך הראשי של הילד', 'ילד שנכנס לפרופיל שלו רואה מסך משלו: כמה יש בארנק, רמת חיסכון עם תגים, טבעות התקדמות ליעדים, טיפ ומשפט מוטיבציה שמתחלפים כל יום, וכפתורים מהירים להוספת כסף, הוצאה ויעד.'), GS('זיהוי פנים / טביעת אצבע', 'להורה עם קוד PIN: אחרי הזנת הקוד הנכון Homey מציעה להפעיל כניסה עם זיהוי פנים או טביעת אצבע באותו מכשיר. שימו לב: הטלפון מאשר כל פנים או אצבע שרשומות בו, אז אם גם ילד רשום במכשיר, עדיף להישאר עם קוד. שינוי הקוד מבטל את זיהוי הפנים עד שמזינים את הקוד החדש.'), GS('קווי מגמה', 'בדף הבית, בהוצאות והכנסות ובמסך של הילד יש גרף מגמה עם מתג "שבועי / חודשי": 8 שבועות או 6 חודשים אחרונים, קו להכנסות וקו להוצאות, והשוואה לתקופה הקודמת. נגיעה או מעבר עכבר על נקודה מציגים את הסכומים שלה.'), GS('מחיקת חשבון', 'בהגדרות ← "מחיקת חשבון": מוחקת לצמיתות את החשבון שלך (פרופיל, קוד PIN, יעדים אישיים, שאלון והתראות). אם את/ה האחרון/ה במשפחה, גם כל נתוני המשפחה נמחקים. צריך להזין סיסמה ולהקליד "מחיקה" לאישור. אין דרך לשחזר.'), GS('התפריט','במחשב התפריט נצמד לצד המסך גם כשגוללים. בטלפון לוחצים על ☰ למעלה, והתפריט נפתח תמיד מול העיניים, גם אם גללתם עד למטה. לחיצה מחוץ לתפריט סוגרת אותו.'), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -6289,7 +6383,7 @@ function App() {
     style: {
       color: 'var(--text-dim)'
     }
-  }, "פחות ריווח — יותר מידע על המסך")), /*#__PURE__*/React.createElement("button", {
+  }, "פחות ריווח, יותר מידע על המסך")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setCompactMode(!compactMode),
     className: "w-12 h-6 rounded-full relative transition",
     style: {
@@ -6357,7 +6451,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, "הוסיפו קטגוריות נוספות מעבר לברירת המחדל (מזון, בגדים, קניות וכו') — לפי מה שמתאים למשפחה שלכם."), Object.keys(customCategories).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "הוסיפו קטגוריות נוספות מעבר לברירת המחדל (מזון, בגדים, קניות וכו'), לפי מה שמתאים למשפחה שלכם."), Object.keys(customCategories).length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, Object.entries(customCategories).map(([name, data]) => /*#__PURE__*/React.createElement("div", {
     key: name,
@@ -6426,7 +6520,7 @@ function App() {
       setCurrentProfile(null);
       setFamilyId(null);
       setAuthStage('login');
-      showToast('החשבון נמחק. להתראות 👋');
+      showToast('החשבון נמחק');
     }
   }), familyInfo && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
@@ -6524,7 +6618,7 @@ function KidMoney({
   const [depositFor, setDepositFor] = useState(null);
   const [depositAmt, setDepositAmt] = useState('');
   const [busy, setBusy] = useState(false);
-  const money = v => `${currency}${Number(v || 0).toLocaleString()}`;
+  const money = v => `${currency}${Number(v || 0).toLocaleString('he-IL')}`;
   const inputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
   useEffect(() => {
     if (isChild) return;
@@ -6677,7 +6771,7 @@ function KidMoney({
   const doDeposit = async g => {
     const amt = Number(depositAmt);
     if (!(amt > 0)) return;
-    if (amt > balance) return showToast(`בארנק יש ${money(Math.max(0, balance))} — אי אפשר להפקיד יותר`);
+    if (amt > balance) return showToast(`בארנק יש רק ${money(Math.max(0, balance))}, אי אפשר להפקיד יותר`);
     setBusy(true);
     try {
       const saved = Number(g.saved || 0) + amt;
@@ -6803,7 +6897,7 @@ function KidMoney({
     className: "flex flex-wrap gap-2"
   }, kids.map(k => chip(k.name, '🧒', k.id === kidId, () => setKidId(k.id)))), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
     rows: 3
-  }), status === 'error' && muted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && /*#__PURE__*/React.createElement("div", {
+  }), status === 'error' && muted('לא הצלחנו לטעון. בדקו את החיבור לאינטרנט.'), status === 'setup' && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-1",
     style: {
       background: 'var(--navy-panel-2)'
@@ -6813,7 +6907,7 @@ function KidMoney({
     style: {
       color: 'var(--text)'
     }
-  }, "האזור הזה כמעט מוכן"), muted(isChild ? 'בקשו מההורה להשלים את ההגדרה — ואז אפשר להתחיל לנהל את הכסף שלכם.' : 'צריך להריץ פעם אחת את קובץ ההגדרה supabase/kids.sql ב-Supabase (SQL Editor).')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }, "האזור הזה כמעט מוכן"), muted(isChild ? 'בקשו מההורה להשלים את ההגדרה, ואז אפשר להתחיל.' : 'צריך להריץ פעם אחת את קובץ ההגדרה supabase/kids.sql ב-Supabase (SQL Editor).')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 lg:grid-cols-4 gap-3"
   }, stat('💳 בארנק', money(balance), balance >= 0 ? 'var(--pos)' : 'var(--neg-soft)'), stat('⬇️ נכנס החודש', money(monthIn), 'var(--pos)'), stat('⬆️ יצא החודש', money(monthOut), 'var(--neg-soft)'), stat('🐷 בחיסכון', money(savedTotal), 'var(--bronze)')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
@@ -6866,7 +6960,7 @@ function KidMoney({
   }, busy ? 'שומר…' : 'שמירה'), /*#__PURE__*/React.createElement("button", {
     onClick: () => setForm(null),
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
-  }, "ביטול"))), status === 'ok' && goals.length === 0 && balance > 0 && muted('💡 טיפ: הציבו יעד חיסכון — הרבה יותר קל לחסוך כשיודעים בשביל מה.', 'mt-1')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }, "ביטול"))), status === 'ok' && goals.length === 0 && balance > 0 && muted('💡 טיפ: הציבו יעד חיסכון. הרבה יותר קל לחסוך כשיודעים בשביל מה.', 'mt-1')), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold"
@@ -6936,7 +7030,7 @@ function KidMoney({
     className: "ent-heading font-bold mb-2"
   }, "📒 מה נכנס ומה יצא"), entries.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: 'עוד אין תנועות',
-    hint: 'התחילו מ"כסף נכנס" — למשל דמי כיס'
+    hint: 'התחילו מ"כסף נכנס", למשל דמי כיס'
   }) : entries.slice(0, 40).map(e => {
     const isIn = e.type === 'income';
     const transfer = e.category === KID_TO_GOAL || e.category === KID_FROM_GOAL;
@@ -6959,7 +7053,7 @@ function KidMoney({
       style: {
         color: 'var(--text-dim)'
       }
-    }, d.length === 3 ? `${d[2]}.${d[1]}` : '')), /*#__PURE__*/React.createElement("div", {
+    }, fmtDateHe(e.date))), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2 shrink-0"
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-bold",
@@ -6980,7 +7074,7 @@ function KidMoney({
     ownerKind: "child",
     showToast: showToast,
     title: isChild ? '🌱 היעדים האישיים שלי' : '🌱 יעדים אישיים',
-    note: isChild ? 'ללמוד משהו חדש, ספורט, רישיון — עם שלבים לסימון.' : 'היעדים האישיים של הילד/ה.'
+    note: isChild ? 'ללמוד משהו חדש, ספורט או רישיון, עם שלבים לסימון.' : 'היעדים האישיים של הילד/ה.'
   }));
 }
 
@@ -7063,7 +7157,7 @@ function TrendLines({
   const y = v => P.t + (H - P.t - P.b) * (1 - v / max);
   const line = key => data.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(' ');
   const area = key => `${line(key)} L${x(data.length - 1).toFixed(1)},${H - P.b} L${x(0).toFixed(1)},${H - P.b} Z`;
-  const money = v => `${currency}${Math.round(v).toLocaleString()}`;
+  const money = v => `${currency}${Math.round(v).toLocaleString('he-IL')}`;
   const last = data[data.length - 1],
     prev = data[data.length - 2];
   const change = prev && prev.expense ? Math.round((last.expense - prev.expense) / prev.expense * 100) : null;
@@ -7385,7 +7479,7 @@ function DeleteAccountCard({
       } = await sb.rpc('delete_my_account');
       if (isMissingRpc(error)) {
         setBusy(false);
-        return setErr('האפשרות עוד לא הופעלה במערכת — אפשר לבקש מחיקה במייל ' + LEGAL_EMAIL);
+        return setErr('האפשרות עוד לא פעילה. אפשר לבקש מחיקה במייל ' + LEGAL_EMAIL);
       }
       if (error || data !== 'ok') throw error || new Error(String(data));
       await sb.auth.signOut();
@@ -7395,7 +7489,7 @@ function DeleteAccountCard({
       onDeleted();
     } catch (_e) {
       setBusy(false);
-      setErr('משהו השתבש — שום דבר לא נמחק. נסו שוב, או בקשו מחיקה במייל.');
+      setErr('משהו השתבש ושום דבר לא נמחק. נסו שוב או בקשו מחיקה במייל.');
     }
   };
   const inputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
@@ -7418,7 +7512,7 @@ function DeleteAccountCard({
     style: {
       color: 'var(--text-2)'
     }
-  }, "אם את/ה האחרון/ה במשפחה"), " — כל נתוני המשפחה (הוצאות, חיובים, חסכונות, ילדים ועוד) יימחקו גם הם. אם יש עוד בני משפחה — הנתונים המשותפים נשארים אצלם. אין דרך לשחזר."), !open ? /*#__PURE__*/React.createElement("button", {
+  }, "אם את/ה האחרון/ה במשפחה"), ", כל נתוני המשפחה (הוצאות, חיובים, חסכונות, ילדים ועוד) יימחקו גם הם. אם יש עוד בני משפחה, הנתונים המשותפים נשארים אצלם. אין דרך לשחזר."), !open ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpen(true),
     className: "ent-pill-btn ghost px-5 py-2 text-sm",
     style: {
@@ -7470,8 +7564,8 @@ function DeleteAccountCard({
 }
 
 /* ---- המסך הראשי של הילד: ארנק, רמה, יעדים, טיפ ומשפט יומי ---- */
-const KID_TIPS = ['לפני שקונים משהו — מחכים יום אחד. אם עדיין רוצים, כנראה שזה שווה את זה.', 'כל פעם שמקבלים דמי כיס, שמים קודם חלק בחיסכון — ורק אז מבזבזים.', 'להשוות מחירים לפני קנייה זה כמו למצוא כסף ברחוב.', 'רושמים כל הוצאה, גם קטנה — הקטנות מצטברות מהר.', 'יעד שרואים בדמיון (אייפון? אופניים?) עוזר לחסוך הרבה יותר.', 'קיבלת מתנה בכסף? אפשר לחלק: חצי לחיסכון, חצי לכיף.', 'לא חייבים לקנות הכל עכשיו — גם לחכות זה סוג של ניצחון.', 'אפשר להרוויח מדברים שכבר יש לך: למכור צעצוע או ספר שכבר לא משתמשים בהם.', 'ממתק כל יום ב־₪5 זה ₪150 בחודש. מה עוד אפשר לקנות בזה?', 'לפני קנייה שואלים: אני צריך את זה, או רק רוצה את זה?', 'חיסכון קטן כל שבוע עדיף על חיסכון גדול פעם בשנה.', 'מבצע "קנה 2 קבל 1" משתלם רק אם באמת צריך 3.', 'כסף בחיסכון לא נעלם — הוא מחכה לדבר שבאמת חשוב לך.', 'שווה לשאול את ההורים איך הם חוסכים — אפשר ללמוד מהם המון.', 'הכי כיף לקנות משהו שחסכת בשבילו בעצמך.', 'עבודה קטנה (שמירה על ילדים, עזרה, מכירה) יכולה לקרב אותך מהר ליעד.', 'משחקים עם קניות בפנים — שווה לבדוק כמה זה עולה באמת בסוף החודש.', 'כשמגיעים לחצי הדרך ליעד — מגיע לך רגע של גאווה.'];
-const KID_QUOTES = ['כל שקל שחוסכים היום — הוא חלום שמתקרב מחר.', 'צעדים קטנים, יעדים גדולים.', 'מי שחוסך — בוחר בעצמו.', 'הסבלנות שלך היא כוח־על.', 'את/ה הבוס של הכסף שלך.', 'לא צריך למהר — צריך להתמיד.', 'היעד שלך מחכה לך. קדימה!', 'חיסכון זה לא לוותר — זה לבחור.', 'כל הפקדה קטנה היא ניצחון קטן.', 'היום זה עוד צעד קדימה.'];
+const KID_TIPS = ['לפני שקונים משהו, מחכים יום אחד. אם עדיין רוצים, כנראה שזה שווה את זה.', 'כל פעם שמקבלים דמי כיס, שמים קודם חלק בחיסכון, ורק אז מבזבזים.', 'להשוות מחירים לפני קנייה זה כמו למצוא כסף ברחוב.', 'רושמים כל הוצאה, גם קטנה. הקטנות מצטברות מהר.', 'יעד שרואים בדמיון (אייפון? אופניים?) עוזר לחסוך הרבה יותר.', 'קיבלת מתנה בכסף? אפשר לחלק: חצי לחיסכון, חצי לכיף.', 'לא חייבים לקנות הכל עכשיו. גם לחכות זה סוג של ניצחון.', 'אפשר להרוויח מדברים שכבר יש לך: למכור צעצוע או ספר שכבר לא משתמשים בהם.', 'ממתק כל יום ב־₪5 זה ₪150 בחודש. מה עוד אפשר לקנות בזה?', 'לפני קנייה שואלים: אני צריך את זה, או רק רוצה את זה?', 'חיסכון קטן כל שבוע עדיף על חיסכון גדול פעם בשנה.', 'מבצע "קנה 2 קבל 1" משתלם רק אם באמת צריך 3.', 'כסף בחיסכון לא נעלם. הוא מחכה לדבר שבאמת חשוב לך.', 'שווה לשאול את ההורים איך הם חוסכים. אפשר ללמוד מהם המון.', 'הכי כיף לקנות משהו שחסכת בשבילו בעצמך.', 'עבודה קטנה (שמירה על ילדים, עזרה, מכירה) יכולה לקרב אותך מהר ליעד.', 'משחקים עם קניות בפנים? שווה לבדוק כמה זה עולה באמת בסוף החודש.', 'כשמגיעים לחצי הדרך ליעד, מגיע לך רגע של גאווה.'];
+const KID_QUOTES = ['כל שקל שחוסכים היום הוא חלום שמתקרב מחר.', 'צעדים קטנים, יעדים גדולים.', 'מי שחוסך, בוחר בעצמו.', 'הסבלנות שלך היא כוח־על.', 'את/ה הבוס של הכסף שלך.', 'לא צריך למהר. צריך להתמיד.', 'היעד שלך מחכה לך. קדימה!', 'חיסכון זה לא לוותר. זה לבחור.', 'כל הפקדה קטנה היא ניצחון קטן.', 'היום זה עוד צעד קדימה.'];
 const KID_LEVELS = [[0, 'חוסך/ת מתחיל/ה', '🌱'], [100, 'חוסך/ת צעיר/ה', '🐣'], [500, 'חוסך/ת מקצוען/ית', '⭐'], [1500, 'אלוף/ת החיסכון', '🏆'], [5000, 'מלך/ת הכסף', '👑']];
 const dayIndex = () => Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
 const KidRing = ({
@@ -7559,7 +7653,7 @@ function KidDashboard({
       cancelled = true;
     };
   }, [kidId, isDemo]);
-  const money = v => `${currency}${Math.round(Number(v) || 0).toLocaleString()}`;
+  const money = v => `${currency}${Math.round(Number(v) || 0).toLocaleString('he-IL')}`;
   const sum = arr => arr.reduce((s, e) => s + Number(e.amount || 0), 0);
   const balance = sum(entries.filter(e => e.type === 'income')) - sum(entries.filter(e => e.type === 'expense'));
   const mk = kidToday().slice(0, 7);
@@ -7781,10 +7875,7 @@ const monthsLeft = d => {
     n = new Date();
   return Math.max(0, (t.getFullYear() - n.getFullYear()) * 12 + t.getMonth() - n.getMonth());
 };
-const fmtShortDate = d => {
-  const p = String(d || '').slice(0, 10).split('-');
-  return p.length === 3 ? `${p[2]}.${p[1]}.${p[0].slice(2)}` : '';
-};
+const fmtShortDate = d => fmtDateHe(d);
 const roundUp = (v, step) => Math.ceil(v / step) * step;
 const goalInputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
 const goalChip = (label, selected, onClick, key) => /*#__PURE__*/React.createElement("button", {
@@ -7926,7 +8017,7 @@ function PersonalGoals({
       done: !g.done
     });
     if (!g.done && ownerKind !== 'parent') celebrate();
-    if (!g.done) showToast(ownerKind === 'parent' ? 'כל הכבוד! היעד הושג' : '🎉 כל הכבוד! היעד הושג');
+    if (!g.done) showToast(ownerKind === 'parent' ? 'היעד הושג. כל הכבוד' : '🎉 כל הכבוד! היעד הושג');
   };
   const remove = async g => {
     if (!window.confirm(`למחוק את "${g.title}"?`)) return;
@@ -7958,7 +8049,7 @@ function PersonalGoals({
     size: 12
   }), note), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
     rows: 2
-  }), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
+  }), status === 'error' && goalMuted('לא הצלחנו לטעון. בדקו את החיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), adding && /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-xl space-y-3",
     style: {
       background: 'var(--navy-panel-2)'
@@ -8057,7 +8148,7 @@ function PersonalGoals({
     }, "+")), /*#__PURE__*/React.createElement("button", {
       onClick: () => toggleDone(g),
       className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
-    }, g.done ? '↺ החזרה לפעיל' : '✓ הושג!'));
+    }, g.done ? '↺ החזרה לפעיל' : '✓ הושג'));
   })));
 }
 const FAMILY_GOAL_TYPES = [['spending_cap', IReceipt, 'תקרת הוצאה חודשית'], ['net_worth', IBank, 'יעד שווי (הון נקי)'], ['monthly_saving', ICalendar, 'חיסכון חודשי קבוע']];
@@ -8117,7 +8208,7 @@ function GoalsPanel({
   const [deadline, setDeadline] = useState('');
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
-  const money = v => `${currency}${Math.round(Number(v || 0)).toLocaleString()}`;
+  const money = v => `${currency}${Math.round(Number(v || 0)).toLocaleString('he-IL')}`;
   useEffect(() => {
     if (isDemo) return;
     let cancelled = false;
@@ -8241,7 +8332,7 @@ function GoalsPanel({
     size: 20
   }), " יעדים משפחתיים"), status === 'loading' && /*#__PURE__*/React.createElement(Skeleton, {
     rows: 2
-  }), status === 'error' && goalMuted('לא הצלחנו לטעון — בדקו חיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
+  }), status === 'error' && goalMuted('לא הצלחנו לטעון. בדקו את החיבור לאינטרנט.'), status === 'setup' && goalMuted('האזור הזה כמעט מוכן — צריך להריץ פעם אחת את supabase/goals.sql ב-Supabase.'), status === 'ok' && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
   }, FAMILY_GOAL_TYPES.map(([id, Ic, label]) => /*#__PURE__*/React.createElement("button", {
     key: id,
@@ -8282,7 +8373,7 @@ function GoalsPanel({
     style: {
       color: 'var(--text-muted)'
     }
-  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (אופציונלי — נחשב כמה צריך לחסוך בחודש)"), /*#__PURE__*/React.createElement("input", {
+  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (לא חובה. נחשב כמה צריך לחסוך בחודש)"), /*#__PURE__*/React.createElement("input", {
     className: goalInputCls,
     type: "date",
     value: deadline,
@@ -8798,7 +8889,7 @@ function SetupWizard({
       onDone(answers);
     } catch (_e) {
       setBusy(false);
-      setErr('משהו לא נשמר — בדקו חיבור לאינטרנט ונסו שוב.');
+      setErr('משהו לא נשמר. בדקו את החיבור ונסו שוב.');
     }
   };
   const bigChip = (label, selected, onClick) => /*#__PURE__*/React.createElement("button", {
@@ -8833,7 +8924,7 @@ function SetupWizard({
       className: "ent-icon-badge"
     }, /*#__PURE__*/React.createElement(ITarget, {
       size: 22
-    }))), h2('היעדים שלך'),sugg.length ? goalMuted('לפי התשובות שלך הכנו כמה יעדים. סמנו מה מתאים — ואפשר לשנות סכומים:') : goalMuted('לא מצאנו יעד מתאים כרגע — אפשר תמיד להוסיף יעדים באפליקציה.'), /*#__PURE__*/React.createElement("div", {
+    }))), h2('היעדים שלך'),sugg.length ? goalMuted('לפי התשובות שלך הכנו כמה יעדים. סמנו מה מתאים, ואפשר לשנות סכומים:') : goalMuted('לא מצאנו יעד מתאים כרגע. אפשר תמיד להוסיף יעדים באפליקציה.'), /*#__PURE__*/React.createElement("div", {
       key: "l",
       className: "space-y-2"
     }, sugg.map(s => /*#__PURE__*/React.createElement("div", {
@@ -8896,7 +8987,7 @@ function SetupWizard({
       className: "ent-icon-badge"
     }, /*#__PURE__*/React.createElement(ISparkles, {
       size: 22
-    }))), h2(`היי ${profile.name}!`),goalMuted(isKid ? 'כמה שאלות קצרות וכיפיות — ובסוף נציע לך יעדי חיסכון משלך 🐷' : 'כמה שאלות קצרות (כדקה) כדי להתאים לך את Homey — ובסוף נציע לך יעדים מוכנים.'), small(isKid ? '🔒 התשובות גלויות רק לך ולהורים.' : 'התשובות גלויות רק לך.'), /*#__PURE__*/React.createElement("button", {
+    }))), h2(isKid ? `היי ${profile.name}!` : `שלום, ${profile.name}`),goalMuted(isKid ? 'כמה שאלות קצרות וכיפיות, ובסוף נציע לך יעדי חיסכון משלך 🐷' : 'כמה שאלות קצרות (כדקה) כדי להתאים לך את Homey. בסוף נציע לך יעדים מוכנים.'), small(isKid ? '🔒 התשובות גלויות רק לך ולהורים.' : 'התשובות גלויות רק לך.'), /*#__PURE__*/React.createElement("button", {
       key: "go",
       onClick: () => setStep(1),
       className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm mt-2"
