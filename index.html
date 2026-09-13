@@ -765,9 +765,10 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-settings-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
   .ent-settings-chevron { color: var(--text-dim); transition: transform .2s ease; }
   .ent-settings-chevron.open { transform: rotate(180deg); }
-  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; overflow-anchor: none; }
   .ent-settings-body.open { grid-template-rows: 1fr; }
   .ent-settings-body > div { overflow: hidden; }
+  .ent-settings-head { overflow-anchor: none; }
   .ent-settings-body-inner { padding: 6px 24px 28px; }
   @media (prefers-reduced-motion: reduce) { .ent-settings-body { transition: none; } .ent-settings-chevron { transition: none; } }
 
@@ -7539,7 +7540,10 @@ function SettingsSection({
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-card overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpen(!open),
+    onClick: e => {
+      setOpen(!open);
+      e.currentTarget.blur(); // בלי זה, נייד לפעמים גולל את הכפתור לתצוגה מלאה תוך כדי הפתיחה
+    },
     "aria-expanded": open,
     className: "ent-settings-head flex items-center gap-3 p-6 text-right"
   }, /*#__PURE__*/React.createElement("span", {
