@@ -763,14 +763,18 @@ body[data-compact="1"] main { gap: .75rem; }
   /* ===== הגדרות: כרטיס-נושא שנפתח ונסגר בלחיצה ===== */
   .ent-settings-head { width: 100%; background: transparent; border: 0; cursor: pointer; transition: background-color .15s ease; }
   .ent-settings-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
-  .ent-settings-chevron { color: var(--text-dim); transition: transform .2s ease; }
+  .ent-settings-chevron { color: var(--text-dim); transition: transform .3s cubic-bezier(.2,.7,.2,1); }
   .ent-settings-chevron.open { transform: rotate(180deg); }
-  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; overflow-anchor: none; }
+  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .42s cubic-bezier(.2,.7,.2,1); overflow-anchor: none; }
   .ent-settings-body.open { grid-template-rows: 1fr; }
   .ent-settings-body > div { overflow: hidden; }
   .ent-settings-head { overflow-anchor: none; }
-  .ent-settings-body-inner { padding: 6px 24px 28px; }
-  @media (prefers-reduced-motion: reduce) { .ent-settings-body { transition: none; } .ent-settings-chevron { transition: none; } }
+  .ent-settings-body-inner { padding: 6px 24px 28px; opacity: 0; transform: translateY(-4px); transition: opacity .2s ease, transform .2s ease; }
+  .ent-settings-body.open .ent-settings-body-inner { opacity: 1; transform: none; transition: opacity .32s ease .14s, transform .32s ease .14s; }
+  @media (prefers-reduced-motion: reduce) {
+    .ent-settings-body, .ent-settings-chevron, .ent-settings-body-inner { transition: none; }
+    .ent-settings-body-inner { opacity: 1; transform: none; }
+  }
 
 </style>
 </head>
