@@ -760,21 +760,27 @@ body[data-compact="1"] main { gap: .75rem; }
   html[data-look="fintech"] .ent-forecast-hero { background: var(--navy-panel-2) !important; }
   html[data-look="fintech"] .ent-horizon { background: var(--line) !important; animation: none !important; height: 1px !important; }
 
-  /* ===== הגדרות: כרטיס-נושא שנפתח ונסגר בלחיצה ===== */
-  .ent-settings-head { width: 100%; background: transparent; border: 0; cursor: pointer; transition: background-color .15s ease; }
+  /* ===== הגדרות: כרטיס-נושא שנפתח ונסגר בלחיצה =====
+     בכוונה בלי אנימציית גובה: על חלק מהמכשירים בנייד זה התנגש עם "גלילה אוטומטית לכפתור
+     בפוקוס" של הדפדפן וגרם לקפיצות. פתיחה/סגירה מיידית, כמו בכל מקום אחר באתר. */
+  .ent-settings-head { width: 100%; background: transparent; border: 0; cursor: pointer; transition: background-color .15s ease; overflow-anchor: none; }
   .ent-settings-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
-  .ent-settings-chevron { color: var(--text-dim); transition: transform .3s cubic-bezier(.2,.7,.2,1); }
+  .ent-settings-chevron { color: var(--text-dim); transition: transform .2s ease; }
   .ent-settings-chevron.open { transform: rotate(180deg); }
-  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .42s cubic-bezier(.2,.7,.2,1); overflow-anchor: none; }
-  .ent-settings-body.open { grid-template-rows: 1fr; }
-  .ent-settings-body > div { overflow: hidden; }
-  .ent-settings-head { overflow-anchor: none; }
-  .ent-settings-body-inner { padding: 6px 24px 28px; opacity: 0; transform: translateY(-4px); transition: opacity .2s ease, transform .2s ease; }
-  .ent-settings-body.open .ent-settings-body-inner { opacity: 1; transform: none; transition: opacity .32s ease .14s, transform .32s ease .14s; }
-  @media (prefers-reduced-motion: reduce) {
-    .ent-settings-body, .ent-settings-chevron, .ent-settings-body-inner { transition: none; }
-    .ent-settings-body-inner { opacity: 1; transform: none; }
-  }
+  .ent-settings-body-inner { padding: 6px 24px 28px; overflow-anchor: none; }
+  @media (prefers-reduced-motion: reduce) { .ent-settings-chevron { transition: none; } }
+
+  /* ===== קרוסלת התראות: תיבה אחת קומפקטית במקום ערימה ===== */
+  .ent-alert-carousel { position: relative; overflow: hidden; }
+  .ent-alert-slide { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem 1.1rem; }
+  .ent-alert-dots { display: flex; justify-content: center; gap: 6px; padding-bottom: .85rem; }
+  .ent-alert-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background-color .2s ease, width .2s ease; cursor: pointer; border: 0; padding: 0; }
+  .ent-alert-dot.active { width: 16px; border-radius: 3px; }
+  .ent-alert-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--navy-panel) 70%, transparent); color: var(--text-dim); border: 1px solid var(--line); cursor: pointer; opacity: 0; transition: opacity .15s ease; }
+  .ent-alert-carousel:hover .ent-alert-arrow { opacity: 1; }
+  .ent-alert-arrow.prev { right: 6px; }
+  .ent-alert-arrow.next { left: 6px; }
+  @media (max-width: 640px) { .ent-alert-arrow { opacity: 1; } }
 
 </style>
 </head>
@@ -3523,6 +3529,87 @@ function EditProfileModal({
     className: "ent-pill-btn ghost px-5 py-2 text-sm flex-1"
   }, "ביטול")))));
 }
+/* ---- קרוסלת התראות: תיבה אחת קומפקטית במקום ערימה, דוגמת אוטומטית עם עצירה במעבר עכבר/נגיעה ---- */
+function AlertCarousel({
+  alerts,
+  onDismiss
+}) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const i = Math.min(idx, Math.max(0, alerts.length - 1));
+  useEffect(() => {
+    if (alerts.length < 2 || paused) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setIdx(v => (v + 1) % alerts.length), 5000);
+    return () => clearInterval(t);
+  }, [alerts.length, paused]);
+  if (!alerts.length) return null;
+  const a = alerts[i];
+  const c = a.level === 'danger' ? 'var(--neg)' : a.level === 'good' ? 'var(--pos)' : 'var(--bronze)';
+  const Ic = a.level === 'good' ? ICheck : IBell;
+  const go = d => setIdx((i + d + alerts.length) % alerts.length);
+  const multi = alerts.length > 1;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card ent-alert-carousel",
+    style: {
+      borderColor: c
+    },
+    onMouseEnter: () => setPaused(true),
+    onMouseLeave: () => setPaused(false),
+    onTouchStart: () => setPaused(true)
+  }, multi && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go(1),
+    className: "ent-alert-arrow prev",
+    "aria-label": "ההתראה הקודמת"
+  }, /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 14,
+    style: {
+      transform: 'rotate(90deg)'
+    }
+  })), multi && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go(-1),
+    className: "ent-alert-arrow next",
+    "aria-label": "ההתראה הבאה"
+  }, /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 14,
+    style: {
+      transform: 'rotate(-90deg)'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "ent-alert-slide"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: c,
+      flexShrink: 0,
+      marginTop: 1
+    }
+  }, /*#__PURE__*/React.createElement(Ic, {
+    size: 16
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm flex-1",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, a.text), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onDismiss(a.id),
+    className: "ent-icon-btn",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, /*#__PURE__*/React.createElement(IX, {
+    size: 14
+  }))), multi && /*#__PURE__*/React.createElement("div", {
+    className: "ent-alert-dots"
+  }, alerts.map((x, k) => /*#__PURE__*/React.createElement("button", {
+    key: x.id,
+    onClick: () => setIdx(k),
+    className: `ent-alert-dot${k === i ? ' active' : ''}`,
+    style: k === i ? {
+      background: c
+    } : undefined,
+    "aria-label": `התראה ${k + 1} מתוך ${alerts.length}`
+  }))));
+}
 function App() {
   const [authStage, setAuthStage] = useState('login');
   const [restoring, setRestoring] = useState(true);
@@ -4996,40 +5083,10 @@ function App() {
   }, /*#__PURE__*/React.createElement(Money, {
     v: value,
     currency: currency
-  }))))), alerts.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, alerts.slice(0, 4).map(a => {
-    const c = a.level === 'danger' ? 'var(--neg)' : a.level === 'good' ? 'var(--pos)' : 'var(--bronze)';
-    return /*#__PURE__*/React.createElement("div", {
-      key: a.id,
-      className: "flex items-start gap-3 p-3.5 rounded-xl",
-      style: {
-        background: 'var(--navy-panel)',
-        border: `1px solid ${c}`
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: c,
-        flexShrink: 0,
-        marginTop: 1
-      }
-    }, /*#__PURE__*/React.createElement(IBell, {
-      size: 16
-    })), /*#__PURE__*/React.createElement("p", {
-      className: "text-sm flex-1",
-      style: {
-        color: 'var(--text-2)'
-      }
-    }, a.text), /*#__PURE__*/React.createElement("button", {
-      onClick: () => setDismissedAlerts(prev => [...prev, a.id]),
-      className: "ent-icon-btn",
-      style: {
-        color: 'var(--text-dim)'
-      }
-    }, /*#__PURE__*/React.createElement(IX, {
-      size: 14
-    })));
-  })), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement(AlertCarousel, {
+    alerts: alerts.slice(0, 6),
+    onDismiss: id => setDismissedAlerts(prev => [...prev, id])
+  }), /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-baseline justify-between gap-2 mb-4"
@@ -7574,11 +7631,9 @@ function SettingsSection({
     className: `ent-settings-chevron${open ? ' open' : ''}`
   }, /*#__PURE__*/React.createElement(IChevronDown, {
     size: 18
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: `ent-settings-body${open ? ' open' : ''}`
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }))), open && /*#__PURE__*/React.createElement("div", {
     className: "ent-settings-body-inner space-y-5"
-  }, children))));
+  }, children));
 }
 function PinToggleCard({
   profile,
