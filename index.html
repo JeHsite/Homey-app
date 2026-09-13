@@ -761,14 +761,18 @@ body[data-compact="1"] main { gap: .75rem; }
   html[data-look="fintech"] .ent-horizon { background: var(--line) !important; animation: none !important; height: 1px !important; }
 
   /* ===== הגדרות: כרטיס-נושא שנפתח ונסגר בלחיצה =====
-     בכוונה בלי אנימציית גובה: על חלק מהמכשירים בנייד זה התנגש עם "גלילה אוטומטית לכפתור
-     בפוקוס" של הדפדפן וגרם לקפיצות. פתיחה/סגירה מיידית, כמו בכל מקום אחר באתר. */
+     overflow-anchor:none + blur אחרי הלחיצה מונעים מנייד "לגלול לכפתור" תוך כדי הפתיחה. */
   .ent-settings-head { width: 100%; background: transparent; border: 0; cursor: pointer; transition: background-color .15s ease; overflow-anchor: none; }
   .ent-settings-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
-  .ent-settings-chevron { color: var(--text-dim); transition: transform .2s ease; }
+  .ent-settings-chevron { color: var(--text-dim); transition: transform .4s cubic-bezier(.2,.7,.2,1); }
   .ent-settings-chevron.open { transform: rotate(180deg); }
-  .ent-settings-body-inner { padding: 6px 24px 28px; overflow-anchor: none; }
-  @media (prefers-reduced-motion: reduce) { .ent-settings-chevron { transition: none; } }
+  .ent-settings-body { height: 0; overflow: hidden; transition: height .55s cubic-bezier(.2,.7,.2,1); overflow-anchor: none; }
+  .ent-settings-body-inner { padding: 6px 24px 28px; opacity: 0; transform: translateY(-6px); transition: opacity .3s ease, transform .3s ease; }
+  .ent-settings-body-inner.open { opacity: 1; transform: none; transition: opacity .45s ease .18s, transform .45s ease .18s; }
+  @media (prefers-reduced-motion: reduce) {
+    .ent-settings-chevron, .ent-settings-body, .ent-settings-body-inner { transition: none; }
+    .ent-settings-body-inner { opacity: 1; transform: none; }
+  }
 
   /* ===== קרוסלת התראות: תיבה אחת קומפקטית במקום ערימה ===== */
   .ent-alert-carousel { position: relative; overflow: hidden; }
@@ -3540,7 +3544,7 @@ function AlertCarousel({
   useEffect(() => {
     if (alerts.length < 2 || paused) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setIdx(v => (v + 1) % alerts.length), 5000);
+    const t = setInterval(() => setIdx(v => (v + 1) % alerts.length), 8000);
     return () => clearInterval(t);
   }, [alerts.length, paused]);
   if (!alerts.length) return null;
@@ -7598,6 +7602,24 @@ function SettingsSection({
   children
 }) {
   const [open, setOpen] = useState(false);
+  const innerRef = React.useRef(null);
+  const [maxH, setMaxH] = useState(0);
+  // גובה מדוד ב-JS, לא grid-template-rows: 0fr/1fr — בדפדפן הזה המעבר בין 0fr ל-1fr
+  // פשוט לא זז (נתקע ב-0), כי לא כל דפדפן יודע להנפיש יחידת fr. ResizeObserver דואג
+  // גם לגובה שגדל תוך כדי (למשל שדות ה-PIN שנפתחים בתוך "אבטחה" כשהיא כבר פתוחה).
+  useEffect(() => {
+    if (!open) {
+      setMaxH(0);
+      return;
+    }
+    const el = innerRef.current;
+    if (!el) return;
+    setMaxH(el.scrollHeight);
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setMaxH(el.scrollHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-card overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
@@ -7631,9 +7653,15 @@ function SettingsSection({
     className: `ent-settings-chevron${open ? ' open' : ''}`
   }, /*#__PURE__*/React.createElement(IChevronDown, {
     size: 18
-  }))), open && /*#__PURE__*/React.createElement("div", {
-    className: "ent-settings-body-inner space-y-5"
-  }, children));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-settings-body",
+    style: {
+      height: maxH
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: innerRef,
+    className: `ent-settings-body-inner space-y-5${open ? ' open' : ''}`
+  }, children)));
 }
 function PinToggleCard({
   profile,
