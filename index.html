@@ -760,6 +760,16 @@ body[data-compact="1"] main { gap: .75rem; }
   html[data-look="fintech"] .ent-forecast-hero { background: var(--navy-panel-2) !important; }
   html[data-look="fintech"] .ent-horizon { background: var(--line) !important; animation: none !important; height: 1px !important; }
 
+  /* ===== הגדרות: כרטיס-נושא שנפתח ונסגר בלחיצה ===== */
+  .ent-settings-head { width: 100%; background: transparent; border: 0; cursor: pointer; transition: background-color .15s ease; }
+  .ent-settings-head:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .ent-settings-chevron { color: var(--text-dim); transition: transform .2s ease; }
+  .ent-settings-chevron.open { transform: rotate(180deg); }
+  .ent-settings-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+  .ent-settings-body.open { grid-template-rows: 1fr; }
+  .ent-settings-body > div { overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) { .ent-settings-body { transition: none; } .ent-settings-chevron { transition: none; } }
+
 </style>
 </head>
 <body>
@@ -1145,6 +1155,12 @@ const ISettings = p => /*#__PURE__*/React.createElement(Icon, {
   }), /*#__PURE__*/React.createElement("path", {
     d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
   }))
+});
+const IChevronDown = p => /*#__PURE__*/React.createElement(Icon, {
+  ...p,
+  d: /*#__PURE__*/React.createElement("polyline", {
+    points: "6 9 12 15 18 9"
+  })
 });
 const IUtensils = p => /*#__PURE__*/React.createElement(Icon, {
   ...p,
@@ -6307,13 +6323,11 @@ function App() {
     }
   }, "פתחו קבוצת וואטסאפ, לחצו על שם הקבוצה ← \"הזמנה באמצעות קישור\" ← העתיקו, והדביקו את הקישור בהגדרות."))))), activeTab === 'settings' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-4"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ISettings, {
-    size: 20
-  }), " תצוגה"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ISettings,
+    title: "תצוגה",
+    subtitle: "ערכת נושא, בהירות וגודל טקסט"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-2",
     style: {
       color: 'var(--text-muted)'
@@ -6375,13 +6389,11 @@ function App() {
       color: fontScale === val ? 'var(--on-accent)' : 'var(--text-2)',
       border: '1px solid var(--line)'
     }
-  }, label))))), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-4"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ISettings, {
-    size: 20
-  }), " העדפות כלליות"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }, label))))), /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ISettings,
+    title: "כלליות",
+    subtitle: "מטבע, תצוגה צפופה, התראות וקהילה"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-2",
     style: {
       color: 'var(--text-muted)'
@@ -6466,20 +6478,21 @@ function App() {
     style: {
       color: 'var(--text-dim)'
     }
-  }, "יופיע ככפתור בלשונית \"מדריך ומידע\" ← קהילה."))), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(PinToggleCard, {
+  }, "יופיע ככפתור בלשונית \"מדריך ומידע\" ← קהילה."))), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ILock,
+    title: "אבטחה",
+    subtitle: "קוד PIN לכניסה לפרופיל שלך"
+  }, /*#__PURE__*/React.createElement(PinToggleCard, {
     profile: currentProfile,
     isDemo: isDemo,
     onChanged: upd => setCurrentProfile(p => ({
       ...p,
       ...upd
     }))
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-4"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ITag, {
-    size: 20
-  }), " קטגוריות מותאמות אישית להוצאות"), /*#__PURE__*/React.createElement("p", {
+  })), /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ITag,
+    title: "קטגוריות מותאמות אישית להוצאות"
+  }, /*#__PURE__*/React.createElement("p", {
     className: "text-sm",
     style: {
       color: 'var(--text-muted)'
@@ -6517,10 +6530,12 @@ function App() {
     size: 16
   }))))), /*#__PURE__*/React.createElement(NewCategoryForm, {
     onAdd: addCustomCategory
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold mb-2",
+  })), /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ITrash,
+    title: "אזור מסוכן",
+    danger: true
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold",
     style: {
       color: 'var(--neg)'
     }
@@ -6548,20 +6563,17 @@ function App() {
       borderColor: 'var(--neg)',
       color: 'var(--neg)'
     }
-  }, "איפוס כל הנתונים")), !isDemo && /*#__PURE__*/React.createElement(DeleteAccountCard, {
+  }, "איפוס כל הנתונים"), !isDemo && /*#__PURE__*/React.createElement(DeleteAccountCard, {
     onDeleted: () => {
       setCurrentProfile(null);
       setFamilyId(null);
       setAuthStage('login');
       showToast('החשבון נמחק');
     }
-  }), familyInfo && /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold mb-2 flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(IUsers, {
-    size: 20
-  }), " קוד הקבוצה שלכם"), /*#__PURE__*/React.createElement("p", {
+  })), familyInfo && /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: IUsers,
+    title: "קוד הקבוצה שלכם"
+  }, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-3",
     style: {
       color: 'var(--text-muted)'
@@ -7514,6 +7526,51 @@ function Piggy3D({
 
 /* ---- מחיקת חשבון עצמאית (supabase/delete_account.sql) ---- */
 /* ---- הגדרות: הפעלה / כיבוי של קוד ה-PIN לפרופיל ההורה המחובר ---- */
+/* ---- הגדרות: כרטיס-נושא אחד (תצוגה / אבטחה / וכו'), נפתח ונסגר בלחיצה על הכותרת ---- */
+function SettingsSection({
+  icon: IconC,
+  title,
+  subtitle,
+  danger,
+  children
+}) {
+  const [open, setOpen] = useState(false);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card overflow-hidden"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(!open),
+    "aria-expanded": open,
+    className: "ent-settings-head flex items-center gap-3 p-6 text-right"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-icon-badge shrink-0",
+    style: danger ? {
+      background: 'color-mix(in srgb, var(--neg) 16%, transparent)',
+      color: 'var(--neg)'
+    } : undefined
+  }, /*#__PURE__*/React.createElement(IconC, {
+    size: 18
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "ent-heading font-bold",
+    style: {
+      color: danger ? 'var(--neg)' : 'var(--text)'
+    }
+  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, subtitle)), /*#__PURE__*/React.createElement("span", {
+    className: `ent-settings-chevron${open ? ' open' : ''}`
+  }, /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: `ent-settings-body${open ? ' open' : ''}`
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pb-6 space-y-4"
+  }, children))));
+}
 function PinToggleCard({
   profile,
   isDemo,
@@ -7564,13 +7621,7 @@ function PinToggleCard({
     onChange: e => set(digits(e.target.value)),
     onKeyDown: e => e.key === 'Enter' && submit()
   });
-  return /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-4"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ILock, {
-    size: 20
-  }), " אבטחה"), /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm",
@@ -7892,13 +7943,8 @@ function DeleteAccountCard({
     }
   };
   const inputCls = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
-  return /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6 space-y-3",
-    style: {
-      borderColor: 'color-mix(in srgb, var(--neg) 45%, var(--line))'
-    }
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "ent-heading text-xl font-bold",
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold",
     style: {
       color: 'var(--neg)'
     }
