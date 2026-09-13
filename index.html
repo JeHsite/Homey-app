@@ -689,6 +689,29 @@ body[data-compact="1"] main { gap: .75rem; }
   }
   @keyframes ent-draw { from { stroke-dashoffset: 1200; } to { stroke-dashoffset: 0; } }
 
+  /* ===== סקירה שבועית: מלבן עם שורה רצה (בעברית הטקסט זז ימינה) ===== */
+  .ent-review-tick { display: block; width: 100%; overflow: hidden; white-space: nowrap; padding: 2px 0; text-align: right; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+  .ent-review-track { display: inline-flex; width: max-content; }
+  .ent-review-copy { display: inline-flex; }
+  .ent-review-item { position: relative; padding-inline-end: 2.5rem; }
+  .ent-review-item::after { content: ''; position: absolute; inset-inline-end: 1.15rem; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--bronze); opacity: .7; }
+  .ent-review-head { display: flex; align-items: center; gap: .75rem; }
+  .ent-review-head > .grow { flex: 1 1 auto; min-width: 0; }
+  .ent-review-num { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--bronze) 16%, transparent); color: var(--bronze); }
+  .ent-review-goal { flex-shrink: 0; display: inline-flex; }
+  .ent-review-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 640px) { .ent-review-grid { grid-template-columns: 1fr 1fr; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .ent-review-track { animation: ent-tick 40s linear infinite; }
+    .ent-review-tick:hover .ent-review-track, .ent-review-tick:focus-visible .ent-review-track { animation-play-state: paused; }
+  }
+  @keyframes ent-tick { from { transform: translateX(0); } to { transform: translateX(50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ent-review-tick { white-space: normal; -webkit-mask-image: none; mask-image: none; }
+    .ent-review-copy { flex-wrap: wrap; }
+    .ent-review-copy[aria-hidden] { display: none; }
+  }
+
   /* ===== פרימיום: גופן אחד (3 משקלים), 3 רדיוסים, עומק במקום מסגרות, פוקוס ומצבי מעבר אחידים ===== */
   :root { --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --font-ui: 'IBM Plex Sans Hebrew', 'Segoe UI', system-ui, sans-serif; }
   body, .ent-root { font-family: var(--font-ui); line-height: 1.55; }
@@ -2317,7 +2340,7 @@ const PIN_MESSAGES = {
 };
 
 /* ---- מסמכים משפטיים: פרטיות, תנאי שימוש, נגישות ---- */
-const LEGAL_UPDATED = '10.09.2026';
+const LEGAL_UPDATED = '13.09.2026';
 const LEGAL_OWNER = 'איתמר הורביץ (ENT code, video & beyond)';
 const LEGAL_EMAIL = 'jehbuissnes@gmail.com';
 const LB = t => /*#__PURE__*/React.createElement("b", {
@@ -2363,7 +2386,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.', 'תמיכה בהגדלת תצוגה (זום) של הדפדפן והטלפון.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים (גרפים, חלונות קופצים ובחירת אייקונים) אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, ולשליחת תזכורות תשלום אם הפעלתם אותן. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, לשליחת תזכורות תשלום אם הפעלתם אותן, ולכתיבת סקירה שבועית עם טיפים ויעדים. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.', 'Anthropic (Claude): כתיבת הסקירה השבועית. נשלחים רק נתונים מסוכמים: סכומים לפי קטגוריה, חיובים קרובים ויעדי חיסכון. לא נשלחים שמות של בני המשפחה, תיאורים של הוצאות או אימייל. העיבוד נעשה בארצות הברית.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה, והנתונים המסוכמים לסקירה השבועית מעובדים בארצות הברית) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -4925,7 +4948,10 @@ function App() {
     className: "flex-1 space-y-6"
   }, activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
+    familyId: familyId,
+    isDemo: isDemo
+  }), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
   }, [[IDollar, 'יתרה נוכחית', balance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
     key: label,
@@ -6440,7 +6466,14 @@ function App() {
     style: {
       color: 'var(--text-dim)'
     }
-  }, "יופיע ככפתור בלשונית \"מדריך ומידע\" ← קהילה."))), /*#__PURE__*/React.createElement("div", {
+  }, "יופיע ככפתור בלשונית \"מדריך ומידע\" ← קהילה."))), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(PinToggleCard, {
+    profile: currentProfile,
+    isDemo: isDemo,
+    onChanged: upd => setCurrentProfile(p => ({
+      ...p,
+      ...upd
+    }))
+  }), /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-xl font-bold flex items-center gap-2"
@@ -7092,7 +7125,34 @@ const HEB_MONTHS = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'י�
 function buildTrend(rows, mode) {
   const now = new Date();
   const out = [];
-  if (mode === 'week') {
+  if (mode === 'day') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    for (let i = 13; i >= 0; i--) {
+      const s = new Date(start);
+      s.setDate(s.getDate() - i);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 1);
+      out.push({
+        s,
+        e,
+        label: `${s.getDate()}.${s.getMonth() + 1}`,
+        income: 0,
+        expense: 0
+      });
+    }
+  } else if (mode === 'year') {
+    for (let i = 3; i >= 0; i--) {
+      const yr = now.getFullYear() - i;
+      out.push({
+        s: new Date(yr, 0, 1),
+        e: new Date(yr + 1, 0, 1),
+        label: String(yr),
+        income: 0,
+        expense: 0
+      });
+    }
+  } else if (mode === 'week') {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate() - start.getDay()); // שבוע מתחיל ביום ראשון
@@ -7128,8 +7188,17 @@ function buildTrend(rows, mode) {
     if (!b) return;
     if (r.type === 'income') b.income += Number(r.amount) || 0;else if (r.type === 'expense') b.expense += Number(r.amount) || 0;
   });
+  // שנתי: לא מציגים שנים ריקות לפני שהתחלתם, אבל תמיד לפחות שתי נקודות
+  if (mode === 'year') while (out.length > 2 && !out[0].income && !out[0].expense) out.shift();
   return out;
 }
+// מצב -> [שם התואר, התקופה הנוכחית, התקופה הקודמת]
+const TREND_PERIODS = {
+  day: ['יומית', 'היום', 'אתמול'],
+  week: ['שבועית', 'השבוע', 'השבוע שעבר'],
+  month: ['חודשית', 'החודש', 'החודש שעבר'],
+  year: ['שנתית', 'השנה', 'השנה שעברה']
+};
 let trendUid = 0;
 function TrendLines({
   rows,
@@ -7140,7 +7209,7 @@ function TrendLines({
   },
   exclude
 }) {
-  const [mode, setMode] = useState(() => lsGet('homey_trend_mode') || 'week');
+  const [mode, setMode] = useState(() => TREND_PERIODS[lsGet('homey_trend_mode')] ? lsGet('homey_trend_mode') : 'week');
   const [hover, setHover] = useState(null);
   const uid = React.useRef('tr' + ++trendUid).current;
   const data = buildTrend(exclude ? rows.filter(r => !exclude(r)) : rows, mode);
@@ -7160,7 +7229,10 @@ function TrendLines({
   const money = v => `${currency}${Math.round(v).toLocaleString('he-IL')}`;
   const last = data[data.length - 1],
     prev = data[data.length - 2];
-  const change = prev && prev.expense ? Math.round((last.expense - prev.expense) / prev.expense * 100) : null;
+  // בתחילת תקופה (למשל ביום ראשון בתצוגה שבועית) ההשוואה מטעה ("נמוכות ב-100%"),
+  // לכן מציגים אותה רק אחרי 30% מהתקופה, ורק כשכבר יש הוצאות בתקופה הנוכחית
+  const elapsed = last ? (Date.now() - last.s) / (last.e - last.s) : 0;
+  const change = prev && prev.expense && last.expense && elapsed >= 0.3 ? Math.round((last.expense - prev.expense) / prev.expense * 100) : null;
   const h = hover != null ? data[hover] : null;
   const setM = m => {
     setMode(m);
@@ -7177,7 +7249,7 @@ function TrendLines({
     style: {
       background: 'var(--navy-panel-2)'
     }
-  }, [['week', 'שבועי'], ['month', 'חודשי']].map(([m, l]) => /*#__PURE__*/React.createElement("button", {
+  }, [['day', 'יומי'], ['week', 'שבועי'], ['month', 'חודשי'], ['year', 'שנתי']].map(([m, l]) => /*#__PURE__*/React.createElement("button", {
     key: m,
     onClick: () => setM(m),
     className: "ent-pill-btn px-3 py-1 text-xs",
@@ -7190,13 +7262,13 @@ function TrendLines({
     style: {
       color: change > 0 ? 'var(--neg-soft)' : 'var(--pos)'
     }
-  }, change > 0 ? '▲' : '▼', " ", labels.expense, " ", mode === 'week' ? 'השבוע' : 'החודש', " ", change > 0 ? 'גבוהות' : 'נמוכות', " ב-", Math.abs(change), "% מ", mode === 'week' ? 'השבוע שעבר' : 'החודש שעבר')), /*#__PURE__*/React.createElement("div", {
+  }, change > 0 ? '▲' : '▼', " ", labels.expense, " ", TREND_PERIODS[mode][1], " ", change > 0 ? 'גבוהות' : 'נמוכות', " ב-", Math.abs(change), "% מ", TREND_PERIODS[mode][2])), /*#__PURE__*/React.createElement("div", {
     dir: "ltr"
   }, /*#__PURE__*/React.createElement("svg", {
     className: "ent-trend-svg",
     viewBox: `0 0 ${W} ${H}`,
     role: "img",
-    "aria-label": `מגמה ${mode === 'week' ? 'שבועית' : 'חודשית'}: ${labels.income} מול ${labels.expense}`
+    "aria-label": `מגמה ${TREND_PERIODS[mode][0]}: ${labels.income} מול ${labels.expense}`
   }, /*#__PURE__*/React.createElement("defs", null, series.map(([k, c]) => /*#__PURE__*/React.createElement("linearGradient", {
     key: k,
     id: `${uid}-${k}`,
@@ -7270,7 +7342,7 @@ function TrendLines({
     style: {
       fill: hover === i ? 'var(--text)' : 'var(--text-dim)'
     }
-  }, d.label)), data.map((d, i) => /*#__PURE__*/React.createElement("rect", {
+  }, data.length > 8 && (data.length - 1 - i) % 2 ? '' : d.label)), data.map((d, i) => /*#__PURE__*/React.createElement("rect", {
     key: 'h' + i,
     className: "ent-trend-hit",
     x: x(i) - (W - P.l - P.r) / (data.length - 1) / 2,
@@ -7441,6 +7513,333 @@ function Piggy3D({
 }
 
 /* ---- מחיקת חשבון עצמאית (supabase/delete_account.sql) ---- */
+/* ---- הגדרות: הפעלה / כיבוי של קוד ה-PIN לפרופיל ההורה המחובר ---- */
+function PinToggleCard({
+  profile,
+  isDemo,
+  onChanged
+}) {
+  const on = !!profile.hasPin;
+  const [open, setOpen] = useState(false);
+  const [cur, setCur] = useState('');
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const digits = v => v.replace(/[^0-9]/g, '').slice(0, 6);
+  const close = () => {
+    setOpen(false);
+    setCur('');
+    setP1('');
+    setP2('');
+    setErr('');
+  };
+  const submit = async () => {
+    setErr('');
+    if (on && !cur) return setErr('הזינו את הקוד הנוכחי');
+    if (!on && !/^[0-9]{4,6}$/.test(p1)) return setErr('הקוד צריך להיות 4 עד 6 ספרות');
+    if (!on && p1 !== p2) return setErr('שני הקודים לא תואמים');
+    setBusy(true);
+    // כיבוי = קוד חדש ריק. השרת דורש את הקוד הנוכחי (או כניסה עם סיסמה ב-10 הדקות האחרונות)
+    const res = isDemo ? on && profile.pin && cur !== profile.pin ? 'wrong_pin' : 'ok' : await savePin(profile.id, on ? '' : p1, on ? cur : null);
+    setBusy(false);
+    if (res === 'ok' || res === 'ok_legacy') {
+      bioForget(profile.id); // קוד השתנה, זיהוי הפנים במכשיר מתאפס
+      onChanged({
+        hasPin: !on,
+        pin: isDemo || res === 'ok_legacy' ? on ? null : p1 : null
+      });
+      close();
+      return;
+    }
+    setErr(res === 'wrong_pin' ? 'הקוד הנוכחי שגוי' : res === 'locked' ? 'יותר מדי ניסיונות שגויים. אפשר לנסות שוב בעוד 5 דקות' : 'לא הצלחנו לשמור. בדקו את החיבור לאינטרנט');
+  };
+  const pinField = (value, set, placeholder) => /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    type: "password",
+    inputMode: "numeric",
+    autoComplete: "off",
+    placeholder,
+    value,
+    onChange: e => set(digits(e.target.value)),
+    onKeyDown: e => e.key === 'Enter' && submit()
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ILock, {
+    size: 20
+  }), " אבטחה"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text)'
+    }
+  }, "קוד PIN לפרופיל שלי"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, on ? 'פעיל. כדי להיכנס לפרופיל שלך צריך להקליד קוד' : 'כבוי. כל מי שפותח את האפליקציה במכשיר יכול להיכנס לפרופיל שלך')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => open ? close() : setOpen(true),
+    role: "switch",
+    "aria-checked": on,
+    "aria-label": "קוד PIN לפרופיל שלי",
+    className: "w-12 h-6 rounded-full relative transition shrink-0",
+    style: {
+      background: on ? 'var(--bronze)' : 'var(--navy-panel-2)',
+      border: '1px solid var(--line)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute top-0.5 w-5 h-5 rounded-full transition-all",
+    style: {
+      background: on ? 'var(--on-accent)' : 'var(--text-dim)',
+      right: on ? 2 : 24
+    }
+  }))), open && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 p-4 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, on ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs leading-relaxed",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, "בלי קוד, גם ילד שמשתמש בטלפון יוכל להיכנס לפרופיל שלך ולראות את הנתונים הכספיים. אפשר להפעיל אותו שוב בכל רגע."), pinField(cur, setCur, 'הקוד הנוכחי')) : /*#__PURE__*/React.createElement(React.Fragment, null, pinField(p1, setP1, 'קוד חדש (4 עד 6 ספרות)'), pinField(p2, setP2, 'הקלידו את הקוד שוב')), err && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--neg-soft)'
+    }
+  }, err), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    disabled: busy,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex-1",
+    style: {
+      opacity: busy ? 0.6 : 1
+    }
+  }, busy ? 'שומר…' : on ? 'כיבוי הקוד' : 'הפעלת הקוד'), /*#__PURE__*/React.createElement("button", {
+    onClick: close,
+    className: "ent-pill-btn ghost px-5 py-2 text-sm flex-1"
+  }, "ביטול"))));
+}
+
+/* ---- סקירה שבועית (AI): מלבן בראש הדשבורד. הסקירות נכתבות בשרת (supabase/functions/weekly-review) ---- */
+// סיכום: ממוצ"ש 20:00 עד ראשון 8:00. פתיחת שבוע: מראשון 8:00 עד סוף שלישי. week = יום ראשון של השבוע שהסקירה עוסקת בו
+function reviewSlot(now) {
+  const d = now.getDay(),
+    h = now.getHours();
+  const sunday = new Date(now);
+  sunday.setHours(0, 0, 0, 0);
+  sunday.setDate(sunday.getDate() - d);
+  const key = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  if (d === 6 && h >= 20) return {
+    kind: 'summary',
+    week: key(sunday)
+  };
+  if (d === 0 && h < 8) {
+    const prev = new Date(sunday);
+    prev.setDate(prev.getDate() - 7);
+    return {
+      kind: 'summary',
+      week: key(prev)
+    };
+  }
+  if (d === 0 || d === 1 || d === 2) return {
+    kind: 'start',
+    week: key(sunday)
+  };
+  return null;
+}
+const REVIEW_DEMO = {
+  start: {
+    headline: 'שבוע חדש: יעד של ₪1,400 להוצאות השוטפות',
+    summary: 'בשבוע שעבר אוכל בחוץ היה גבוה ב-30% מהממוצע שלכם. שאר הקטגוריות בקצב טוב, וחשבון החשמל יורד ביום רביעי.',
+    tips: ['תכננו מראש שתי ארוחות ערב בבית. זה החיסכון הכי מהיר השבוע.', 'חשבון החשמל (₪420) יורד ברביעי. כדאי לוודא שיש כיסוי בחשבון.', 'העבירו ₪200 לקופת החופשה כבר היום, לפני שהכסף מתפזר.'],
+    goals: [{
+      text: 'הוצאות שוטפות עד ₪1,400',
+      met: null
+    }, {
+      text: 'אוכל בחוץ עד ₪250',
+      met: null
+    }, {
+      text: '₪200 לקופת החופשה',
+      met: null
+    }]
+  },
+  summary: {
+    headline: 'שבוע טוב: נשארתם ₪180 מתחת ליעד',
+    summary: 'הוצאתם ₪1,220 מתוך ₪1,400. הסופר ירד ב-12% לעומת הממוצע, ואוכל בחוץ עדיין גבוה. עמדתם בשניים משלושת היעדים.',
+    tips: ['המשיכו עם רשימת קניות קבועה. זה עבד השבוע.', 'אוכל בחוץ עבר את היעד ב-₪90. נסו לקבוע מראש ערב אחד בשבוע.', 'הקצב החודשי טוב. אם הוא יישמר, יישארו כ-₪600 לחיסכון בסוף החודש.'],
+    goals: [{
+      text: 'הוצאות שוטפות עד ₪1,400',
+      met: true
+    }, {
+      text: 'אוכל בחוץ עד ₪250',
+      met: false
+    }, {
+      text: '₪200 לקופת החופשה',
+      met: true
+    }]
+  }
+};
+function WeeklyReviewBanner({
+  familyId,
+  isDemo
+}) {
+  const slot = useMemo(() => reviewSlot(new Date()), []);
+  const key = slot || {
+    kind: 'start',
+    week: 'demo'
+  };
+  const dismissKey = `homey_review_x_${key.kind}_${key.week}`;
+  const [review, setReview] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(() => lsGet(dismissKey) === '1');
+  useEffect(() => {
+    if (isDemo) {
+      setReview({
+        kind: key.kind,
+        content: REVIEW_DEMO[key.kind]
+      });
+      return;
+    }
+    if (!slot || !familyId) return;
+    let alive = true;
+    // לפני weekly_review.sql הטבלה לא קיימת, ואז פשוט אין מלבן
+    sb.from('weekly_reviews').select('kind, week_start, content').eq('family_id', familyId).eq('kind', slot.kind).eq('week_start', slot.week).maybeSingle().then(({
+      data
+    }) => {
+      if (alive && data && data.content) setReview(data);
+    }, () => {});
+    return () => {
+      alive = false;
+    };
+  }, [familyId, isDemo]);
+  if (!review || hidden) return null;
+  const c = review.content || {};
+  const isSum = review.kind === 'summary';
+  const tips = (c.tips || []).slice(0, 3);
+  const goals = (c.goals || []).slice(0, 3);
+  const ticker = [c.headline, ...tips].filter(Boolean);
+  const dismiss = () => {
+    lsSet(dismissKey, '1');
+    setHidden(true);
+  };
+  const tickCopy = dup => /*#__PURE__*/React.createElement("span", {
+    className: "ent-review-copy",
+    "aria-hidden": dup ? 'true' : undefined
+  }, ticker.map((t, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "ent-review-item"
+  }, t)));
+  const label = t => /*#__PURE__*/React.createElement("p", {
+    className: "text-xs font-semibold",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, t);
+  return /*#__PURE__*/React.createElement("section", {
+    className: "ent-card ent-review p-5 space-y-3",
+    "aria-label": isSum ? 'סיכום השבוע' : 'פתיחת שבוע'
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-review-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-icon-badge"
+  }, /*#__PURE__*/React.createElement(ISparkles, {
+    size: 18
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grow"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, isSum ? 'סיכום השבוע' : 'פתיחת שבוע'), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, isSum ? 'מוצאי שבת, 20:00' : 'יום ראשון, 8:00', " · נכתב עם AI")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(!open),
+    "aria-expanded": open,
+    className: "ent-pill-btn ghost px-4 py-2 text-xs"
+  }, open ? 'פחות' : 'לסקירה המלאה'), /*#__PURE__*/React.createElement("button", {
+    onClick: dismiss,
+    className: "ent-icon-btn",
+    "aria-label": "הסתרה עד הסקירה הבאה",
+    title: "הסתרה עד הסקירה הבאה"
+  }, /*#__PURE__*/React.createElement(IX, {
+    size: 16
+  }))), !open ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(true),
+    className: "ent-review-tick text-sm",
+    style: {
+      color: 'var(--text-2)'
+    },
+    "aria-label": `${c.headline || ''}. לפתיחת הסקירה המלאה`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-review-track"
+  }, tickCopy(false), tickCopy(true))) : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+    className: "text-lg font-semibold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, c.headline), c.summary && /*#__PURE__*/React.createElement("p", {
+    className: "text-sm leading-relaxed mt-1",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, c.summary)), /*#__PURE__*/React.createElement("div", {
+    className: "ent-review-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-mini-card p-4 space-y-2"
+  }, label('3 טיפים לשבוע'), /*#__PURE__*/React.createElement("ol", {
+    className: "space-y-2"
+  }, tips.map((t, i) => /*#__PURE__*/React.createElement("li", {
+    key: i,
+    className: "flex gap-2 text-sm leading-relaxed",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-review-num"
+  }, i + 1), /*#__PURE__*/React.createElement("span", null, t))))), goals.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "ent-mini-card p-4 space-y-2"
+  }, label(isSum ? 'היעדים של השבוע' : 'היעדים לשבוע הזה'), /*#__PURE__*/React.createElement("ul", {
+    className: "space-y-2"
+  }, goals.map((g, i) => {
+    const met = g.met === true,
+      miss = g.met === false;
+    return /*#__PURE__*/React.createElement("li", {
+      key: i,
+      className: "flex items-center gap-2 text-sm",
+      style: {
+        color: 'var(--text-2)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ent-review-goal",
+      style: {
+        color: met ? 'var(--pos)' : miss ? 'var(--text-dim)' : 'var(--bronze)'
+      }
+    }, /*#__PURE__*/React.createElement(met ? ICheck : miss ? IX : ITarget, {
+      size: 14
+    })), /*#__PURE__*/React.createElement("span", {
+      className: "flex-1"
+    }, g.text), isSum && /*#__PURE__*/React.createElement("span", {
+      className: "text-xs",
+      style: {
+        color: met ? 'var(--pos)' : 'var(--text-dim)'
+      }
+    }, met ? 'עמדתם' : 'לא הפעם'));
+  }))))));
+}
 function DeleteAccountCard({
   onDeleted
 }) {
