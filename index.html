@@ -607,13 +607,16 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-ticker-live { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 18px; font-size: 11px; font-weight: 800; letter-spacing: .4px; color: var(--neg); border-left: 1px solid var(--line); }
   .ent-ticker-live-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--neg); animation: ent-ticker-pulse 1.4s ease-in-out infinite; }
   @keyframes ent-ticker-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-  .ent-ticker-viewport { position: relative; overflow: hidden; flex: 1; min-width: 0; }
+  .ent-ticker-viewport { position: relative; overflow: hidden; flex: 1; min-width: 0; direction: ltr; }
   .ent-ticker-viewport::before, .ent-ticker-viewport::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; }
   .ent-ticker-viewport::before { right: 0; background: linear-gradient(to left, var(--navy-panel), transparent); }
   .ent-ticker-viewport::after { left: 0; background: linear-gradient(to right, var(--navy-panel), transparent); }
   /* התזוזה נשלטת ב-JS (requestAnimationFrame, ר' NewsTicker) ולא ב-CSS animation — כדי לא להיות
      תלויים בהתנהגות לא-אחידה של דפדפנים ל-animation-iteration-count/transform-percent על SVG/flex. */
-  .ent-ticker-track { display: flex; width: max-content; white-space: nowrap; will-change: transform; }
+  /* direction:ltr בכוונה: כדי ש-translateX שלילי (ב-JS) יגלול תוכן חדש פנימה מימין באופן רציף.
+     בלי זה, ברירת המחדל RTL "עוגנת" את הרצועה לקצה הימני של אזור התצוגה במקום השמאלי, ואז
+     translateX שלילי רק פותח רווח ריק מימין (התוכן כבר לא ממשיך שם) עד שמגיעים לעטיפה. */
+  .ent-ticker-track { display: flex; direction: ltr; width: max-content; white-space: nowrap; will-change: transform; }
   .ent-ticker-item { display: inline-flex; align-items: center; font-size: 13.5px; font-weight: 500; color: var(--text-2); padding: 0 22px; border-left: 1px solid var(--line); }
   .ent-ticker-source { color: var(--bronze); font-weight: 700; margin-left: 6px; }
 
@@ -1950,7 +1953,6 @@ function newsAgo(unixSeconds) {
 function NewsTicker({ items }) {
   const trackRef = useRef(null);
   const posRef = useRef(0);
-  const [dbg, setDbg] = useState('');
   // אם עותק אחד של הכותרות צר יותר מרוחב הטיקר, החלון הנגלל "יוצא" מעבר לקצה התוכן המשוכפל
   // ונראה ריק עד שהוא עוטף — לכן משכפלים כמה עותקים שצריך (יותר משכפלים כשיש מעט כותרות),
   // לא רק שניים.
@@ -1961,23 +1963,16 @@ function NewsTicker({ items }) {
     if (!track) return;
     const speed = 45; // פיקסלים לשנייה
     let last = null;
-    let frame = 0;
     let raf = requestAnimationFrame(function step(now) {
-      try {
-        if (last == null) last = now;
-        const dt = (now - last) / 1000;
-        last = now;
-        const oneSet = track.scrollWidth / repeats;
-        frame++;
-        if (oneSet > 0) {
-          posRef.current = (posRef.current + speed * dt) % oneSet;
-          track.style.transform = `translateX(${-posRef.current}px)`;
-        }
-        if (frame % 20 === 0) setDbg(`n${items.length} r${repeats} sw${track.scrollWidth} 1x${Math.round(oneSet)} p${Math.round(posRef.current)} vw${document.querySelector('.ent-ticker-viewport')?.clientWidth}`);
-        raf = requestAnimationFrame(step);
-      } catch (e) {
-        setDbg('ERR ' + e.message);
+      if (last == null) last = now;
+      const dt = (now - last) / 1000;
+      last = now;
+      const oneSet = track.scrollWidth / repeats;
+      if (oneSet > 0) {
+        posRef.current = (posRef.current + speed * dt) % oneSet;
+        track.style.transform = `translateX(${-posRef.current}px)`;
       }
+      raf = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(raf);
   }, [items, repeats]);
@@ -1987,9 +1982,8 @@ function NewsTicker({ items }) {
     className: "ent-ticker",
     "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-ticker-live",
-    style: { fontFamily: 'monospace', fontSize: 8, whiteSpace: 'nowrap' }
-  }, dbg || '···', /*#__PURE__*/React.createElement("span", {
+    className: "ent-ticker-live"
+  }, /*#__PURE__*/React.createElement("span", {
     className: "ent-ticker-live-dot"
   }), "Live"), /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
