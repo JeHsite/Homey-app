@@ -6,9 +6,13 @@ create table if not exists public.family_reminder_slots (
   family_id uuid not null references public.families(id) on delete cascade,
   hour smallint not null check (hour >= 0 and hour <= 23),
   days smallint[] not null default '{0,1,2,3,4,5,6}',
+  title text,
   created_at timestamptz not null default now()
 );
 create index if not exists family_reminder_slots_family on public.family_reminder_slots (family_id);
+
+-- בטוח להריץ שוב גם אם כבר יצרתן את הטבלה קודם בלי title (idempotent)
+alter table public.family_reminder_slots add column if not exists title text;
 
 alter table public.family_reminder_slots enable row level security;
 
@@ -26,7 +30,7 @@ from public.families f
 where not exists (select 1 from public.family_reminder_slots s where s.family_id = f.id);
 
 -- בדיקה
-select f.id as family_id, f.name, s.id as slot_id, s.hour, s.days
+select f.id as family_id, f.name, s.id as slot_id, s.title, s.hour, s.days
 from public.families f
 left join public.family_reminder_slots s on s.family_id = f.id
 order by f.id, s.hour;

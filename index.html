@@ -2003,9 +2003,9 @@ function DonutChart({
   const act = segments.find(s => s.name === active);
   const toggle = name => setActive(active === name ? null : name);
   return /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-center sm:justify-start gap-6 flex-wrap"
+    className: "flex items-center gap-6 flex-wrap"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-donut-wrap"
+    className: "ent-donut-wrap mx-auto sm:mx-0"
   }, /*#__PURE__*/React.createElement("svg", {
     width: "170",
     height: "170",
@@ -4335,14 +4335,16 @@ function App() {
   const [reminderSlots, setReminderSlots] = useState([{
     id: 'demo-1',
     hour: 8,
-    days: [0, 1, 2, 3, 4, 5, 6]
+    days: [0, 1, 2, 3, 4, 5, 6],
+    title: ''
   }]);
   const addReminderSlot = async () => {
     if (isDemo || !familyId) {
       setReminderSlots([...reminderSlots, {
         id: 'local-' + Date.now(),
         hour: 8,
-        days: [0, 1, 2, 3, 4, 5, 6]
+        days: [0, 1, 2, 3, 4, 5, 6],
+        title: ''
       }]);
       return;
     }
@@ -4356,7 +4358,8 @@ function App() {
     if (data) setReminderSlots([...reminderSlots, {
       id: data.id,
       hour: data.hour,
-      days: data.days
+      days: data.days,
+      title: data.title || ''
     }]);
   };
   const updateReminderSlotHour = (id, hour) => {
@@ -4384,6 +4387,18 @@ function App() {
   const removeReminderSlot = id => {
     setReminderSlots(reminderSlots.filter(x => x.id !== id));
     if (!isDemo && familyId) sb.from('family_reminder_slots').delete().eq('id', id).then(() => {});
+  };
+  const editReminderSlotTitle = (id, title) => {
+    setReminderSlots(reminderSlots.map(x => x.id === id ? {
+      ...x,
+      title
+    } : x));
+  };
+  const saveReminderSlotTitle = id => {
+    const slot = reminderSlots.find(x => x.id === id);
+    if (!isDemo && familyId && slot) sb.from('family_reminder_slots').update({
+      title: slot.title || null
+    }).eq('id', id).then(() => {});
   };
   const [rates, setRates] = useState(null); // null = עוד לא נטען. אז toPrimary מחזיר את הסכום הגולמי בלי המרה
   const [ratesStale, setRatesStale] = useState(false);
@@ -4799,7 +4814,8 @@ function App() {
       setReminderSlots((rs.data || []).map(r => ({
         id: r.id,
         hour: r.hour,
-        days: r.days
+        days: r.days,
+        title: r.title || ''
       })));
     })();
   }, [authStage, familyId]);
@@ -7284,7 +7300,14 @@ function App() {
   }, reminderSlots.map(slot => /*#__PURE__*/React.createElement("div", {
     key: slot.id,
     className: "ent-mini-card p-3 space-y-2"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-3 py-1.5 rounded-lg text-sm outline-none",
+    placeholder: "שם לתזכורת (אופציונלי), למשל: תזכורת בוקר",
+    maxLength: 40,
+    value: slot.title || '',
+    onChange: e => editReminderSlotTitle(slot.id, e.target.value),
+    onBlur: () => saveReminderSlotTitle(slot.id)
+  }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-2"
   }, /*#__PURE__*/React.createElement("select", {
     className: "ent-input px-3 py-2 rounded-xl text-sm outline-none",
@@ -8227,7 +8250,7 @@ function TrendLines({
         key: 't' + i,
         textAnchor: "middle",
         fontSize: "9",
-        style: { fill }
+        style: { fill, direction: 'rtl', unicodeBidi: 'plaintext' }
       }, /*#__PURE__*/React.createElement("tspan", {
         x: x(i),
         y: H - 18
