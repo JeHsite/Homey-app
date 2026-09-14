@@ -7221,12 +7221,15 @@ function buildTrend(rows, mode) {
       });
     }
   } else if (mode === 'year') {
-    for (let i = 3; i >= 0; i--) {
-      const yr = now.getFullYear() - i;
+    // שני חלונות גולשים של 12 חודש (לא שנים קלנדריות), כדי שהחלון הנוכחי תמיד יהיה מלא
+    // ולא ייראה כאילו "ירדנו" רק כי השנה עוד לא הסתיימה
+    const y = now.getFullYear(),
+      m = now.getMonth();
+    for (let i = 1; i >= 0; i--) {
       out.push({
-        s: new Date(yr, 0, 1),
-        e: new Date(yr + 1, 0, 1),
-        label: String(yr),
+        s: new Date(y, m - i * 12 - 11, 1),
+        e: new Date(y, m - i * 12 + 1, 1),
+        label: i === 0 ? '12 החודשים האחרונים' : '12 החודשים הקודמים',
         income: 0,
         expense: 0
       });
@@ -7267,8 +7270,6 @@ function buildTrend(rows, mode) {
     if (!b) return;
     if (r.type === 'income') b.income += Number(r.amount) || 0;else if (r.type === 'expense') b.expense += Number(r.amount) || 0;
   });
-  // שנתי: לא מציגים שנים ריקות לפני שהתחלתם, אבל תמיד לפחות שתי נקודות
-  if (mode === 'year') while (out.length > 2 && !out[0].income && !out[0].expense) out.shift();
   return out;
 }
 // מצב -> [שם התואר, התקופה הנוכחית, התקופה הקודמת]
@@ -7276,7 +7277,7 @@ const TREND_PERIODS = {
   day: ['יומית', 'היום', 'אתמול'],
   week: ['שבועית', 'השבוע', 'השבוע שעבר'],
   month: ['חודשית', 'החודש', 'החודש שעבר'],
-  year: ['שנתית', 'השנה', 'השנה שעברה']
+  year: ['שנתית', 'בשנה האחרונה', 'השנה שלפניה']
 };
 let trendUid = 0;
 function TrendLines({
