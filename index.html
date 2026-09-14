@@ -1958,7 +1958,7 @@ function NewsTicker({ items }) {
     className: "ent-ticker-live"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ent-ticker-live-dot"
-  }), "לייב"), /*#__PURE__*/React.createElement("div", {
+  }), "Live"), /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-track",
@@ -4331,21 +4331,59 @@ function App() {
       currency: c
     }).eq('id', familyId).then(() => {});
   };
-  const [reminderHour, setReminderHour] = useState(8); // שעת שליחת תזכורות תשלום (שעון ישראל, 0-23)
-  const setFamilyReminderHour = h => {
-    setReminderHour(h);
-    if (!isDemo && familyId) sb.from('families').update({
-      reminder_hour: h
-    }).eq('id', familyId).then(() => {});
+  // תזכורות תשלום: כל משפחה יכולה להגדיר כמה "תזכורות" (שעה + ימים) ולא רק אחת
+  const [reminderSlots, setReminderSlots] = useState([{
+    id: 'demo-1',
+    hour: 8,
+    days: [0, 1, 2, 3, 4, 5, 6]
+  }]);
+  const addReminderSlot = async () => {
+    if (isDemo || !familyId) {
+      setReminderSlots([...reminderSlots, {
+        id: 'local-' + Date.now(),
+        hour: 8,
+        days: [0, 1, 2, 3, 4, 5, 6]
+      }]);
+      return;
+    }
+    const {
+      data
+    } = await sb.from('family_reminder_slots').insert({
+      family_id: familyId,
+      hour: 8,
+      days: [0, 1, 2, 3, 4, 5, 6]
+    }).select().single();
+    if (data) setReminderSlots([...reminderSlots, {
+      id: data.id,
+      hour: data.hour,
+      days: data.days
+    }]);
   };
-  const [reminderDays, setReminderDays] = useState([0, 1, 2, 3, 4, 5, 6]); // ימי שבוע לשליחת תזכורות (0=ראשון...6=שבת), ברירת מחדל כל הימים
-  const toggleFamilyReminderDay = d => {
-    const next = reminderDays.includes(d) ? reminderDays.filter(x => x !== d) : [...reminderDays, d].sort();
-    if (next.length === 0) return; // חייב להישאר לפחות יום אחד
-    setReminderDays(next);
-    if (!isDemo && familyId) sb.from('families').update({
-      reminder_days: next
-    }).eq('id', familyId).then(() => {});
+  const updateReminderSlotHour = (id, hour) => {
+    setReminderSlots(reminderSlots.map(x => x.id === id ? {
+      ...x,
+      hour
+    } : x));
+    if (!isDemo && familyId) sb.from('family_reminder_slots').update({
+      hour
+    }).eq('id', id).then(() => {});
+  };
+  const toggleReminderSlotDay = (id, d) => {
+    const slot = reminderSlots.find(x => x.id === id);
+    if (!slot) return;
+    const next = slot.days.includes(d) ? slot.days.filter(x => x !== d) : [...slot.days, d].sort();
+    if (next.length === 0) return; // חייב להישאר לפחות יום אחד בכל תזכורת
+    setReminderSlots(reminderSlots.map(x => x.id === id ? {
+      ...x,
+      days: next
+    } : x));
+    if (!isDemo && familyId) sb.from('family_reminder_slots').update({
+      days: next
+    }).eq('id', id).then(() => {});
+  };
+  const removeReminderSlot = id => {
+    setReminderSlots(reminderSlots.filter(x => x.id !== id));
+    if (!isDemo && familyId) sb.from('family_reminder_slots').delete().eq('id', id).then(() => {});
   };
   const [rates, setRates] = useState(null); // null = עוד לא נטען. אז toPrimary מחזיר את הסכום הגולמי בלי המרה
   const [ratesStale, setRatesStale] = useState(false);
@@ -4683,9 +4721,9 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single()]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour')]);
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
@@ -4757,9 +4795,12 @@ function App() {
           groupCode: fam.data.group_code
         });
         if (fam.data.currency) setCurrency(fam.data.currency);
-        if (Number.isInteger(fam.data.reminder_hour)) setReminderHour(fam.data.reminder_hour);
-        if (Array.isArray(fam.data.reminder_days) && fam.data.reminder_days.length) setReminderDays(fam.data.reminder_days);
       }
+      setReminderSlots((rs.data || []).map(r => ({
+        id: r.id,
+        hour: r.hour,
+        days: r.days
+      })));
     })();
   }, [authStage, familyId]);
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -7217,46 +7258,64 @@ function App() {
       background: pushState === 'on' ? 'var(--on-accent)' : 'var(--text-dim)',
       right: pushState === 'on' ? 2 : 24
     }
-  }))), !isDemo && currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between gap-3"
+  }))), !isDemo && currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3 mb-2"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm",
     style: {
       color: 'var(--text)'
     }
-  }, "שעת שליחת תזכורות"), /*#__PURE__*/React.createElement("p", {
+  }, "תזכורות תשלום"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
     style: {
       color: 'var(--text-dim)'
     }
-  }, "לפי שעון ישראל")), /*#__PURE__*/React.createElement("select", {
+  }, "לפי שעון ישראל · אפשר להוסיף כמה תזכורות")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: addReminderSlot,
+    className: "ent-pill-btn ghost px-3 py-1.5 text-xs shrink-0"
+  }, "+ הוספת תזכורת")), reminderSlots.length === 0 && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, "אין תזכורות מוגדרות"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, reminderSlots.map(slot => /*#__PURE__*/React.createElement("div", {
+    key: slot.id,
+    className: "ent-mini-card p-3 space-y-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("select", {
     className: "ent-input px-3 py-2 rounded-xl text-sm outline-none",
-    value: reminderHour,
-    onChange: e => setFamilyReminderHour(Number(e.target.value))
+    value: slot.hour,
+    onChange: e => updateReminderSlotHour(slot.id, Number(e.target.value))
   }, Array.from({
     length: 24
   }, (_, h) => /*#__PURE__*/React.createElement("option", {
     key: h,
     value: h
-  }, `${String(h).padStart(2, '0')}:00`)))), !isDemo && currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mb-1.5",
-    style: {
-      color: 'var(--text)'
-    }
-  }, "ימים לשליחת תזכורות"), /*#__PURE__*/React.createElement("div", {
+  }, `${String(h).padStart(2, '0')}:00`))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => removeReminderSlot(slot.id),
+    className: "ent-icon-btn",
+    "aria-label": "מחיקת תזכורת"
+  }, /*#__PURE__*/React.createElement(ITrash, {
+    size: 14
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5"
   }, WEEKDAY_LABELS.map((label, d) => /*#__PURE__*/React.createElement("button", {
     key: d,
     type: "button",
-    onClick: () => toggleFamilyReminderDay(d),
-    "aria-pressed": reminderDays.includes(d),
+    onClick: () => toggleReminderSlotDay(slot.id, d),
+    "aria-pressed": slot.days.includes(d),
     className: "w-9 h-9 rounded-xl text-sm",
     style: {
-      background: reminderDays.includes(d) ? 'var(--bronze)' : 'var(--navy-panel-2)',
-      color: reminderDays.includes(d) ? 'var(--on-accent)' : 'var(--text-muted)',
+      background: slot.days.includes(d) ? 'var(--bronze)' : 'var(--navy-panel-2)',
+      color: slot.days.includes(d) ? 'var(--on-accent)' : 'var(--text-muted)',
       border: '1px solid var(--line)'
     }
-  }, label)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }, label))))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-1.5",
     style: {
       color: 'var(--text-muted)'

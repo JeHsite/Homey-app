@@ -1,7 +1,7 @@
 // Homey — תזכורות תשלום בפוש.
-// מופעל ע"י pg_cron פעם בשעה (לא פעם ביום — כל משפחה בוחרת שעה ב-families.reminder_hour וימים
-// בשבוע ב-families.reminder_days, והפונקציה בכל הפעלה שולחת רק למשפחות שהשעה והיום הנוכחיים
-// בישראל תואמים את מה שהן בחרו).
+// מופעל ע"י pg_cron פעם בשעה (לא פעם ביום — כל משפחה מגדירה כמה "תזכורות" (שעה+ימים) בטבלת
+// family_reminder_slots, והפונקציה בכל הפעלה שולחת רק למשפחות שיש להן תזכורת שהשעה והיום
+// הנוכחיים בישראל תואמים אותה).
 // מוגן בכותרת x-cron-secret — לכן "Verify JWT" כבוי לפונקציה הזו.
 // בדיקה ידנית: POST עם הכותרת x-cron-secret וגוף {"test": true} — שולח הודעת ניסיון לכל המנויים, בלי קשר לשעה.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -84,20 +84,22 @@ Deno.serve(async (req) => {
       byFamily.set(b.family_id, list);
     }
 
-    // מסננים למשפחות שהשעה והיום הנוכחיים בישראל תואמים למה שהן בחרו
-    // (ברירת מחדל: שעה 8, כל הימים — אם עדיין לא נבחר כלום, שומר על ההתנהגות הישנה של תזכורת יומית)
+    // מסננים למשפחות שיש להן תזכורת (family_reminder_slots) שהשעה והיום הנוכחיים בישראל תואמים לה.
+    // משפחה יכולה להגדיר כמה תזכורות (שעות/ימים שונים) — מספיק שאחת מהן תואמת עכשיו.
     const familyIds = [...byFamily.keys()];
     if (familyIds.length) {
-      const { data: fams } = await supabase.from("families").select("id, reminder_hour, reminder_days").in("id", familyIds);
-      const settingsByFamily = new Map((fams ?? []).map((f) => [
-        f.id,
-        { hour: f.reminder_hour ?? 8, days: f.reminder_days ?? [0, 1, 2, 3, 4, 5, 6] },
-      ] as const));
+      const { data: slots } = await supabase
+        .from("family_reminder_slots").select("family_id, hour, days")
+        .in("family_id", familyIds);
       const thisHour = israelHour();
       const thisDow = israelDayOfWeek();
+      const dueFamilies = new Set(
+        (slots ?? [])
+          .filter((s) => s.hour === thisHour && (s.days ?? []).includes(thisDow))
+          .map((s) => s.family_id),
+      );
       for (const familyId of familyIds) {
-        const s = settingsByFamily.get(familyId);
-        if (!s || s.hour !== thisHour || !s.days.includes(thisDow)) byFamily.delete(familyId);
+        if (!dueFamilies.has(familyId)) byFamily.delete(familyId);
       }
     }
 
