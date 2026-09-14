@@ -602,7 +602,7 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-donut-wrap { position: relative; width: 170px; height: 170px; flex-shrink: 0; }
   .ent-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
   .ent-donut-seg { transition: stroke-width .15s ease, opacity .15s ease; cursor: pointer; }
-  .ent-legend-row { display: flex; align-items: center; gap: .5rem; font-size: .75rem; padding: 3px 6px; margin-bottom: 2px; border-radius: 8px; cursor: pointer; transition: background .15s ease; }
+  .ent-legend-row { display: flex; align-items: center; gap: .5rem; font-size: .75rem; padding: 3px 6px; margin-bottom: 2px; border-radius: 8px; cursor: pointer; transition: background .15s ease; background: none; border: none; font-family: inherit; color: inherit; width: 100%; text-align: right; }
   .ent-legend-row.on { background: var(--navy-panel-2); }
   .ent-bar { transition: filter .15s ease; }
   .ent-bar:hover { filter: brightness(1.15); }
@@ -2004,12 +2004,14 @@ function DonutChart({
     }
   }, Math.round(act.pct), "%"))), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0"
-  }, segments.map(s => /*#__PURE__*/React.createElement("div", {
+  }, segments.map(s => /*#__PURE__*/React.createElement("button", {
     key: s.name,
+    type: "button",
     className: `ent-legend-row${active === s.name ? ' on' : ''}`,
     style: {
       color: 'var(--text-2)'
     },
+    "aria-pressed": active === s.name,
     onPointerEnter: e => e.pointerType === 'mouse' && setActive(s.name),
     onPointerLeave: e => e.pointerType === 'mouse' && setActive(null),
     onClick: () => toggle(s.name)
@@ -3367,6 +3369,7 @@ function ProfileScreen({
       className: "mb-3 flex justify-center"
     }, pinGateFor.photoUrl ? /*#__PURE__*/React.createElement("img", {
       src: pinGateFor.photoUrl,
+      alt: pinGateFor.name,
       className: "w-20 h-20 rounded-2xl object-cover"
     }) : /*#__PURE__*/React.createElement(InitialAvatar, {
       name: pinGateFor.name,
@@ -3449,6 +3452,7 @@ function ProfileScreen({
     }
   }, p.photoUrl ? /*#__PURE__*/React.createElement("img", {
     src: p.photoUrl,
+    alt: "",
     className: "w-full h-full object-cover"
   }) : /*#__PURE__*/React.createElement(InitialAvatar, {
     name: p.name,
@@ -3621,6 +3625,7 @@ function EditProfileModal({
     className: "flex justify-center mb-1"
   }, photoUrl ? /*#__PURE__*/React.createElement("img", {
     src: photoUrl,
+    alt: `תמונת הפרופיל של ${member.name}`,
     className: "w-20 h-20 rounded-2xl object-cover"
   }) : /*#__PURE__*/React.createElement(InitialAvatar, {
     name: member.name,
@@ -3785,6 +3790,7 @@ function AlertCarousel({
   }, a.text), /*#__PURE__*/React.createElement("button", {
     onClick: () => onDismiss(a.id),
     className: "ent-icon-btn",
+    "aria-label": "סגירת ההתראה",
     style: {
       color: 'var(--text-dim)'
     }
@@ -5258,9 +5264,11 @@ function App() {
     style: {
       border: '1px solid var(--line)'
     },
-    title: "החלף פרופיל"
+    title: "החלף פרופיל",
+    "aria-label": "החלף פרופיל"
   }, /*#__PURE__*/React.createElement("span", null, currentProfile?.photoUrl ? /*#__PURE__*/React.createElement("img", {
     src: currentProfile.photoUrl,
+    alt: "",
     className: "w-6 h-6 rounded-full object-cover"
   }) : /*#__PURE__*/React.createElement(InitialAvatar, {
     name: currentProfile?.name,
@@ -5753,6 +5761,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     },
+    "aria-label": `עריכת ${t.category}`,
     onClick: () => startEdit('expenses', t, r => ({
       type: r.type,
       category: r.category,
@@ -5765,6 +5774,7 @@ function App() {
     size: 15
   })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת ${t.category}`,
     onClick: () => deleteTransaction(t.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
@@ -5908,6 +5918,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     },
+    "aria-label": `עריכת ${b.title}`,
     onClick: () => startEdit('bills', b, r => ({
       title: r.title,
       category: r.category,
@@ -5918,6 +5929,7 @@ function App() {
     size: 15
   })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת ${b.title}`,
     onClick: () => deleteBill(b.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
@@ -6021,6 +6033,7 @@ function App() {
       style: {
         color: 'var(--text-muted)'
       },
+      "aria-label": `עריכת ${p.name}`,
       onClick: () => startEdit('savings', p, r => ({
         name: r.name,
         iconIdx: r.iconIdx || 0,
@@ -6032,6 +6045,7 @@ function App() {
       size: 14
     })), /*#__PURE__*/React.createElement("button", {
       className: "ent-icon-btn",
+      "aria-label": `מחיקת ${p.name}`,
       onClick: () => deleteSavingsPot(p.id)
     }, /*#__PURE__*/React.createElement(ITrash, {
       size: 15
@@ -6183,6 +6197,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     },
+    "aria-label": `עריכת ${a.name}`,
     onClick: () => startEdit('investments', a, r => ({
       name: r.name,
       type: r.type,
@@ -6193,6 +6208,7 @@ function App() {
     size: 15
   })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת ${a.name}`,
     onClick: () => deleteAsset(a.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
@@ -6266,6 +6282,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     },
+    "aria-label": `עריכת ${n.title}`,
     onClick: () => startEdit('notes', n, r => ({
       title: r.title,
       content: r.content || ''
@@ -6274,6 +6291,7 @@ function App() {
     size: 14
   })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת ${n.title}`,
     onClick: () => deleteNote(n.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 15
@@ -6403,6 +6421,7 @@ function App() {
       style: {
         color: 'var(--text-muted)'
       },
+      "aria-label": `עריכת ${tr.title}`,
       onClick: () => startEdit('trips', tr, r => ({
         title: r.title,
         type: r.type,
@@ -6414,6 +6433,7 @@ function App() {
       size: 15
     })), /*#__PURE__*/React.createElement("button", {
       className: "ent-icon-btn",
+      "aria-label": `מחיקת ${tr.title}`,
       onClick: () => deleteTrip(tr.id)
     }, /*#__PURE__*/React.createElement(ITrash, {
       size: 16
@@ -6529,6 +6549,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     },
+    "aria-label": `עריכת ${g.event}`,
     onClick: () => startEdit('gifts', g, r => ({
       event: r.event,
       category: r.category,
@@ -6540,6 +6561,7 @@ function App() {
     size: 15
   })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת ${g.event}`,
     onClick: () => deleteGift(g.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
@@ -6873,6 +6895,7 @@ function App() {
     }
   }, data.subs.join(', ')))), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
+    "aria-label": `מחיקת קטגוריית ${name}`,
     onClick: () => deleteCustomCategory(name)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
@@ -7907,7 +7930,9 @@ function SettingsSection({
   }, /*#__PURE__*/React.createElement("button", {
     onClick: e => {
       setOpen(!open);
-      e.currentTarget.blur(); // בלי זה, נייד לפעמים גולל את הכפתור לתצוגה מלאה תוך כדי הפתיחה
+      // בלי זה, נייד לפעמים גולל את הכפתור לתצוגה מלאה תוך כדי הפתיחה. רק בלחיצה אמיתית (עכבר/מגע) —
+      // הפעלה במקלדת (Enter/Space) מגיעה עם detail=0, ושם ה-blur היה זורק את הפוקוס בלי סיבה
+      if (e.detail !== 0) e.currentTarget.blur();
     },
     "aria-expanded": open,
     className: "ent-settings-head flex items-center gap-3 p-6 text-right"
