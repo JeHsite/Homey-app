@@ -4303,7 +4303,7 @@ function App() {
       cancelled = true;
     };
   }, [authStage, currentProfile]);
-  const [communityLink, setCommunityLink] = useState(() => localStorage.getItem('homey_community') || '');
+  const [communityLink, setCommunityLink] = useState(() => localStorage.getItem('homey_community') || 'https://chat.whatsapp.com/C4lSJ6tNHTu3gNF0naRCOZ');
   const [dismissedAlerts, setDismissedAlerts] = useState([]);
   useEffect(() => {
     localStorage.setItem('homey_community', communityLink);
@@ -7109,7 +7109,15 @@ function App() {
     style: {
       color: 'var(--text)'
     }
-  }, "הקהילה שלנו"), /*#__PURE__*/React.createElement("p", null, "מקום לשתף, להתייעץ, לקחת חלק באתגרים וללמוד ביחד איך לעשות יותר עם הכסף."), communityLink ? /*#__PURE__*/React.createElement("a", {
+  }, "הקהילה שלנו"), /*#__PURE__*/React.createElement("p", null, "מקום לשתף, להתייעץ, לקחת חלק באתגרים וללמוד ביחד איך לעשות יותר עם הכסף."), /*#__PURE__*/React.createElement("p", null, "רוצים להצטרף לקהילה שלנו ב-WhatsApp? פשוט לוחצים על ", /*#__PURE__*/React.createElement("a", {
+    href: "https://chat.whatsapp.com/C4lSJ6tNHTu3gNF0naRCOZ",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      color: 'var(--cyan)',
+      textDecoration: 'underline'
+    }
+  }, "הקישור הזה"), "."), communityLink ? /*#__PURE__*/React.createElement("a", {
     href: communityLink,
     target: "_blank",
     rel: "noopener noreferrer",
