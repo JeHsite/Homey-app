@@ -4081,6 +4081,13 @@ function App() {
       currency: c
     }).eq('id', familyId).then(() => {});
   };
+  const [reminderHour, setReminderHour] = useState(8); // שעת שליחת תזכורות תשלום (שעון ישראל, 0-23)
+  const setFamilyReminderHour = h => {
+    setReminderHour(h);
+    if (!isDemo && familyId) sb.from('families').update({
+      reminder_hour: h
+    }).eq('id', familyId).then(() => {});
+  };
   const [rates, setRates] = useState(null); // null = עוד לא נטען. אז toPrimary מחזיר את הסכום הגולמי בלי המרה
   const [ratesStale, setRatesStale] = useState(false);
   useEffect(() => {
@@ -4432,6 +4439,7 @@ function App() {
           groupCode: fam.data.group_code
         });
         if (fam.data.currency) setCurrency(fam.data.currency);
+        if (Number.isInteger(fam.data.reminder_hour)) setReminderHour(fam.data.reminder_hour);
       }
     })();
   }, [authStage, familyId]);
@@ -6833,7 +6841,28 @@ function App() {
       background: pushState === 'on' ? 'var(--on-accent)' : 'var(--text-dim)',
       right: pushState === 'on' ? 2 : 24
     }
-  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }))), !isDemo && currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text)'
+    }
+  }, "שעת שליחת תזכורות"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, "לפי שעון ישראל, אחת ליום")), /*#__PURE__*/React.createElement("select", {
+    className: "ent-input px-3 py-2 rounded-xl text-sm outline-none",
+    value: reminderHour,
+    onChange: e => setFamilyReminderHour(Number(e.target.value))
+  }, Array.from({
+    length: 24
+  }, (_, h) => /*#__PURE__*/React.createElement("option", {
+    key: h,
+    value: h
+  }, `${String(h).padStart(2, '0')}:00`)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-1.5",
     style: {
       color: 'var(--text-muted)'

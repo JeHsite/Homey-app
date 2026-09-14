@@ -1,6 +1,8 @@
 // Homey — תזכורות תשלום יומיות בפוש.
-// מופעל ע"י pg_cron פעם ביום. מוגן בכותרת x-cron-secret — לכן "Verify JWT" כבוי לפונקציה הזו.
-// בדיקה ידנית: POST עם הכותרת x-cron-secret וגוף {"test": true} — שולח הודעת ניסיון לכל המנויים.
+// מופעל ע"י pg_cron פעם בשעה (לא פעם ביום — כל משפחה בוחרת שעה משלה ב-families.reminder_hour,
+// והפונקציה בכל הפעלה שולחת רק למשפחות שהשעה הנוכחית בישראל תואמת את מה שהן בחרו).
+// מוגן בכותרת x-cron-secret — לכן "Verify JWT" כבוי לפונקציה הזו.
+// בדיקה ידנית: POST עם הכותרת x-cron-secret וגוף {"test": true} — שולח הודעת ניסיון לכל המנויים, בלי קשר לשעה.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
@@ -14,6 +16,13 @@ function israelDate() {
   }).formatToParts(new Date());
   const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
   return { y: get("year"), m: get("month"), d: get("day") };
+}
+
+// השעה העגולה הנוכחית בישראל (0-23) — מבוסס על שעון ישראל בפועל, כך שמעבר קיץ/חורף מטופל אוטומטית
+function israelHour() {
+  return Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jerusalem", hour: "numeric", hourCycle: "h23",
+  }).format(new Date()));
 }
 
 // due_day -> בעוד כמה ימים (0-2). מטפל במעבר חודש, ובחשבון של יום 31 בחודש קצר (נחשב ליום האחרון).
@@ -67,6 +76,18 @@ Deno.serve(async (req) => {
       list.push({ title: b.title, amount: b.amount, ahead: upcoming.get(b.due_day)! });
       byFamily.set(b.family_id, list);
     }
+
+    // מסננים למשפחות שהשעה הנוכחית בישראל היא בדיוק השעה שהן בחרו (ברירת מחדל 8, אם עדיין לא נבחרה)
+    const familyIds = [...byFamily.keys()];
+    if (familyIds.length) {
+      const { data: fams } = await supabase.from("families").select("id, reminder_hour").in("id", familyIds);
+      const hourByFamily = new Map((fams ?? []).map((f) => [f.id, f.reminder_hour ?? 8] as const));
+      const thisHour = israelHour();
+      for (const familyId of familyIds) {
+        if (hourByFamily.get(familyId) !== thisHour) byFamily.delete(familyId);
+      }
+    }
+
     for (const [familyId, list] of byFamily) {
       list.sort((a, b) => a.ahead - b.ahead);
       messages.set(familyId, list.length === 1
