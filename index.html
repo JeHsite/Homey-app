@@ -8132,7 +8132,7 @@ function TrendLines({
       l: 10,
       r: 10,
       t: 14,
-      b: mode === 'year' ? 32 : 22
+      b: 22
     };
   const max = Math.max(1, ...data.map(d => Math.max(d.income, d.expense)));
   const x = i => P.l + i * (W - P.l - P.r) / (data.length - 1);
@@ -8249,26 +8249,10 @@ function TrendLines({
   }))), data.map((d, i) => {
     const skip = data.length > 8 && (data.length - 1 - i) % 2;
     const fill = hover === i ? 'var(--text)' : 'var(--text-dim)';
-    if (skip) return /*#__PURE__*/React.createElement("text", { key: 't' + i });
-    if (mode === 'year') {
-      const words = d.label.split(' ');
-      // ‏ (RLM) בתחילת כל שורה: מסמן לאלגוריתם ה-bidi שזו פסקה בעברית, כדי שהמספר "12"
-      // לא ישבש את סדר המילים — עמיד יותר בין דפדפנים מ-CSS direction/unicode-bidi על SVG text.
-      const line1 = '‏' + words.slice(0, 2).join(' '),
-        line2 = '‏' + words.slice(2).join(' ');
-      return /*#__PURE__*/React.createElement("text", {
-        key: 't' + i,
-        textAnchor: "middle",
-        fontSize: "9",
-        style: { fill }
-      }, /*#__PURE__*/React.createElement("tspan", {
-        x: x(i),
-        y: H - 18
-      }, line1), /*#__PURE__*/React.createElement("tspan", {
-        x: x(i),
-        y: H - 6
-      }, line2));
-    }
+    // במצב שנתי אין תוויות טקסט מתחת לציר בכלל — המספר "12" מעורבב עם מילים בעברית בתוך
+    // SVG עטוף ב-dir="ltr" יצר שיבוש תווים שלא הצלחנו לתקן אמין בין דפדפנים. התקופה המדויקת
+    // עדיין מוצגת בנגיעה/מעבר עכבר (השורה מעל המקרא), והמקרא למטה מבהיר "הכנסות/הוצאות שנתיות".
+    if (skip || mode === 'year') return /*#__PURE__*/React.createElement("text", { key: 't' + i });
     return /*#__PURE__*/React.createElement("text", {
       key: 't' + i,
       x: x(i),
@@ -8299,13 +8283,17 @@ function TrendLines({
     }
   }, series.map(([k, c]) => /*#__PURE__*/React.createElement("span", {
     key: k,
-    className: "flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1.5",
+    style: mode === 'year' ? {
+      color: c,
+      fontWeight: 700
+    } : undefined
+  }, mode !== 'year' && /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-sm",
     style: {
       background: c
     }
-  }), labels[k]))));
+  }), mode === 'year' ? `${labels[k]} שנתיות` : labels[k]))));
 }
 
 /* ---- חזרזיר תלת-ממדי חי (Three.js נטען רק במסך הילד); בלי WebGL — חוזרים לאימוג'י ---- */
