@@ -3870,6 +3870,8 @@ function App() {
   const [familyId, setFamilyId] = useState(null);
   const isDemo = familyId === 'DEMO';
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [txSearch, setTxSearch] = useState('');
+  const [txFilterCategory, setTxFilterCategory] = useState('all');
   const [tripsMonth, setTripsMonth] = useState('all');
   const [giftsMonth, setGiftsMonth] = useState('all');
   const [billsFilter, setBillsFilter] = useState('all');
@@ -4529,6 +4531,14 @@ function App() {
   const visibleGifts = useMemo(() => giftsMonth === 'all' ? gifts : gifts.filter(g => monthKey(g.date) === giftsMonth), [gifts, giftsMonth]);
   const visibleBills = useMemo(() => billsFilter === 'all' ? bills : bills.filter(b => billsFilter === 'paid' ? b.isPaid : !b.isPaid), [bills, billsFilter]);
   const visibleTransactions = useMemo(() => selectedMonth === 'all' ? transactions : transactions.filter(t => monthKey(t.date) === selectedMonth), [transactions, selectedMonth]);
+  const txFilterCategories = useMemo(() => [...new Set(visibleTransactions.map(t => t.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he')), [visibleTransactions]);
+  const searchedTransactions = useMemo(() => {
+    let list = visibleTransactions;
+    if (txFilterCategory !== 'all') list = list.filter(t => t.category === txFilterCategory);
+    const q = txSearch.trim().toLowerCase();
+    if (q) list = list.filter(t => (t.description || '').toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q) || (t.sub || '').toLowerCase().includes(q));
+    return list;
+  }, [visibleTransactions, txSearch, txFilterCategory]);
   const categoryBreakdown = useMemo(() => {
     const map = {};
     visibleTransactions.filter(t => t.type === 'expense').forEach(t => {
@@ -5731,9 +5741,27 @@ function App() {
   }, editingId ? "עדכון" : "שמור"), /*#__PURE__*/React.createElement("button", {
     onClick: () => closeForm('expenses'),
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
-  }, "ביטול"))), visibleTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+  }, "ביטול"))), visibleTransactions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-3 gap-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: `${inputClass} sm:col-span-2`,
+    placeholder: "חיפוש לפי תיאור או קטגוריה",
+    value: txSearch,
+    onChange: e => setTxSearch(e.target.value)
+  }), /*#__PURE__*/React.createElement("select", {
+    className: inputClass,
+    value: txFilterCategory,
+    onChange: e => setTxFilterCategory(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "כל הקטגוריות"), txFilterCategories.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, c)))), visibleTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "עדיין אין רשומות"
-  }) : /*#__PURE__*/React.createElement("div", null, visibleTransactions.slice(0, 12).map(t => /*#__PURE__*/React.createElement("div", {
+  }) : searchedTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    text: "אין תוצאות התואמות לחיפוש"
+  }) : /*#__PURE__*/React.createElement("div", null, searchedTransactions.slice(0, 12).map(t => /*#__PURE__*/React.createElement("div", {
     key: t.id,
     className: "ent-row py-3 flex justify-between items-center group"
   }, /*#__PURE__*/React.createElement("div", {
