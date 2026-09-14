@@ -1950,42 +1950,37 @@ function newsAgo(unixSeconds) {
 function NewsTicker({ items }) {
   const trackRef = useRef(null);
   const posRef = useRef(0);
-  const [dbg, setDbg] = useState('');
+  // אם עותק אחד של הכותרות צר יותר מרוחב הטיקר, החלון הנגלל "יוצא" מעבר לקצה התוכן המשוכפל
+  // ונראה ריק עד שהוא עוטף — לכן משכפלים כמה עותקים שצריך (יותר משכפלים כשיש מעט כותרות),
+  // לא רק שניים.
+  const repeats = items && items.length ? Math.max(4, Math.ceil(24 / items.length)) : 4;
   useEffect(() => {
     if (!items || !items.length) return;
     const track = trackRef.current;
     if (!track) return;
     const speed = 45; // פיקסלים לשנייה
     let last = null;
-    let frame = 0;
     let raf = requestAnimationFrame(function step(now) {
-      try {
-        if (last == null) last = now;
-        const dt = (now - last) / 1000;
-        last = now;
-        const half = track.scrollWidth / 2;
-        frame++;
-        if (half > 0) {
-          posRef.current = (posRef.current + speed * dt) % half;
-          track.style.transform = `translateX(${-posRef.current}px)`;
-        }
-        if (frame % 15 === 0) setDbg(`f${frame} p${Math.round(posRef.current)} h${Math.round(half)} sw${track.scrollWidth}`);
-        raf = requestAnimationFrame(step);
-      } catch (e) {
-        setDbg('ERR ' + e.message);
+      if (last == null) last = now;
+      const dt = (now - last) / 1000;
+      last = now;
+      const oneSet = track.scrollWidth / repeats;
+      if (oneSet > 0) {
+        posRef.current = (posRef.current + speed * dt) % oneSet;
+        track.style.transform = `translateX(${-posRef.current}px)`;
       }
+      raf = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(raf);
-  }, [items]);
+  }, [items, repeats]);
   if (!items || !items.length) return null;
-  const doubled = [...items, ...items];
+  const doubled = Array.from({ length: repeats }, () => items).flat();
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker",
     "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-ticker-live",
-    style: { fontFamily: 'monospace', fontSize: 9 }
-  }, dbg || '···', /*#__PURE__*/React.createElement("span", {
+    className: "ent-ticker-live"
+  }, /*#__PURE__*/React.createElement("span", {
     className: "ent-ticker-live-dot"
   }), "Live"), /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
