@@ -2273,6 +2273,16 @@ const lsDel = k => {
     localStorage.removeItem(k);
   } catch (_e) {}
 };
+// סגירת חלון מודאלי במקש Escape, לנגישות ניווט מקלדת
+function useEscapeClose(onClose) {
+  useEffect(() => {
+    const h = e => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+}
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
 async function bioSupported() {
@@ -2431,12 +2441,16 @@ function LegalModal({
   doc,
   onClose
 }) {
+  useEscapeClose(onClose);
   return /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center px-4 z-50",
     style: {
       background: 'rgba(0,0,0,0.6)'
     },
     dir: "rtl",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "מסמך משפטי",
     onClick: onClose
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 w-full max-w-lg overflow-y-auto",
@@ -2461,6 +2475,7 @@ function OnboardingTour({
   onEnablePush
 }) {
   const [step, setStep] = useState(0);
+  useEscapeClose(onClose);
   const ua = navigator.userAgent;
   const isIOS = /iphone|ipad|ipod/i.test(ua);
   const isAndroid = /android/i.test(ua);
@@ -3418,12 +3433,16 @@ function EditProfileModal({
     setSaving(false);
     if (res && res !== 'ok') setPinErr(PIN_MESSAGES[res] || PIN_MESSAGES.error);
   };
+  useEscapeClose(onClose);
   return /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center px-4 z-50",
     style: {
       background: 'rgba(0,0,0,0.6)'
     },
-    dir: "rtl"
+    dir: "rtl",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "עריכת פרופיל"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 w-full max-w-sm"
   }, /*#__PURE__*/React.createElement("h3", {
@@ -3558,6 +3577,7 @@ function AlertCarousel({
     style: {
       borderColor: c
     },
+    "aria-live": "polite",
     onMouseEnter: () => setPaused(true),
     onMouseLeave: () => setPaused(false),
     onTouchStart: () => setPaused(true)
