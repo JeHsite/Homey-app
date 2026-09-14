@@ -3191,8 +3191,7 @@ function ProfileScreen({
       }, {
         data: kids
       }] = await Promise.all([
-      // has_pin קיים אחרי pin.sql; לפני כן נופלים לעמודת pin הישנה
-      sb.from('profiles').select('id, full_name, avatar, has_pin, status, photo_url').eq('family_id', familyId).then(r => r.error ? sb.from('profiles').select('id, full_name, avatar, pin, status, photo_url').eq('family_id', familyId) : r), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId)]);
+      sb.from('profiles').select('id, full_name, avatar, has_pin, status, photo_url').eq('family_id', familyId), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId)]);
       const list = [...(parents || []).map(p => ({
         id: p.id,
         name: p.full_name,
@@ -3272,8 +3271,7 @@ function ProfileScreen({
   };
   const checkPin = async () => {
     const p = pinGateFor;
-    // דמו, או מסד שעוד לא עבר ל-pin.sql — השוואה מקומית כמו קודם
-    if (isDemo || p.pin) {
+    if (isDemo) {
       if (pinInput === p.pin) passGate(p);else setPinError('קוד שגוי, נסה/י שוב');
       return;
     }
