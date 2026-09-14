@@ -611,11 +611,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-ticker-viewport::before, .ent-ticker-viewport::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; }
   .ent-ticker-viewport::before { right: 0; background: linear-gradient(to left, var(--navy-panel), transparent); }
   .ent-ticker-viewport::after { left: 0; background: linear-gradient(to right, var(--navy-panel), transparent); }
-  .ent-ticker-track { display: flex; width: max-content; white-space: nowrap; animation-name: ent-ticker-scroll; animation-timing-function: linear; animation-iteration-count: infinite; }
+  /* התזוזה נשלטת ב-JS (requestAnimationFrame, ר' NewsTicker) ולא ב-CSS animation — כדי לא להיות
+     תלויים בהתנהגות לא-אחידה של דפדפנים ל-animation-iteration-count/transform-percent על SVG/flex. */
+  .ent-ticker-track { display: flex; width: max-content; white-space: nowrap; will-change: transform; }
   .ent-ticker-item { display: inline-flex; align-items: center; font-size: 13.5px; font-weight: 500; color: var(--text-2); padding: 0 22px; border-left: 1px solid var(--line); }
   .ent-ticker-source { color: var(--bronze); font-weight: 700; margin-left: 6px; }
-  @keyframes ent-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  /* הטיקר רץ תמיד, בלי קשר להעדפת prefers-reduced-motion — תוכן דקורטיבי/redundant עם "כלכלה בעולם" למטה */
 
   /* ===== "כלכלה בעולם" — עיצוב עיתון ===== */
   .ent-newspaper-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 24px 14px; border-bottom: 3px double var(--line); }
@@ -1948,9 +1948,29 @@ function newsAgo(unixSeconds) {
   return `לפני ${days} ימים`;
 }
 function NewsTicker({ items }) {
+  const trackRef = useRef(null);
+  const posRef = useRef(0);
+  useEffect(() => {
+    if (!items || !items.length) return;
+    const track = trackRef.current;
+    if (!track) return;
+    const speed = 45; // פיקסלים לשנייה
+    let last = null;
+    let raf = requestAnimationFrame(function step(now) {
+      if (last == null) last = now;
+      const dt = (now - last) / 1000;
+      last = now;
+      const half = track.scrollWidth / 2;
+      if (half > 0) {
+        posRef.current = (posRef.current + speed * dt) % half;
+        track.style.transform = `translateX(${-posRef.current}px)`;
+      }
+      raf = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [items]);
   if (!items || !items.length) return null;
   const doubled = [...items, ...items];
-  const duration = Math.max(24, items.length * 6);
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker",
     "aria-hidden": "true"
@@ -1961,10 +1981,8 @@ function NewsTicker({ items }) {
   }), "Live"), /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-ticker-track",
-    style: {
-      animationDuration: `${duration}s`
-    }
+    ref: trackRef,
+    className: "ent-ticker-track"
   }, doubled.map((n, i) => /*#__PURE__*/React.createElement("span", {
     key: i,
     className: "ent-ticker-item"
