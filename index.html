@@ -597,6 +597,7 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-skel { border-radius: 10px; background: linear-gradient(90deg, var(--navy-panel-2) 0%, color-mix(in srgb, var(--navy-panel-2) 80%, var(--text) 12%) 50%, var(--navy-panel-2) 100%); background-size: 200% 100%; animation: ent-shimmer 1.3s linear infinite; }
   @keyframes ent-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .ent-skel { animation: none; } }
+  @media print { .ent-report-noprint { display: none !important; } }
 
   /* ===== גרפים (5) ===== */
   .ent-donut-wrap { position: relative; width: 170px; height: 170px; flex-shrink: 0; }
@@ -3808,6 +3809,137 @@ function AlertCarousel({
     "aria-label": `התראה ${k + 1} מתוך ${alerts.length}`
   }))));
 }
+// דוח חודשי להדפסה/שמירה כ-PDF — עמוד עצמאי, בכוונה לבן-על-שחור קבוע (לא לפי ערכת הנושא) כדי שיידפס נקי בלי רקע כהה מיותר
+function MonthlyReportView({
+  familyName,
+  monthLabel,
+  currency,
+  income,
+  expense,
+  categoryBreakdown,
+  onClose
+}) {
+  const rows = Object.entries(categoryBreakdown).sort((a, b) => b[1].total - a[1].total);
+  const money = v => `${currency}${Math.round(v).toLocaleString('he-IL')}`;
+  const cell = (align, bold) => ({
+    padding: '8px 6px',
+    textAlign: align || 'right',
+    fontWeight: bold ? 700 : 400,
+    borderBottom: '1px solid #ddd'
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    dir: "rtl",
+    style: {
+      background: '#fff',
+      color: '#111',
+      minHeight: '100vh',
+      padding: '32px 24px',
+      fontFamily: 'inherit'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-report-noprint",
+    style: {
+      display: 'flex',
+      gap: 12,
+      justifyContent: 'flex-end',
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => window.print(),
+    style: {
+      padding: '10px 20px',
+      borderRadius: 999,
+      border: 'none',
+      background: '#111',
+      color: '#fff',
+      fontSize: 14,
+      cursor: 'pointer'
+    }
+  }, "הדפסה / שמירה כ-PDF"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    style: {
+      padding: '10px 20px',
+      borderRadius: 999,
+      border: '1px solid #ccc',
+      background: '#fff',
+      color: '#111',
+      fontSize: 14,
+      cursor: 'pointer'
+    }
+  }, "סגירה")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 640,
+      margin: '0 auto'
+    }
+  }, /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontSize: 24,
+      fontWeight: 700,
+      marginBottom: 4
+    }
+  }, "Homey — דוח חודשי"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: '#555',
+      marginBottom: 28
+    }
+  }, familyName ? `${familyName} · ${monthLabel}` : monthLabel), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr',
+      gap: 12,
+      marginBottom: 32
+    }
+  }, [['הכנסות', income, '#1a7f37'], ['הוצאות', expense, '#c0392b'], ['מאזן', income - expense, '#111']].map(([label, val, color]) => /*#__PURE__*/React.createElement("div", {
+    key: label,
+    style: {
+      border: '1px solid #ddd',
+      borderRadius: 12,
+      padding: '14px 12px'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: '#666',
+      marginBottom: 4
+    }
+  }, label), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color
+    }
+  }, money(val))))), /*#__PURE__*/React.createElement("h2", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      marginBottom: 12
+    }
+  }, "פירוט הוצאות לפי קטגוריה"), rows.length === 0 ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: '#666'
+    }
+  }, "אין הוצאות בתקופה שנבחרה.") : /*#__PURE__*/React.createElement("table", {
+    style: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      fontSize: 14
+    }
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    style: cell('right', true)
+  }, "קטגוריה"), /*#__PURE__*/React.createElement("th", {
+    style: cell('left', true)
+  }, "סכום"), /*#__PURE__*/React.createElement("th", {
+    style: cell('left', true)
+  }, "אחוז"))), /*#__PURE__*/React.createElement("tbody", null, rows.map(([name, v]) => /*#__PURE__*/React.createElement("tr", {
+    key: name
+  }, /*#__PURE__*/React.createElement("td", {
+    style: cell('right')
+  }, name), /*#__PURE__*/React.createElement("td", {
+    style: cell('left')
+  }, money(v.total)), /*#__PURE__*/React.createElement("td", {
+    style: cell('left')
+  }, expense ? `${Math.round(v.total / expense * 100)}%` : '—')))))));
+}
 function App() {
   const [authStage, setAuthStage] = useState('login');
   const [restoring, setRestoring] = useState(true);
@@ -3871,6 +4003,7 @@ function App() {
   const isDemo = familyId === 'DEMO';
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [txSearch, setTxSearch] = useState('');
+  const [monthlyReportOpen, setMonthlyReportOpen] = useState(false);
   const [txFilterCategory, setTxFilterCategory] = useState('all');
   const [tripsMonth, setTripsMonth] = useState('all');
   const [giftsMonth, setGiftsMonth] = useState('all');
@@ -3929,6 +4062,7 @@ function App() {
   const [currency, setCurrency] = useState(() => localStorage.getItem('homey_currency') || '₪');
   const [compactMode, setCompactMode] = useState(() => localStorage.getItem('homey_compact') === '1');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
   const [helpTab, setHelpTab] = useState('guide');
   const [news, setNews] = useState([]);
   const [newsState, setNewsState] = useState('idle'); // idle | loading | ok | unavailable
@@ -4128,6 +4262,65 @@ function App() {
     setCustomCategories({});
     setConfirmReset(false);
     showToast('כל הנתונים אופסו');
+  };
+  const downloadBackup = async () => {
+    setBackupBusy(true);
+    try {
+      let data;
+      if (isDemo) {
+        data = {
+          transactions,
+          bills,
+          notes,
+          trips,
+          gifts,
+          savingsPots,
+          assets,
+          customCategories: Object.keys(customCategories)
+        };
+      } else {
+        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
+        data = {
+          transactions: tx.data ?? [],
+          bills: bl.data ?? [],
+          notes: nt.data ?? [],
+          trips: tr.data ?? [],
+          gifts: gf.data ?? [],
+          savingsPots: sp.data ?? [],
+          assets: as.data ?? [],
+          customCategories: cc.data ?? [],
+          children: (ch.data ?? []).map(c => ({
+            id: c.id,
+            name: c.name
+          })),
+          familyGoals: fg.data ?? [],
+          personalGoals: pg.data ?? [],
+          kidEntries: ke.data ?? [],
+          kidGoals: kg.data ?? []
+        };
+      }
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        familyName: familyInfo?.name || null,
+        ...data
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `homey-גיבוי-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('הגיבוי הורד בהצלחה');
+    } catch (_e) {
+      showToast('שגיאה בהורדת הגיבוי');
+    } finally {
+      setBackupBusy(false);
+    }
   };
   useEffect(() => {
     localStorage.setItem('homey_fontscale', fontScale);
@@ -4551,6 +4744,8 @@ function App() {
     });
     return map;
   }, [visibleTransactions]);
+  const reportIncome = useMemo(() => visibleTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), [visibleTransactions]);
+  const reportExpense = useMemo(() => visibleTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0), [visibleTransactions]);
   const pieData = Object.entries(categoryBreakdown).map(([name, v]) => ({
     name,
     value: v.total
@@ -5231,6 +5426,15 @@ function App() {
       setShowTour(true);
     }
   });
+  if (monthlyReportOpen) return /*#__PURE__*/React.createElement(MonthlyReportView, {
+    familyName: familyInfo?.name,
+    monthLabel: selectedMonth === 'all' ? 'כל הזמן' : monthLabelHe(selectedMonth),
+    currency: currency,
+    income: reportIncome,
+    expense: reportExpense,
+    categoryBreakdown: categoryBreakdown,
+    onClose: () => setMonthlyReportOpen(false)
+  });
   const isChild = currentProfile?.role === 'child';
   const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
@@ -5820,12 +6024,17 @@ function App() {
     className: "flex flex-wrap items-center justify-between gap-3 mb-4"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold"
-  }, "פירוט הוצאות לפי קטגוריה"), /*#__PURE__*/React.createElement(MonthPicker, {
+  }, "פירוט הוצאות לפי קטגוריה"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(MonthPicker, {
     value: selectedMonth,
     onChange: setSelectedMonth,
     months: availableMonths,
     labelFn: monthLabelHe
-  })), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMonthlyReportOpen(true),
+    className: "ent-pill-btn ghost px-3 py-1.5 text-xs"
+  }, "ייצוא דוח"))), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: selectedMonth === 'all' ? 'אין הוצאות עדיין' : 'אין הוצאות בחודש שנבחר'
   }) : /*#__PURE__*/React.createElement("table", {
     className: "ent-table w-full"
@@ -6959,6 +7168,22 @@ function App() {
   }))))), /*#__PURE__*/React.createElement(NewCategoryForm, {
     onAdd: addCustomCategory
   })), /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: IClipboard,
+    title: "גיבוי נתונים",
+    subtitle: "הורדת עותק מקומי של כל הנתונים שלכם"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mb-3",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "קובץ JSON עם כל ההוצאות, החיובים, החסכונות, הנכסים, הפתקים, הטיולים, המתנות, היעדים והכסף של הילדים. שווה להוריד לפני איפוס נתונים, או פשוט כרשת ביטחון."), /*#__PURE__*/React.createElement("button", {
+    onClick: downloadBackup,
+    disabled: backupBusy,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm",
+    style: {
+      opacity: backupBusy ? 0.6 : 1
+    }
+  }, backupBusy ? 'מוריד...' : 'הורדת גיבוי (JSON)')), /*#__PURE__*/React.createElement(SettingsSection, {
     icon: ITrash,
     title: "אזור מסוכן",
     danger: true
