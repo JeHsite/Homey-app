@@ -2105,6 +2105,125 @@ function generateFamilyCode(name) {
   const digits = String(Math.floor(10 + Math.random() * 90));
   return prefix + digits;
 }
+/* ---- ריבוי מטבעות: קופות חיסכון ונכסים יכולים להיות במטבע שונה מהמטבע הראשי של המשפחה ---- */
+// רשימת מטבעות נתמכים (קוד ISO + שם עברי) — מ-Frankfurter /currencies, קבוע בקוד
+const CURRENCY_LIST = [{
+  code: 'ILS',
+  name: 'שקל חדש'
+}, {
+  code: 'USD',
+  name: 'דולר אמריקאי'
+}, {
+  code: 'EUR',
+  name: 'יורו'
+}, {
+  code: 'GBP',
+  name: 'לירה שטרלינג'
+}, {
+  code: 'AUD',
+  name: 'דולר אוסטרלי'
+}, {
+  code: 'BGN',
+  name: 'לב בולגרי'
+}, {
+  code: 'BRL',
+  name: 'ריאל ברזילאי'
+}, {
+  code: 'CAD',
+  name: 'דולר קנדי'
+}, {
+  code: 'CHF',
+  name: 'פרנק שוויצרי'
+}, {
+  code: 'CNY',
+  name: 'יואן סיני'
+}, {
+  code: 'CZK',
+  name: 'קורונה צ׳כית'
+}, {
+  code: 'DKK',
+  name: 'קרונה דנית'
+}, {
+  code: 'HKD',
+  name: 'דולר הונג קונגי'
+}, {
+  code: 'HUF',
+  name: 'פורינט הונגרי'
+}, {
+  code: 'IDR',
+  name: 'רופיה אינדונזית'
+}, {
+  code: 'INR',
+  name: 'רופי הודי'
+}, {
+  code: 'ISK',
+  name: 'קרונה איסלנדית'
+}, {
+  code: 'JPY',
+  name: 'ין יפני'
+}, {
+  code: 'KRW',
+  name: 'וון דרום קוריאני'
+}, {
+  code: 'MXN',
+  name: 'פסו מקסיקני'
+}, {
+  code: 'MYR',
+  name: 'רינגיט מלזי'
+}, {
+  code: 'NOK',
+  name: 'קרונה נורווגית'
+}, {
+  code: 'NZD',
+  name: 'דולר ניו זילנדי'
+}, {
+  code: 'PHP',
+  name: 'פסו פיליפיני'
+}, {
+  code: 'PLN',
+  name: 'זלוטי פולני'
+}, {
+  code: 'RON',
+  name: 'לאו רומני'
+}, {
+  code: 'SEK',
+  name: 'קרונה שוודית'
+}, {
+  code: 'SGD',
+  name: 'דולר סינגפורי'
+}, {
+  code: 'THB',
+  name: 'באט תאילנדי'
+}, {
+  code: 'TRY',
+  name: 'לירה טורקית'
+}, {
+  code: 'ZAR',
+  name: 'ראנד דרום אפריקאי'
+}];
+const CURRENCY_SYMBOL_TO_CODE = {
+  '₪': 'ILS',
+  '$': 'USD',
+  '€': 'EUR',
+  '£': 'GBP'
+};
+const CURRENCY_CODE_DISPLAY = {
+  ILS: '₪',
+  USD: '$',
+  EUR: '€',
+  GBP: '£'
+};
+const currencyDisplay = code => CURRENCY_CODE_DISPLAY[code] || code;
+// ממיר סכום ממטבע פריט (קוד ISO) למטבע הראשי של המשפחה (סימן). null = אין שער זמין למטבע הזה — הקורא מציג "שער לא זמין" ולא כולל בסכום.
+function toPrimary(amount, itemCode, familySymbol, rates) {
+  if (!itemCode || !rates) return amount;
+  const familyCode = CURRENCY_SYMBOL_TO_CODE[familySymbol] || 'ILS';
+  if (itemCode === familyCode) return amount;
+  const from = rates[itemCode],
+    to = rates[familyCode];
+  if (!from || !to) return null;
+  return amount * from.rate_to_ils / to.rate_to_ils;
+}
 /* ---- סכום כספי: ₪ קטן ובהיר מהמספר, ספרות ברוחב אחיד ---- */
 const reducedMotion = () => {
   try {
@@ -2152,6 +2271,60 @@ function Money({
   }, /*#__PURE__*/React.createElement("span", {
     className: "ent-cur"
   }, currency), n.toLocaleString('he-IL'));
+}
+// שורה קטנה ועמומה "≈ ₪X" מתחת לסכום פריט שבמטבע זר — מוצג רק כשמטבע הפריט שונה מהמטבע הראשי.
+function ConvertedNote({
+  amount,
+  itemCurrency,
+  familyCurrency,
+  rates
+}) {
+  if (!itemCurrency || itemCurrency === (CURRENCY_SYMBOL_TO_CODE[familyCurrency] || 'ILS')) return null;
+  const v = toPrimary(amount, itemCurrency, familyCurrency, rates);
+  return /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, v === null ? 'שער לא זמין' : `≈ ${familyCurrency}${Math.round(v).toLocaleString('he-IL')}`);
+}
+// שדה "מטבע אחר" בטפסי קופת חיסכון/נכס — סגור כברירת מחדל, פותח בחירה מ-CURRENCY_LIST + תצוגת המרה חיה
+function CurrencyField({
+  amount,
+  currency,
+  onChange,
+  familyCurrency,
+  rates,
+  open,
+  onToggleOpen,
+  colSpanClass = "sm:col-span-4"
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: colSpanClass
+  }, !open ? /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onToggleOpen,
+    className: "text-xs underline",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "מטבע אחר") : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    value: currency || '',
+    onChange: e => onChange(e.target.value || null)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, `${familyCurrency} (מטבע ראשי)`), CURRENCY_LIST.filter(c => c.code !== (CURRENCY_SYMBOL_TO_CODE[familyCurrency] || 'ILS')).map(c => /*#__PURE__*/React.createElement("option", {
+    key: c.code,
+    value: c.code
+  }, `${c.name} (${c.code})`))), /*#__PURE__*/React.createElement(ConvertedNote, {
+    amount: amount,
+    itemCurrency: currency,
+    familyCurrency: familyCurrency,
+    rates: rates
+  })));
 }
 // שלד טעינה במקום "טוען…"
 const Skeleton = ({
@@ -3676,6 +3849,10 @@ function App() {
   const [toast, setToast] = useState(null);
   const [openForm, setOpenForm] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState({
+    savings: false,
+    investments: false
+  });
   const [depositForId, setDepositForId] = useState(null);
   const [depositAmount, setDepositAmount] = useState('');
   const showToast = msg => {
@@ -3897,6 +4074,32 @@ function App() {
   useEffect(() => {
     localStorage.setItem('homey_currency', currency);
   }, [currency]);
+  const setFamilyCurrency = c => {
+    setCurrency(c);
+    if (!isDemo && familyId) sb.from('families').update({
+      currency: c
+    }).eq('id', familyId).then(() => {});
+  };
+  const [rates, setRates] = useState(null); // null = עוד לא נטען. אז toPrimary מחזיר את הסכום הגולמי בלי המרה
+  const [ratesStale, setRatesStale] = useState(false);
+  useEffect(() => {
+    if (authStage !== 'app') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: json,
+          error
+        } = await sb.functions.invoke('exchange-rate');
+        if (error || !json || cancelled) return;
+        setRates(json.rates || {});
+        setRatesStale(!!json.stale);
+      } catch (_e) {/* נשארים עם rates=null — פריטים במטבע זר יוצגו בלי המרה עד שיצליח */}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authStage]);
   useEffect(() => {
     localStorage.setItem('homey_compact', compactMode ? '1' : '0');
     document.body.setAttribute('data-compact', compactMode ? '1' : '0');
@@ -4202,13 +4405,15 @@ function App() {
         name: r.name,
         iconIdx: r.icon_idx || 0,
         target: Number(r.target),
-        current: Number(r.current)
+        current: Number(r.current),
+        currency: r.currency || null
       })));
       setAssets((as.data || []).map(r => ({
         id: r.id,
         name: r.name,
         type: r.type,
-        value: Number(r.value)
+        value: Number(r.value),
+        currency: r.currency || null
       })));
       const ccObj = {};
       (cc.data || []).forEach(r => {
@@ -4220,17 +4425,26 @@ function App() {
         };
       });
       setCustomCategories(ccObj);
-      if (fam.data) setFamilyInfo({
-        name: fam.data.name,
-        groupCode: fam.data.group_code
-      });
+      if (fam.data) {
+        setFamilyInfo({
+          name: fam.data.name,
+          groupCode: fam.data.group_code
+        });
+        if (fam.data.currency) setCurrency(fam.data.currency);
+      }
     })();
   }, [authStage, familyId]);
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
-  const totalSavings = savingsPots.reduce((s, p) => s + p.current, 0);
-  const totalAssets = assets.reduce((s, a) => s + a.value, 0);
+  const totalSavings = savingsPots.reduce((s, p) => {
+    const v = toPrimary(p.current, p.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0);
+  const totalAssets = assets.reduce((s, a) => {
+    const v = toPrimary(a.value, a.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0);
   const netWorth = balance + totalSavings + totalAssets;
   const monthKey = d => {
     if (!d) return null;
@@ -4325,13 +4539,15 @@ function App() {
   const assetBreakdown = useMemo(() => {
     const map = {};
     assets.forEach(a => {
-      map[a.type] = (map[a.type] || 0) + a.value;
+      const v = toPrimary(a.value, a.currency, currency, rates);
+      if (v === null) return;
+      map[a.type] = (map[a.type] || 0) + v;
     });
     return Object.entries(map).map(([name, value]) => ({
       name,
       value
     }));
-  }, [assets]);
+  }, [assets, currency, rates]);
   const monthlyTrend = useMemo(() => {
     const map = {};
     transactions.forEach(t => {
@@ -4429,7 +4645,7 @@ function App() {
       if (p.target > 0 && p.current >= p.target) out.push({
         id: 'goal-' + p.id,
         level: 'good',
-        text: `הגעתם ליעד "${p.name}"! ${currency}${p.current.toLocaleString('he-IL')} נחסכו.`
+        text: `הגעתם ליעד "${p.name}"! ${p.currency ? currencyDisplay(p.currency) : currency}${p.current.toLocaleString('he-IL')} נחסכו.`
       });
     });
     return out.filter(a => !dismissedAlerts.includes(a.id));
@@ -4474,12 +4690,14 @@ function App() {
       name: '',
       iconIdx: 0,
       target: '',
-      current: ''
+      current: '',
+      currency: null
     },
     investments: {
       name: '',
       type: Object.keys(ASSET_TYPES)[0],
-      value: ''
+      value: '',
+      currency: null
     }
   };
   const [formData, setFormData] = useState(emptyForms);
@@ -4496,6 +4714,10 @@ function App() {
     setFormData(prev => ({
       ...prev,
       [tab]: emptyForms[tab]
+    }));
+    setShowCurrencyPicker(prev => ({
+      ...prev,
+      [tab]: false
     }));
   };
   const startEdit = (tab, record, mapper) => {
@@ -4818,7 +5040,8 @@ function App() {
       name: f.name,
       iconIdx: Number(f.iconIdx) || 0,
       target: Number(f.target),
-      current: Number(f.current) || 0
+      current: Number(f.current) || 0,
+      currency: f.currency || null
     };
     if (editingId) {
       setSavingsPots(prev => prev.map(x => x.id === editingId ? {
@@ -4829,7 +5052,8 @@ function App() {
         name: row.name,
         icon_idx: row.iconIdx,
         target: row.target,
-        current: row.current
+        current: row.current,
+        currency: row.currency
       }).eq('id', editingId);
       closeForm('savings');
       showToast('קופת החיסכון עודכנה');
@@ -4849,7 +5073,8 @@ function App() {
         name: row.name,
         icon_idx: row.iconIdx,
         target: row.target,
-        current: row.current
+        current: row.current,
+        currency: row.currency
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
       setSavingsPots(prev => [...prev, {
@@ -4886,7 +5111,8 @@ function App() {
     const row = {
       name: f.name,
       type: f.type,
-      value: Number(f.value)
+      value: Number(f.value),
+      currency: f.currency || null
     };
     if (editingId) {
       setAssets(prev => prev.map(x => x.id === editingId ? {
@@ -4971,6 +5197,8 @@ function App() {
     familyId: familyId,
     isDemo: isDemo,
     profile: currentProfile,
+    currency: currency,
+    rates: rates,
     transactions: transactions,
     assets: assets,
     savingsPots: savingsPots,
@@ -5748,6 +5976,17 @@ function App() {
     placeholder: "נחסך כבר (אופציונלי)",
     value: formData.savings.current,
     onChange: e => updateField('savings', 'current', e.target.value)
+  }), /*#__PURE__*/React.createElement(CurrencyField, {
+    amount: Number(formData.savings.current) || 0,
+    currency: formData.savings.currency,
+    onChange: c => updateField('savings', 'currency', c),
+    familyCurrency: currency,
+    rates: rates,
+    open: showCurrencyPicker.savings || !!formData.savings.currency,
+    onToggleOpen: () => setShowCurrencyPicker(prev => ({
+      ...prev,
+      savings: !prev.savings
+    }))
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 sm:col-span-4"
   }, /*#__PURE__*/React.createElement("button", {
@@ -5791,7 +6030,8 @@ function App() {
         name: r.name,
         iconIdx: r.iconIdx || 0,
         target: String(r.target),
-        current: String(r.current)
+        current: String(r.current),
+        currency: r.currency || null
       }))
     }, /*#__PURE__*/React.createElement(IEdit, {
       size: 14
@@ -5812,7 +6052,12 @@ function App() {
       style: {
         color: 'var(--text-muted)'
       }
-    }, /*#__PURE__*/React.createElement("span", null, currency, p.current.toLocaleString('he-IL'), " מתוך ", currency, p.target.toLocaleString('he-IL')), /*#__PURE__*/React.createElement("span", null, pct, "%")), depositForId === p.id ? /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("span", null, p.currency ? currencyDisplay(p.currency) : currency, p.current.toLocaleString('he-IL'), " מתוך ", p.currency ? currencyDisplay(p.currency) : currency, p.target.toLocaleString('he-IL')), /*#__PURE__*/React.createElement("span", null, pct, "%")), /*#__PURE__*/React.createElement(ConvertedNote, {
+      amount: p.current,
+      itemCurrency: p.currency,
+      familyCurrency: currency,
+      rates: rates
+    }), depositForId === p.id ? /*#__PURE__*/React.createElement("div", {
       className: "flex gap-2 mt-3"
     }, /*#__PURE__*/React.createElement("input", {
       className: inputClass,
@@ -5838,6 +6083,7 @@ function App() {
     isDemo: isDemo,
     currentProfile: currentProfile,
     currency: currency,
+    rates: rates,
     showToast: showToast,
     transactions: transactions,
     assets: assets,
@@ -5881,6 +6127,18 @@ function App() {
     placeholder: `שווי נוכחי ${currency}`,
     value: formData.investments.value,
     onChange: e => updateField('investments', 'value', e.target.value)
+  }), /*#__PURE__*/React.createElement(CurrencyField, {
+    amount: Number(formData.investments.value) || 0,
+    currency: formData.investments.currency,
+    onChange: c => updateField('investments', 'currency', c),
+    familyCurrency: currency,
+    rates: rates,
+    open: showCurrencyPicker.investments || !!formData.investments.currency,
+    onToggleOpen: () => setShowCurrencyPicker(prev => ({
+      ...prev,
+      investments: !prev.investments
+    })),
+    colSpanClass: "sm:col-span-3"
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 sm:col-span-3"
   }, /*#__PURE__*/React.createElement("button", {
@@ -5913,12 +6171,19 @@ function App() {
     }
   }, a.type))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-left"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold",
     style: {
       color: 'var(--pos-soft)'
     }
-  }, currency, a.value.toLocaleString('he-IL')), /*#__PURE__*/React.createElement("button", {
+  }, a.currency ? currencyDisplay(a.currency) : currency, a.value.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(ConvertedNote, {
+    amount: a.value,
+    itemCurrency: a.currency,
+    familyCurrency: currency,
+    rates: rates
+  })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
     style: {
       color: 'var(--text-muted)'
@@ -5926,7 +6191,8 @@ function App() {
     onClick: () => startEdit('investments', a, r => ({
       name: r.name,
       type: r.type,
-      value: String(r.value)
+      value: String(r.value),
+      currency: r.currency || null
     }))
   }, /*#__PURE__*/React.createElement(IEdit, {
     size: 15
@@ -6489,7 +6755,7 @@ function App() {
     className: "flex gap-2"
   }, ['₪', '$', '€', '£'].map(c => /*#__PURE__*/React.createElement("button", {
     key: c,
-    onClick: () => setCurrency(c),
+    onClick: () => setFamilyCurrency(c),
     className: "ent-pill-btn px-4 py-2 text-sm flex-1",
     style: {
       background: currency === c ? 'var(--bronze)' : 'var(--navy-panel-2)',
@@ -8739,6 +9005,7 @@ function GoalsPanel({
   isDemo,
   currentProfile,
   currency,
+  rates,
   showToast,
   transactions,
   assets,
@@ -8799,7 +9066,13 @@ function GoalsPanel({
   const mk = kidToday().slice(0, 7);
   const monthTx = transactions.filter(t => String(t.date).startsWith(mk));
   const sumBy = (type, c) => monthTx.filter(t => t.type === type && (!c || t.category === c)).reduce((s, t) => s + Number(t.amount || 0), 0);
-  const netWorth = assets.reduce((s, a) => s + Number(a.value || 0), 0) + savingsPots.reduce((s, p) => s + Number(p.current || 0), 0);
+  const netWorth = assets.reduce((s, a) => {
+    const v = toPrimary(Number(a.value || 0), a.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0) + savingsPots.reduce((s, p) => {
+    const v = toPrimary(Number(p.current || 0), p.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0);
   const measure = g => {
     const tgt = Number(g.target || 0);
     if (g.type === 'spending_cap') {
@@ -9272,6 +9545,8 @@ function SetupWizard({
   familyId,
   isDemo,
   profile,
+  currency,
+  rates,
   transactions,
   assets,
   savingsPots,
@@ -9301,7 +9576,13 @@ function SetupWizard({
   }));
   const answered = !q || (isKid && q.id === 'age' ? age >= 4 && age <= 25 : q.optional || (q.type === 'multi' ? (val || []).length > 0 : !!val));
   const finishQuestions = () => {
-    const netWorth = assets.reduce((s, x) => s + Number(x.value || 0), 0) + savingsPots.reduce((s, p) => s + Number(p.current || 0), 0);
+    const netWorth = assets.reduce((s, x) => {
+      const v = toPrimary(Number(x.value || 0), x.currency, currency, rates);
+      return v === null ? s : s + v;
+    }, 0) + savingsPots.reduce((s, p) => {
+      const v = toPrimary(Number(p.current || 0), p.currency, currency, rates);
+      return v === null ? s : s + v;
+    }, 0);
     const list = setupSuggestions(audience, answers, {
       transactions,
       netWorth
