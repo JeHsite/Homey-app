@@ -17,13 +17,21 @@ serve(async (req) => {
     const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${key}`);
     const all = await res.json();
 
-    const news = (all || []).slice(0, 6).map((n: any) => ({
-      headline: n.headline,
-      summary: (n.summary || "").slice(0, 200),
-      source: n.source,
-      url: n.url,
-      datetime: n.datetime,
-    }));
+    const seen = new Set<string>();
+    const news = (all || [])
+      .filter((n: any) => {
+        if (!n.headline || seen.has(n.headline)) return false;
+        seen.add(n.headline);
+        return true;
+      })
+      .slice(0, 18)
+      .map((n: any) => ({
+        headline: n.headline,
+        summary: (n.summary || "").slice(0, 200),
+        source: n.source,
+        url: n.url,
+        datetime: n.datetime,
+      }));
 
     return new Response(JSON.stringify({ news }), {
       headers: { ...CORS, "Content-Type": "application/json" },
