@@ -1950,6 +1950,7 @@ function newsAgo(unixSeconds) {
 function NewsTicker({ items }) {
   const trackRef = useRef(null);
   const posRef = useRef(0);
+  const [dbg, setDbg] = useState('');
   // אם עותק אחד של הכותרות צר יותר מרוחב הטיקר, החלון הנגלל "יוצא" מעבר לקצה התוכן המשוכפל
   // ונראה ריק עד שהוא עוטף — לכן משכפלים כמה עותקים שצריך (יותר משכפלים כשיש מעט כותרות),
   // לא רק שניים.
@@ -1960,16 +1961,23 @@ function NewsTicker({ items }) {
     if (!track) return;
     const speed = 45; // פיקסלים לשנייה
     let last = null;
+    let frame = 0;
     let raf = requestAnimationFrame(function step(now) {
-      if (last == null) last = now;
-      const dt = (now - last) / 1000;
-      last = now;
-      const oneSet = track.scrollWidth / repeats;
-      if (oneSet > 0) {
-        posRef.current = (posRef.current + speed * dt) % oneSet;
-        track.style.transform = `translateX(${-posRef.current}px)`;
+      try {
+        if (last == null) last = now;
+        const dt = (now - last) / 1000;
+        last = now;
+        const oneSet = track.scrollWidth / repeats;
+        frame++;
+        if (oneSet > 0) {
+          posRef.current = (posRef.current + speed * dt) % oneSet;
+          track.style.transform = `translateX(${-posRef.current}px)`;
+        }
+        if (frame % 20 === 0) setDbg(`n${items.length} r${repeats} sw${track.scrollWidth} 1x${Math.round(oneSet)} p${Math.round(posRef.current)} vw${document.querySelector('.ent-ticker-viewport')?.clientWidth}`);
+        raf = requestAnimationFrame(step);
+      } catch (e) {
+        setDbg('ERR ' + e.message);
       }
-      raf = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(raf);
   }, [items, repeats]);
@@ -1979,8 +1987,9 @@ function NewsTicker({ items }) {
     className: "ent-ticker",
     "aria-hidden": "true"
   }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-ticker-live"
-  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-ticker-live",
+    style: { fontFamily: 'monospace', fontSize: 8, whiteSpace: 'nowrap' }
+  }, dbg || '···', /*#__PURE__*/React.createElement("span", {
     className: "ent-ticker-live-dot"
   }), "Live"), /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
