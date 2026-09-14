@@ -1,6 +1,7 @@
-// Homey — תזכורות תשלום יומיות בפוש.
-// מופעל ע"י pg_cron פעם בשעה (לא פעם ביום — כל משפחה בוחרת שעה משלה ב-families.reminder_hour,
-// והפונקציה בכל הפעלה שולחת רק למשפחות שהשעה הנוכחית בישראל תואמת את מה שהן בחרו).
+// Homey — תזכורות תשלום בפוש.
+// מופעל ע"י pg_cron פעם בשעה (לא פעם ביום — כל משפחה בוחרת שעה ב-families.reminder_hour וימים
+// בשבוע ב-families.reminder_days, והפונקציה בכל הפעלה שולחת רק למשפחות שהשעה והיום הנוכחיים
+// בישראל תואמים את מה שהן בחרו).
 // מוגן בכותרת x-cron-secret — לכן "Verify JWT" כבוי לפונקציה הזו.
 // בדיקה ידנית: POST עם הכותרת x-cron-secret וגוף {"test": true} — שולח הודעת ניסיון לכל המנויים, בלי קשר לשעה.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -23,6 +24,12 @@ function israelHour() {
   return Number(new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Jerusalem", hour: "numeric", hourCycle: "h23",
   }).format(new Date()));
+}
+
+// יום השבוע הנוכחי בישראל, 0=ראשון...6=שבת (אותה מוסכמה כמו Date.getDay() ב-JS)
+function israelDayOfWeek() {
+  const short = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Jerusalem", weekday: "short" }).format(new Date());
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(short);
 }
 
 // due_day -> בעוד כמה ימים (0-2). מטפל במעבר חודש, ובחשבון של יום 31 בחודש קצר (נחשב ליום האחרון).
@@ -77,14 +84,20 @@ Deno.serve(async (req) => {
       byFamily.set(b.family_id, list);
     }
 
-    // מסננים למשפחות שהשעה הנוכחית בישראל היא בדיוק השעה שהן בחרו (ברירת מחדל 8, אם עדיין לא נבחרה)
+    // מסננים למשפחות שהשעה והיום הנוכחיים בישראל תואמים למה שהן בחרו
+    // (ברירת מחדל: שעה 8, כל הימים — אם עדיין לא נבחר כלום, שומר על ההתנהגות הישנה של תזכורת יומית)
     const familyIds = [...byFamily.keys()];
     if (familyIds.length) {
-      const { data: fams } = await supabase.from("families").select("id, reminder_hour").in("id", familyIds);
-      const hourByFamily = new Map((fams ?? []).map((f) => [f.id, f.reminder_hour ?? 8] as const));
+      const { data: fams } = await supabase.from("families").select("id, reminder_hour, reminder_days").in("id", familyIds);
+      const settingsByFamily = new Map((fams ?? []).map((f) => [
+        f.id,
+        { hour: f.reminder_hour ?? 8, days: f.reminder_days ?? [0, 1, 2, 3, 4, 5, 6] },
+      ] as const));
       const thisHour = israelHour();
+      const thisDow = israelDayOfWeek();
       for (const familyId of familyIds) {
-        if (hourByFamily.get(familyId) !== thisHour) byFamily.delete(familyId);
+        const s = settingsByFamily.get(familyId);
+        if (!s || s.hour !== thisHour || !s.days.includes(thisDow)) byFamily.delete(familyId);
       }
     }
 
