@@ -604,7 +604,7 @@ body[data-compact="1"] main { gap: .75rem; }
 
   /* ===== טיקר חדשות ===== */
   .ent-ticker { display: flex; align-items: center; border-radius: 999px; background: var(--navy-panel); border: 1px solid var(--line); padding: 11px 0; }
-  .ent-ticker-live { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 18px; font-size: 11px; font-weight: 800; letter-spacing: .4px; color: var(--neg); border-left: 1px solid var(--line); }
+  .ent-ticker-live { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 18px; font-size: 11px; font-weight: 800; letter-spacing: .4px; color: var(--neg); border-right: 1px solid var(--line); }
   .ent-ticker-live-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--neg); animation: ent-ticker-pulse 1.4s ease-in-out infinite; }
   @keyframes ent-ticker-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
   .ent-ticker-viewport { position: relative; overflow: hidden; flex: 1; min-width: 0; direction: ltr; }
@@ -1981,11 +1981,7 @@ function NewsTicker({ items }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker",
     "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-ticker-live"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-ticker-live-dot"
-  }), "Live"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     className: "ent-ticker-viewport"
   }, /*#__PURE__*/React.createElement("div", {
     ref: trackRef,
@@ -1995,7 +1991,11 @@ function NewsTicker({ items }) {
     className: "ent-ticker-item"
   }, /*#__PURE__*/React.createElement("b", {
     className: "ent-ticker-source"
-  }, n.source), " · ", n.headline)))));
+  }, n.source), " · ", n.headline)))), /*#__PURE__*/React.createElement("span", {
+    className: "ent-ticker-live"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-ticker-live-dot"
+  }), "Live"));
 }
 function DonutChart({
   data,
