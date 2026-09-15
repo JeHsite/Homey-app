@@ -3281,6 +3281,7 @@ function ProfileScreen({
   onLogout
 }) {
   const isDemo = familyId === 'DEMO';
+  const [familyName, setFamilyName] = useState('');
   const [members, setMembers] = useState(isDemo ? [{
     id: 'p1',
     name: 'אבא',
@@ -3328,8 +3329,11 @@ function ProfileScreen({
         data: parents
       }, {
         data: kids
+      }, {
+        data: fam
       }] = await Promise.all([
-      sb.from('profiles').select('id, full_name, avatar, has_pin, status, photo_url').eq('family_id', familyId), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId)]);
+      sb.from('profiles').select('id, full_name, avatar, has_pin, status, photo_url').eq('family_id', familyId), sb.from('children').select('id, name, avatar, status, photo_url').eq('family_id', familyId), sb.from('families').select('name').eq('id', familyId).single()]);
+      if (fam?.name) setFamilyName(fam.name.replace(/\s+Family$/i, '').trim());
       const list = [...(parents || []).map(p => ({
         id: p.id,
         name: p.full_name,
@@ -3559,8 +3563,8 @@ function ProfileScreen({
   }, /*#__PURE__*/React.createElement(HomeyMark, {
     size: 48
   }), /*#__PURE__*/React.createElement("h1", {
-    className: "ent-heading text-2xl font-bold mt-4 mb-8"
-  }, "מי משתמש עכשיו?"), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "ent-heading text-2xl font-bold mt-4 mb-8 text-center"
+  }, familyName ? `ברוכים הבאים, משפחת ${familyName}! עם מי נעבוד היום?` : "מי משתמש עכשיו?"), loading ? /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap justify-center gap-6",
     "aria-busy": "true",
     "aria-label": "טוען"
