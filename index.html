@@ -7568,7 +7568,8 @@ function App() {
     subscription: subscription,
     isDemo: isDemo,
     familyId: familyId,
-    showToast: showToast
+    showToast: showToast,
+    isAdmin: isAdmin
   })), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(SettingsSection, {
     icon: ILock,
     title: "אבטחה",
@@ -8730,7 +8731,8 @@ function SubscriptionCard({
   subscription,
   isDemo,
   familyId,
-  showToast
+  showToast,
+  isAdmin
 }) {
   const [busy, setBusy] = useState(false);
   if (isDemo) return /*#__PURE__*/React.createElement("p", {
@@ -8779,7 +8781,7 @@ function SubscriptionCard({
   };
   if (plan === 'premium') {
     const isPaid = source === 'paid' && subscription?.status === 'active';
-    const label = source === 'legacy' ? 'פרימיום — משפחה ותיקה, ללא תשלום לצמיתות' : source === 'admin_grant' ? 'פרימיום — ניתן במתנה' : isPaid ? `מנוי פעיל (${subscription.interval === 'annual' ? 'שנתי' : 'חודשי'})` : 'פרימיום פעיל';
+    const label = isAdmin ? 'פרימיום — משפחת המלוכה 👑' : source === 'legacy' ? 'פרימיום — משפחה ותיקה, ללא תשלום לצמיתות' : source === 'admin_grant' ? 'פרימיום — ניתן במתנה' : isPaid ? `מנוי פעיל (${subscription.interval === 'annual' ? 'שנתי' : 'חודשי'})` : 'פרימיום פעיל';
     return /*#__PURE__*/React.createElement("div", {
       className: "space-y-3"
     }, /*#__PURE__*/React.createElement("div", {
