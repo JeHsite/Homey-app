@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "homey",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5180", "--directory", "C:\\Users\\micha\\Projects\\Homey-app"],
+      "port": 5180
+    }
+  ]
+}

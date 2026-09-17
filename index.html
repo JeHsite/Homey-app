@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Homey</title>
 <link rel="icon" type="image/png" href="icon-512.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -25,6 +25,21 @@
     if (t && /^[a-z]+$/.test(t)) localStorage.setItem('homey_theme', t);
     document.documentElement.setAttribute('data-look', localStorage.getItem('homey_look') || 'fintech');
   } catch (_e) { document.documentElement.setAttribute('data-look', 'fintech'); }
+})();
+</script>
+
+<script>
+// נעילת pinch-zoom / double-tap-zoom — גיבוי ל-touch-action (CSS) לדפדפנים ישנים.
+// מכוון: מתנגש עם WCAG 1.4.4/1.4.10, מתועד בהצהרת הנגישות; ההגדלה החלופית = גודל גופן בהגדרות.
+(function () {
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('gesturechange', function (e) { e.preventDefault(); }, { passive: false });
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
 })();
 </script>
 
@@ -473,6 +488,10 @@ body[data-theme="sky"] .ent-root, body[data-theme="sky"] {
 }
 
 body { background: var(--navy); transition: background .25s ease; }
+
+/* נעילת pinch-zoom מכוונת (גם double-tap) — ראו הצהרת נגישות, סעיף "התאמת תצוגה":
+   הגדלת תוכן עדיין אפשרית דרך הגדרות > תצוגה > גודל גופן. */
+html, body { touch-action: pan-x pan-y; }
 
 /* light-theme readability tweaks (בהיר, חול, תכלת) */
 body:is([data-theme="light"], [data-theme="sand"], [data-theme="sky"]) .ent-header { background: rgba(255,255,255,0.92); }
@@ -1940,6 +1959,36 @@ function EmptyState({
     className: "text-xs mt-1"
   }, hint));
 }
+function PremiumLock({
+  title,
+  desc,
+  onUpgrade
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card flex flex-col items-center text-center gap-3 py-8 px-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-icon-badge",
+    style: {
+      width: 48,
+      height: 48
+    }
+  }, /*#__PURE__*/React.createElement(ILock, {
+    size: 22
+  })), /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-lg"
+  }, title), desc && /*#__PURE__*/React.createElement("p", {
+    className: "text-sm max-w-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, desc), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onUpgrade,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex items-center gap-2 mt-1"
+  }, /*#__PURE__*/React.createElement(ISparkles, {
+    size: 16
+  }), "שדרוג לפרימיום"));
+}
 function newsAgo(unixSeconds) {
   if (!unixSeconds) return '';
   const mins = Math.max(0, Math.round((Date.now() / 1000 - unixSeconds) / 60));
@@ -2402,15 +2451,19 @@ function CurrencyField({
   rates,
   open,
   onToggleOpen,
-  colSpanClass = "sm:col-span-4"
+  colSpanClass = "sm:col-span-4",
+  isPremium = true,
+  onLocked
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: colSpanClass
   }, !open ? /*#__PURE__*/React.createElement("button", {
     type: "button",
-    onClick: onToggleOpen,
-    className: "ent-pill-btn ghost px-3 py-1.5 text-xs"
-  }, "מטבע אחר") : /*#__PURE__*/React.createElement("div", {
+    onClick: isPremium ? onToggleOpen : onLocked,
+    className: "ent-pill-btn ghost px-3 py-1.5 text-xs flex items-center gap-1.5"
+  }, !isPremium && /*#__PURE__*/React.createElement(ILock, {
+    size: 12
+  }), "מטבע אחר") : /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
   }, /*#__PURE__*/React.createElement("select", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
@@ -4367,7 +4420,16 @@ function App() {
     days: [0, 1, 2, 3, 4, 5, 6],
     title: ''
   }]);
+  // מנוי: null = עוד לא נטען (מתייחסים כ-free עד שנטען, אף פעם לא premium בלי אישור מהשרת)
+  const [familyPlan, setFamilyPlan] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const isPremium = isDemo || familyPlan?.plan === 'premium';
   const addReminderSlot = async () => {
+    if (!isPremium && reminderSlots.length >= 1) {
+      showToast('כמה תזכורות למשפחה זו תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+      return;
+    }
     if (isDemo || !familyId) {
       setReminderSlots([...reminderSlots, {
         id: 'local-' + Date.now(),
@@ -4765,9 +4827,9 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour')]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle()]);
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
@@ -4846,6 +4908,10 @@ function App() {
         days: r.days,
         title: r.title || ''
       })));
+      setFamilyPlan(fp.data || {
+        plan: 'free'
+      });
+      setSubscription(fs.data || null);
     })();
   }, [authStage, familyId]);
   const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -5636,6 +5702,20 @@ function App() {
       setShowTour(true);
     }
   });
+  if (monthlyReportOpen && !isPremium) return /*#__PURE__*/React.createElement("div", {
+    className: "max-w-lg mx-auto mt-10 px-4"
+  }, /*#__PURE__*/React.createElement(PremiumLock, {
+    title: "ייצוא דוח חודשי הוא תכונת פרימיום",
+    desc: "שדרגו כדי להפיק דוח הכנסות/הוצאות מלא לפי תקופה ולשמור כ-PDF.",
+    onUpgrade: () => {
+      setMonthlyReportOpen(false);
+      setActiveTab('settings');
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setMonthlyReportOpen(false),
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs mt-3"
+  }, "חזרה"));
   if (monthlyReportOpen) return /*#__PURE__*/React.createElement(MonthlyReportView, {
     familyName: familyInfo?.name,
     monthLabel: selectedMonth === 'all' ? 'כל הזמן' : monthLabelHe(selectedMonth),
@@ -5753,8 +5833,21 @@ function App() {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
     familyId: familyId,
-    isDemo: isDemo
-  }), newsState === 'ok' && news.length > 0 && /*#__PURE__*/React.createElement(NewsTicker, {
+    isDemo: isDemo,
+    isPremium: isPremium
+  }), !isPremium && /*#__PURE__*/React.createElement("div", {
+    className: "ent-card ent-review p-4 flex items-center justify-between gap-3 flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ILock, {
+    size: 16
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm"
+  }, "סקירת AI שבועית על ההוצאות שלכם — תכונת פרימיום")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setActiveTab('settings'),
+    className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs"
+  }, "שדרוג")), newsState === 'ok' && news.length > 0 && /*#__PURE__*/React.createElement(NewsTicker, {
     items: news
   }), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
@@ -6258,8 +6351,10 @@ function App() {
     labelFn: monthLabelHe
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setMonthlyReportOpen(true),
-    className: "ent-pill-btn ghost px-3 py-1.5 text-xs"
-  }, "ייצוא דוח"))), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+    className: "ent-pill-btn ghost px-3 py-1.5 text-xs flex items-center gap-1.5"
+  }, !isPremium && /*#__PURE__*/React.createElement(ILock, {
+    size: 12
+  }), "ייצוא דוח"))), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: selectedMonth === 'all' ? 'אין הוצאות עדיין' : 'אין הוצאות בחודש שנבחר'
   }) : /*#__PURE__*/React.createElement("table", {
     className: "ent-table w-full"
@@ -6463,7 +6558,12 @@ function App() {
     onToggleOpen: () => setShowCurrencyPicker(prev => ({
       ...prev,
       savings: !prev.savings
-    }))
+    })),
+    isPremium: isPremium,
+    onLocked: () => {
+      showToast('מטבע שונה מהמטבע הראשי הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+    }
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 sm:col-span-4"
   }, /*#__PURE__*/React.createElement("button", {
@@ -6617,7 +6717,12 @@ function App() {
       ...prev,
       investments: !prev.investments
     })),
-    colSpanClass: "sm:col-span-3"
+    colSpanClass: "sm:col-span-3",
+    isPremium: isPremium,
+    onLocked: () => {
+      showToast('מטבע שונה מהמטבע הראשי הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+    }
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 sm:col-span-3"
   }, /*#__PURE__*/React.createElement("button", {
@@ -7040,7 +7145,8 @@ function App() {
     isDemo: isDemo,
     currentProfile: currentProfile,
     currency: currency,
-    showToast: showToast
+    showToast: showToast,
+    isPremium: isPremium
   }), activeTab === 'help' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -7391,6 +7497,16 @@ function App() {
       color: 'var(--text-dim)'
     }
   }, "יופיע ככפתור בלשונית \"מדריך ומידע\" ← קהילה."))), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ISparkles,
+    title: "מנוי",
+    subtitle: isPremium ? "התוכנית שלכם ב-Homey" : "שדרגו לפרימיום"
+  }, /*#__PURE__*/React.createElement(SubscriptionCard, {
+    familyPlan: familyPlan,
+    subscription: subscription,
+    isDemo: isDemo,
+    familyId: familyId,
+    showToast: showToast
+  })), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(SettingsSection, {
     icon: ILock,
     title: "אבטחה",
     subtitle: "קוד PIN לכניסה לפרופיל שלך"
@@ -7574,7 +7690,8 @@ function KidMoney({
   isDemo,
   currentProfile,
   currency,
-  showToast
+  showToast,
+  isPremium = true
 }) {
   const isChild = currentProfile?.role === 'child';
   const [kids, setKids] = useState(isChild ? [{
@@ -7672,6 +7789,10 @@ function KidMoney({
   const monthOut = sum(exp.filter(e => String(e.date).startsWith(mk) && e.category !== KID_TO_GOAL));
   const savedTotal = goals.reduce((s, g) => s + Number(g.saved || 0), 0);
   const openForm = f => {
+    if (f === 'goal' && !isPremium) {
+      showToast(isChild ? 'יעדי חיסכון הם תכונת פרימיום — בקשו מההורים לשדרג 🌟' : 'יעדי חיסכון לילדים הם תכונת פרימיום — שדרגו בהגדרות');
+      return;
+    }
     setForm(form === f ? null : f);
     setCat('');
     setAmount('');
@@ -8538,6 +8659,107 @@ function SettingsSection({
     className: `ent-settings-body-inner space-y-5${open ? ' open' : ''}`
   }, children)));
 }
+const PREMIUM_PRICE_MONTHLY = 19.9; // תואם app_config.price_monthly_ils — לעדכן כאן אם משנים ממסך הניהול
+const PREMIUM_PRICE_ANNUAL = 199; // תואם app_config.price_annual_ils
+function SubscriptionCard({
+  familyPlan,
+  subscription,
+  isDemo,
+  familyId,
+  showToast
+}) {
+  const [busy, setBusy] = useState(false);
+  if (isDemo) return /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "מצב הדגמה — ניהול המנוי זמין רק בחשבון אמיתי.");
+  const plan = familyPlan?.plan || 'free';
+  const source = familyPlan?.premium_source;
+  const upgrade = async interval => {
+    setBusy(true);
+    try {
+      const {
+        data,
+        error
+      } = await sb.functions.invoke('billing-checkout', {
+        body: {
+          interval
+        }
+      });
+      if (error || !data?.url) throw error || new Error('no url');
+      window.location.href = data.url;
+    } catch (_e) {
+      showToast('השדרוג עוד לא זמין — נחזור לזה בקרוב');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const cancel = async () => {
+    if (!window.confirm('לבטל את המנוי? הגישה לפרימיום תישאר עד סוף התקופה ששולמה.')) return;
+    setBusy(true);
+    try {
+      const {
+        error
+      } = await sb.functions.invoke('billing-cancel', {
+        body: {}
+      });
+      if (error) throw error;
+      showToast('המנוי בוטל. הגישה לפרימיום תישאר עד תום התקופה.');
+    } catch (_e) {
+      showToast('לא הצלחנו לבטל כרגע. נסו שוב או פנו לתמיכה.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (plan === 'premium') {
+    const isPaid = source === 'paid' && subscription?.status === 'active';
+    const label = source === 'legacy' ? 'פרימיום — משפחה ותיקה, ללא תשלום לצמיתות' : source === 'admin_grant' ? 'פרימיום — ניתן במתנה' : isPaid ? `מנוי פעיל (${subscription.interval === 'annual' ? 'שנתי' : 'חודשי'})` : 'פרימיום פעיל';
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement(ISparkles, {
+      size: 16,
+      style: {
+        color: 'var(--bronze)'
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-semibold"
+    }, label)), isPaid && subscription?.current_period_end && /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, "מתחדש ב-", new Date(subscription.current_period_end).toLocaleDateString('he-IL')), isPaid && subscription?.status === 'active' && /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      disabled: busy,
+      onClick: cancel,
+      className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+    }, "ביטול מנוי"));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "אתם בתוכנית החינמית. שדרגו לפרימיום כדי לפתוח סקירת AI שבועית, ריבוי מטבעות, ייצוא דוחות, יעדי חיסכון לילדים ותזכורות מרובות."), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: busy,
+    onClick: () => upgrade('monthly'),
+    className: "ent-pill-btn solid-bronze px-4 py-2 text-sm"
+  }, "חודשי — ", `₪${PREMIUM_PRICE_MONTHLY}`, "/חודש"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    disabled: busy,
+    onClick: () => upgrade('annual'),
+    className: "ent-pill-btn ghost px-4 py-2 text-sm"
+  }, "שנתי — ", `₪${PREMIUM_PRICE_ANNUAL}`, "/שנה")));
+}
 function PinToggleCard({
   profile,
   isDemo,
@@ -8707,7 +8929,8 @@ const REVIEW_DEMO = {
 };
 function WeeklyReviewBanner({
   familyId,
-  isDemo
+  isDemo,
+  isPremium
 }) {
   const slot = useMemo(() => reviewSlot(new Date()), []);
   const key = slot || {
@@ -8719,6 +8942,7 @@ function WeeklyReviewBanner({
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(() => lsGet(dismissKey) === '1');
   useEffect(() => {
+    if (!isPremium) return; // תכונת פרימיום — לא טוענים בכלל למשפחה חינמית
     if (isDemo) {
       setReview({
         kind: key.kind,
@@ -8737,8 +8961,8 @@ function WeeklyReviewBanner({
     return () => {
       alive = false;
     };
-  }, [familyId, isDemo]);
-  if (!review || hidden) return null;
+  }, [familyId, isDemo, isPremium]);
+  if (!isPremium || !review || hidden) return null;
   const c = review.content || {};
   const isSum = review.kind === 'summary';
   const tips = (c.tips || []).slice(0, 3);
