@@ -95,3 +95,14 @@ select
 --  select id, email from auth.users where email = 'האימייל שלך';)
 --
 -- insert into public.app_admins (user_id) values ('<ה-UUID שלך כאן>');
+
+-- ============ cron יומי לחיוב מנויים (רק אחרי שפורסת billing-cron ויש לך CRON_SECRET) ============
+-- select cron.schedule(
+--   'homey-daily-billing',
+--   '0 4 * * *',
+--   $$ select net.http_post(
+--        url := 'https://fhmcalbsqgdghvbqucwd.supabase.co/functions/v1/billing-cron',
+--        headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', '<CRON_SECRET>'),
+--        body := '{}'::jsonb
+--      ) $$
+-- );
