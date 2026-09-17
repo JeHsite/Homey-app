@@ -7568,8 +7568,7 @@ function App() {
     subscription: subscription,
     isDemo: isDemo,
     familyId: familyId,
-    showToast: showToast,
-    isAdmin: isAdmin
+    showToast: showToast
   })), currentProfile?.role === 'parent' && /*#__PURE__*/React.createElement(SettingsSection, {
     icon: ILock,
     title: "אבטחה",
@@ -8726,13 +8725,13 @@ function SettingsSection({
 const PREMIUM_PRICE_MONTHLY = 19.9; // תואם app_config.price_monthly_ils — לעדכן כאן אם משנים ממסך הניהול
 const PREMIUM_PRICE_ANNUAL = 199; // תואם app_config.price_annual_ils
 const FREE_TRANSACTION_LIMIT = 40; // תואם app_config.free_transaction_limit — בדיקה כפולה: גם כאן (UX מיידי) וגם בטריגר בשרת (אכיפה אמיתית)
+const ROYAL_FAMILY_ID = 'b0519526-ef59-47ae-bdc3-1afb7452bc3c'; // המשפחה של מר הורביץ עצמו — תווית מיוחדת במסך המנוי
 function SubscriptionCard({
   familyPlan,
   subscription,
   isDemo,
   familyId,
-  showToast,
-  isAdmin
+  showToast
 }) {
   const [busy, setBusy] = useState(false);
   if (isDemo) return /*#__PURE__*/React.createElement("p", {
@@ -8781,7 +8780,7 @@ function SubscriptionCard({
   };
   if (plan === 'premium') {
     const isPaid = source === 'paid' && subscription?.status === 'active';
-    const label = isAdmin ? 'פרימיום — משפחת המלוכה 👑' : source === 'legacy' ? 'פרימיום — משפחה ותיקה, ללא תשלום לצמיתות' : source === 'admin_grant' ? 'פרימיום — ניתן במתנה' : isPaid ? `מנוי פעיל (${subscription.interval === 'annual' ? 'שנתי' : 'חודשי'})` : 'פרימיום פעיל';
+    const label = familyId === ROYAL_FAMILY_ID ? 'פרימיום — משפחת המלוכה 👑' : source === 'legacy' ? 'פרימיום — משפחה ותיקה, ללא תשלום לצמיתות' : source === 'admin_grant' ? 'פרימיום — ניתן במתנה' : isPaid ? `מנוי פעיל (${subscription.interval === 'annual' ? 'שנתי' : 'חודשי'})` : 'פרימיום פעיל';
     return /*#__PURE__*/React.createElement("div", {
       className: "space-y-3"
     }, /*#__PURE__*/React.createElement("div", {
