@@ -7699,7 +7699,9 @@ function App() {
       letterSpacing: 3,
       color: 'var(--bronze)'
     }
-  }, familyInfo.groupCode)))))), toast && /*#__PURE__*/React.createElement("div", {
+  }, familyInfo.groupCode)), /*#__PURE__*/React.createElement("p", {
+    className: "text-center text-xs pt-2"
+  }, "Homey פותחה על ידי ", LEGAL_OWNER))))), toast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
   }, toast), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
     kid: currentProfile?.role === 'child',
