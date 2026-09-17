@@ -1835,6 +1835,8 @@ const THEMES = [{
   desc: 'בהיר קריר · כחול וטורקיז',
   swatch: ['#F2F7FB', '#2B6CB0', '#0B7F72']
 }];
+// שתי הערכות החינמיות; שאר 6 הערכות הן תכונת פרימיום
+const FREE_THEME_IDS = ['ent', 'light'];
 // מוסיפים רק בסוף — האינדקס נשמר במסד הנתונים
 const CUSTOM_ICONS = [ITag, IGamepad, IHealth, IBag, IBriefcase, IBuilding, IHandshake, ITarget, ISparkles, IPaw, IBaby, IHeart, IBus, IGift, IPlane, IGraduationCap, IWifi, IShield, ICar, IHome, IUtensils];
 const CHART_COLORS = ['#7B93FF', '#5CC8B7', '#F2B35E', '#B58CFF', '#45C486', '#F07A9A', '#6FB7E3', '#E3C46F', '#9BA8D8', '#8FD0C2', '#C7A2FF', '#F0B27A', '#8FA7B3', '#D98C8C', '#9FD18B', '#A48BD9', '#E6D3A3'];
@@ -5240,6 +5242,15 @@ function App() {
   const submitExpense = async () => {
     const f = formData.expenses;
     if (!f.amount) return showToast('נא למלא סכום');
+    if (!editingId && !isPremium && !isDemo) {
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const countThisMonth = transactions.filter(t => String(t.date || '').startsWith(thisMonth)).length;
+      if (countThisMonth >= FREE_TRANSACTION_LIMIT) {
+        showToast(`הגעתם למכסת ${FREE_TRANSACTION_LIMIT} הרשומות החודשיות בתוכנית החינמית — שדרגו לפרימיום להמשך`);
+        setActiveTab('settings');
+        return;
+      }
+    }
     const row = {
       type: f.type,
       category: f.category,
@@ -6533,7 +6544,14 @@ function App() {
   }, /*#__PURE__*/React.createElement(IPiggyBank, {
     size: 20
   }), " קופות חיסכון"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpenForm(openForm === 'savings' ? null : 'savings'),
+    onClick: () => {
+      if (!isPremium) {
+        showToast('ניהול חסכונות הוא תכונת פרימיום — שדרגו בהגדרות');
+        setActiveTab('settings');
+        return;
+      }
+      setOpenForm(openForm === 'savings' ? null : 'savings');
+    },
     className: "ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm"
   }, /*#__PURE__*/React.createElement(IPlus, {
     size: 16
@@ -6703,7 +6721,14 @@ function App() {
   }, /*#__PURE__*/React.createElement(ITrendingUp, {
     size: 20
   }), " השקעות ונכסים"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpenForm(openForm === 'investments' ? null : 'investments'),
+    onClick: () => {
+      if (!isPremium) {
+        showToast('ניהול השקעות ונכסים הוא תכונת פרימיום — שדרגו בהגדרות');
+        setActiveTab('settings');
+        return;
+      }
+      setOpenForm(openForm === 'investments' ? null : 'investments');
+    },
     className: "ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm"
   }, /*#__PURE__*/React.createElement(IPlus, {
     size: 16
@@ -7314,34 +7339,46 @@ function App() {
     }
   }, "ערכת נושא"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 sm:grid-cols-3 gap-2.5"
-  }, THEMES.map(t => /*#__PURE__*/React.createElement("button", {
-    key: t.id,
-    onClick: () => setTheme(t.id),
-    className: "p-3 rounded-xl text-right transition",
-    style: {
-      background: theme === t.id ? 'rgba(203,160,90,0.12)' : 'var(--navy-panel-2)',
-      border: theme === t.id ? '1px solid var(--bronze)' : '1px solid var(--line)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1.5 mb-1.5"
-  }, t.swatch.map((c, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "w-4 h-4 rounded-full",
-    style: {
-      background: c,
-      border: '1px solid rgba(255,255,255,0.12)'
-    }
-  }))), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm font-semibold",
-    style: {
-      color: theme === t.id ? 'var(--bronze)' : 'var(--text)'
-    }
-  }, t.name), /*#__PURE__*/React.createElement("p", {
-    className: "text-[10px] leading-tight mt-0.5",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, t.desc))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }, THEMES.map(t => {
+    const locked = !isPremium && !FREE_THEME_IDS.includes(t.id);
+    return /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => locked ? (showToast('ערכת נושא זו היא תכונת פרימיום — שדרגו בהגדרות'), setActiveTab('settings')) : setTheme(t.id),
+      className: "p-3 rounded-xl text-right transition relative",
+      style: {
+        background: theme === t.id ? 'rgba(203,160,90,0.12)' : 'var(--navy-panel-2)',
+        border: theme === t.id ? '1px solid var(--bronze)' : '1px solid var(--line)',
+        opacity: locked ? 0.6 : 1
+      }
+    }, locked && /*#__PURE__*/React.createElement(ILock, {
+      size: 12,
+      style: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        color: 'var(--text-dim)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1.5 mb-1.5"
+    }, t.swatch.map((c, i) => /*#__PURE__*/React.createElement("span", {
+      key: i,
+      className: "w-4 h-4 rounded-full",
+      style: {
+        background: c,
+        border: '1px solid rgba(255,255,255,0.12)'
+      }
+    }))), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold",
+      style: {
+        color: theme === t.id ? 'var(--bronze)' : 'var(--text)'
+      }
+    }, t.name), /*#__PURE__*/React.createElement("p", {
+      className: "text-[10px] leading-tight mt-0.5",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, t.desc));
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm mb-2",
     style: {
       color: 'var(--text-muted)'
@@ -8687,6 +8724,7 @@ function SettingsSection({
 }
 const PREMIUM_PRICE_MONTHLY = 19.9; // תואם app_config.price_monthly_ils — לעדכן כאן אם משנים ממסך הניהול
 const PREMIUM_PRICE_ANNUAL = 199; // תואם app_config.price_annual_ils
+const FREE_TRANSACTION_LIMIT = 40; // תואם app_config.free_transaction_limit — בדיקה כפולה: גם כאן (UX מיידי) וגם בטריגר בשרת (אכיפה אמיתית)
 function SubscriptionCard({
   familyPlan,
   subscription,
@@ -8794,7 +8832,8 @@ function AdminPanel({
   const [busyId, setBusyId] = useState(null);
   const [prices, setPrices] = useState({
     price_monthly_ils: '',
-    price_annual_ils: ''
+    price_annual_ils: '',
+    free_transaction_limit: ''
   });
   const [savingPrices, setSavingPrices] = useState(false);
   const load = async () => {
@@ -8817,7 +8856,8 @@ function AdminPanel({
     setConfig(cfgObj);
     setPrices({
       price_monthly_ils: cfgObj.price_monthly_ils || '',
-      price_annual_ils: cfgObj.price_annual_ils || ''
+      price_annual_ils: cfgObj.price_annual_ils || '',
+      free_transaction_limit: cfgObj.free_transaction_limit || ''
     });
   };
   useEffect(() => {
@@ -8867,9 +8907,15 @@ function AdminPanel({
         key: 'price_annual_ils',
         value: prices.price_annual_ils
       }
+    }), sb.functions.invoke('admin-billing', {
+      body: {
+        action: 'set_config',
+        key: 'free_transaction_limit',
+        value: prices.free_transaction_limit
+      }
     })]);
     setSavingPrices(false);
-    showToast('המחירים נשמרו');
+    showToast('ההגדרות נשמרו בשרת. שימו לב: התצוגה בלקוח (FREE_TRANSACTION_LIMIT בקוד) לא מתעדכנת אוטומטית — יש לעדכן ידנית אם שיניתם את המכסה');
   };
   if (!families) return /*#__PURE__*/React.createElement(Skeleton, {
     rows: 4
@@ -8902,6 +8948,17 @@ function AdminPanel({
     onChange: e => setPrices(p => ({
       ...p,
       price_annual_ils: e.target.value
+    })),
+    className: "ent-input block px-3 py-2 rounded-xl text-sm outline-none w-28 mt-1"
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "text-xs"
+  }, "מכסת רשומות חינם/חודש", /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    step: "1",
+    value: prices.free_transaction_limit,
+    onChange: e => setPrices(p => ({
+      ...p,
+      free_transaction_limit: e.target.value
     })),
     className: "ent-input block px-3 py-2 rounded-xl text-sm outline-none w-28 mt-1"
   })), /*#__PURE__*/React.createElement("button", {

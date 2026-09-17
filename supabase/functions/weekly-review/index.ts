@@ -131,9 +131,20 @@ Deno.serve(async (req) => {
     familyIds = (data ?? []).map((f) => f.id);
   }
 
+  const results: Record<string, unknown>[] = [];
+
+  // תכונת פרימיום — עולה כסף אמיתי ל-Anthropic per-family, אז לא מריצים למשפחות חינמיות.
+  // force (בדיקה ידנית ע"י אדמין) עוקף את זה בכוונה.
+  if (!input.force) {
+    const { data: plans } = await supabase.from("family_plan").select("family_id, plan").in("family_id", familyIds);
+    const premiumIds = new Set((plans ?? []).filter((p) => p.plan === "premium").map((p) => p.family_id));
+    const skippedFree = familyIds.filter((id) => !premiumIds.has(id));
+    familyIds = familyIds.filter((id) => premiumIds.has(id));
+    for (const familyId of skippedFree) results.push({ familyId, skipped: "free_tier" });
+  }
+
   if (apiKey) webpush.setVapidDetails(Deno.env.get("VAPID_SUBJECT")!, Deno.env.get("VAPID_PUBLIC")!, Deno.env.get("VAPID_PRIVATE")!);
 
-  const results: Record<string, unknown>[] = [];
   for (const familyId of familyIds) {
     try {
       if (!input.force && !input.dry) {
