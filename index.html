@@ -4429,7 +4429,10 @@ function App() {
   // אדמין: הבדיקה האמיתית תמיד בצד שרת (admin-billing בודק app_admins) — זה רק ל-UI (הצגת הטאב)
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    if (isDemo || authStage !== 'app' || currentProfile?.role !== 'parent') return;
+    if (isDemo || authStage !== 'app' || currentProfile?.role !== 'parent') {
+      setIsAdmin(false); // מונע דליפת מצב אדמין מפרופיל הורה לפרופיל ילד באותה סשן
+      return;
+    }
     let alive = true;
     sb.functions.invoke('admin-billing', {
       body: {
@@ -5759,7 +5762,7 @@ function App() {
   const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
     label: 'הכסף של הילדים'
-  } : item).concat(isAdmin ? [{
+  } : item).concat(isAdmin && !isChild && familyId === ROYAL_FAMILY_ID ? [{
     id: 'admin',
     label: 'ניהול',
     icon: IShield,
@@ -7196,7 +7199,7 @@ function App() {
     currency: currency,
     showToast: showToast,
     isPremium: isPremium
-  }), activeTab === 'admin' && isAdmin && /*#__PURE__*/React.createElement(AdminPanel, {
+  }), activeTab === 'admin' && isAdmin && !isChild && familyId === ROYAL_FAMILY_ID && /*#__PURE__*/React.createElement(AdminPanel, {
     showToast: showToast
   }), activeTab === 'help' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
@@ -7699,9 +7702,9 @@ function App() {
       letterSpacing: 3,
       color: 'var(--bronze)'
     }
-  }, familyInfo.groupCode)), /*#__PURE__*/React.createElement("p", {
+  }, familyInfo.groupCode))), /*#__PURE__*/React.createElement("p", {
     className: "text-center text-xs pt-2"
-  }, "Homey פותחה על ידי ", LEGAL_OWNER))))), toast && /*#__PURE__*/React.createElement("div", {
+  }, "Homey פותחה על ידי ", LEGAL_OWNER)))), toast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
   }, toast), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
     kid: currentProfile?.role === 'child',
@@ -8975,32 +8978,46 @@ function AdminPanel({
     className: "ent-heading font-bold"
   }, "משפחות (", families.length, ")"), families.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "אין עדיין משפחות"
-  }) : /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, families.map(f => /*#__PURE__*/React.createElement("div", {
-    key: f.id,
-    className: "flex items-center justify-between gap-3 p-3 rounded-xl flex-wrap",
-    style: {
-      background: 'var(--navy-panel-2)'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "font-semibold text-sm"
-  }, f.name || '(ללא שם)'), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, f.plan === 'premium' ? `פרימיום — ${f.premiumSource === 'legacy' ? 'ותיקה' : f.premiumSource === 'admin_grant' ? 'מתנה' : 'בתשלום'}` : 'חינם', f.subscriptionStatus && ` · מנוי: ${f.subscriptionStatus}`)), f.premiumSource === 'admin_grant' ? /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    disabled: busyId === f.id,
-    onClick: () => revoke(f.id),
-    className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
-  }, "ביטול מתנה") : f.plan !== 'premium' ? /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    disabled: busyId === f.id,
-    onClick: () => grant(f.id),
-    className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs"
-  }, "תן פרימיום בחינם") : null)))));
+  }) : (() => {
+    const row = f => /*#__PURE__*/React.createElement("div", {
+      key: f.id,
+      className: "flex items-center justify-between gap-3 p-3 rounded-xl flex-wrap",
+      style: {
+        background: 'var(--navy-panel-2)'
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "font-semibold text-sm"
+    }, f.name || '(ללא שם)'), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, f.plan === 'premium' ? `פרימיום — ${f.premiumSource === 'legacy' ? 'ותיקה' : f.premiumSource === 'admin_grant' ? 'מתנה' : 'בתשלום'}` : 'חינם', f.subscriptionStatus && ` · מנוי: ${f.subscriptionStatus}`)), f.premiumSource === 'admin_grant' ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      disabled: busyId === f.id,
+      onClick: () => revoke(f.id),
+      className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+    }, "ביטול מתנה") : f.plan !== 'premium' ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      disabled: busyId === f.id,
+      onClick: () => grant(f.id),
+      className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs"
+    }, "תן פרימיום בחינם") : null);
+    const premiumFamilies = families.filter(f => f.plan === 'premium');
+    const freeFamilies = families.filter(f => f.plan !== 'premium');
+    const group = (title, list) => list.length === 0 ? null : /*#__PURE__*/React.createElement("div", {
+      key: title,
+      className: "space-y-2"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-xs font-semibold",
+      style: {
+        color: 'var(--text-dim)'
+      }
+    }, title, " (", list.length, ")"), list.map(row));
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-5"
+    }, group('פרימיום', premiumFamilies), group('חינמי', freeFamilies));
+  })()));
 }
 function PinToggleCard({
   profile,
