@@ -1641,7 +1641,7 @@ const NAV_ITEMS_ALL = [{
   parentOnly: true
 }, {
   id: 'bills',
-  label: 'חיובים והתחייבויות',
+  label: 'הוראות קבע והלוואות',
   icon: ICalendar,
   parentOnly: true
 }, {
@@ -2862,11 +2862,11 @@ function OnboardingTour({
   }, {
     emoji: '📊',
     title: 'כמה נשאר החודש?',
-    body: [LP('הדשבורד מחשב ', LB('כמה נשאר לכם להוציא החודש'), ': הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שעוד לא שולמו.'), LP('כדי שהמספר יהיה מדויק, הזינו הכנסות וחיובים קבועים.')]
+    body: [LP('הדשבורד מחשב ', LB('כמה נשאר לכם להוציא החודש'), ': הכנסה צפויה, פחות מה שכבר הוצאתם, פחות הוראות קבע והחזרי הלוואות שעוד לא שולמו.'), LP('כדי שהמספר יהיה מדויק, הזינו הכנסות, הוראות קבע והלוואות.')]
   }, {
     emoji: '➕',
     title: 'הוספת הוצאות וחיובים',
-    body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה, למשל מזון ← סופר או רכב ← דלק.'), LP('חיובים קבועים (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"חיובים והתחייבויות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הם חוזרים אוטומטית ל"לא שולם".')]
+    body: [LP('בכל מסך יש כפתור ', LB('"הוסף"'), '. בוחרים קטגוריה ותת-קטגוריה, למשל מזון ← סופר או רכב ← דלק.'), LP('הוראות קבע (חשמל, ארנונה, סלולר) מוסיפים ב', LB('"הוראות קבע והלוואות"'), ' עם יום התשלום בחודש. בכל 1 לחודש הן חוזרות אוטומטית ל"לא שולם". באותו מסך אפשר להוסיף הלוואות: המערכת מחשבת החזר חודשי, יתרה וריבית, ומראה כמה אפשר לחסוך בפירעון מוקדם.')]
   }, {
     emoji: '🎯',
     title: 'יעדים',
@@ -4192,6 +4192,7 @@ function App() {
   };
   const [transactions, setTransactions] = useState([]);
   const [bills, setBills] = useState([]);
+  const [loans, setLoans] = useState([]);
   const [notes, setNotes] = useState([]);
   const [trips, setTrips] = useState([]);
   const [gifts, setGifts] = useState([]);
@@ -4541,10 +4542,11 @@ function App() {
   }, [compactMode]);
   const resetAllData = async () => {
     if (!isDemo) {
-      await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories'].map(t => sb.from(t).delete().eq('family_id', familyId)));
+      await Promise.all(['transactions', 'bills', 'loans', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories'].map(t => sb.from(t).delete().eq('family_id', familyId)));
     }
     setTransactions([]);
     setBills([]);
+    setLoans([]);
     setNotes([]);
     setTrips([]);
     setGifts([]);
@@ -4562,6 +4564,7 @@ function App() {
         data = {
           transactions,
           bills,
+          loans,
           notes,
           trips,
           gifts,
@@ -4570,10 +4573,11 @@ function App() {
           customCategories: Object.keys(customCategories)
         };
       } else {
-        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
+        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg, ln] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals', 'loans'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
         data = {
           transactions: tx.data ?? [],
           bills: bl.data ?? [],
+          loans: ln.data ?? [],
           notes: nt.data ?? [],
           trips: tr.data ?? [],
           gifts: gf.data ?? [],
@@ -4756,6 +4760,19 @@ function App() {
         description: 'קולנוע ומסעדה',
         date: '2026-06-20'
       }]);
+      setLoans([{
+        id: 'demo-loan-1',
+        title: 'הלוואה לשיפוץ',
+        kind: 'bank',
+        lender: 'בנק לדוגמה',
+        principal: 60000,
+        annualRate: 6.5,
+        termMonths: 48,
+        firstPaymentDate: '2025-11-10',
+        method: 'spitzer',
+        rateType: 'fixed',
+        monthlyOverride: null
+      }]);
       setBills([{
         id: 1,
         title: 'ארנונה',
@@ -4851,9 +4868,9 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle()]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId)]);
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
@@ -4863,6 +4880,7 @@ function App() {
         description: r.description,
         date: r.date
       })));
+      setLoans((ln?.data || []).map(mapLoanRow));
       setBills((bl.data || []).map(r => ({
         id: r.id,
         title: r.title,
@@ -5099,7 +5117,11 @@ function App() {
     const prevVals = Object.values(prevIncomes);
     const avgIncome = prevVals.length ? prevVals.reduce((a, b) => a + b, 0) / prevVals.length : 0;
     const expectedIncome = Math.max(incomeSoFar, Math.round(avgIncome));
-    const billsUnpaid = bills.filter(b => !b.isPaid).reduce((s, b) => s + b.amount, 0);
+    const loansUnpaid = loans.reduce((s, l) => {
+      const st = loanState(l);
+      return st.dueThisMonth ? s + st.monthly : s;
+    }, 0);
+    const billsUnpaid = bills.filter(b => !b.isPaid).reduce((s, b) => s + b.amount, 0) + loansUnpaid;
     const available = expectedIncome - spentSoFar - billsUnpaid;
     const dailyPace = daysLeft > 0 ? available / daysLeft : available;
 
@@ -5124,7 +5146,7 @@ function App() {
       weeklyBudget,
       hasData: transactions.length > 0
     };
-  }, [transactions, bills]);
+  }, [transactions, bills, loans]);
   const TIPS = ['כלל 50/30/20: 50% לצרכים, 30% לרצונות, 20% לחיסכון והחזר חובות.', 'קרן חירום מומלצת: 3-6 חודשי הוצאות. זה מה שמונע כניסה למינוס בהפתעה.', 'בדקו מנויים חוזרים אחת לרבעון. רובנו משלמים על משהו שהפסקנו להשתמש בו.', 'לפני קנייה גדולה, המתינו 48 שעות. חלק ניכר מהרצון פשוט חולף.', 'שלמו קודם לעצמכם: העבירו לחיסכון ביום המשכורת, לא בסוף החודש.', 'חוב בריבית גבוהה (אשראי, מינוס) עדיף לסגור לפני שמגדילים השקעות.', 'עקבו אחרי ההוצאות הקטנות: קפה יומי הוא כ-4,000 ₪ בשנה.', 'השוו ביטוחים אחת לשנה. אותה פוליסה יכולה לעלות פחות אצל מתחרה.', 'הגדירו יעד חיסכון עם שם ותאריך. יעדים מוגדרים מושגים יותר.', 'תקציב הוא לא הגבלה, הוא החלטה מראש איפה אתם רוצים שהכסף יהיה.'];
   const todayTipIdx = new Date().getDate() % TIPS.length;
   const alerts = useMemo(() => {
@@ -5155,6 +5177,16 @@ function App() {
         text: `${b.title} (${currency}${b.amount.toLocaleString('he-IL')}) עבר את מועד התשלום (${b.dueDay} לחודש).`
       });
     });
+    loans.forEach(l => {
+      const st = loanState(l);
+      if (!st.dueThisMonth) return;
+      const diff = st.dueDay - today;
+      if (diff >= 0 && diff <= 3) out.push({
+        id: 'loan-' + l.id,
+        level: 'warn',
+        text: `החזר ההלוואה "${l.title}" (${currency}${Math.round(st.monthly).toLocaleString('he-IL')}) ${diff === 0 ? 'היום' : `בעוד ${diff} ימים`}.`
+      });
+    });
     savingsPots.forEach(p => {
       if (p.target > 0 && p.current >= p.target) out.push({
         id: 'goal-' + p.id,
@@ -5163,7 +5195,7 @@ function App() {
       });
     });
     return out.filter(a => !dismissedAlerts.includes(a.id));
-  }, [forecast, bills, savingsPots, dismissedAlerts, currency]);
+  }, [forecast, bills, loans, savingsPots, dismissedAlerts, currency]);
   const nextBill = [...bills].filter(b => !b.isPaid).sort((a, b) => a.dueDay - b.dueDay)[0];
   const nextTrip = [...trips].filter(t => tripStatus(t) !== 'past').sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
   const nextGift = [...gifts].filter(g => !g.purchased).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
@@ -5324,7 +5356,7 @@ function App() {
         due_day: row.dueDay
       }).eq('id', editingId);
       closeForm('bills');
-      showToast('החיוב עודכן');
+      showToast('הוראת הקבע עודכנה');
       return;
     }
     if (isDemo) {
@@ -5351,7 +5383,7 @@ function App() {
       }, ...prev]);
     }
     closeForm('bills');
-    showToast('החיוב נוסף');
+    showToast('הוראת הקבע נוספה');
   };
   const toggleBillPaid = async (id, current) => {
     setBills(prev => prev.map(x => x.id === id ? {
@@ -5365,7 +5397,85 @@ function App() {
   const deleteBill = async id => {
     setBills(prev => prev.filter(x => x.id !== id));
     if (!isDemo) await sb.from('bills').delete().eq('id', id);
-    showToast('החיוב נמחק');
+    showToast('הוראת הקבע נמחקה');
+  };
+  const submitLoan = async (f, editId) => {
+    const principal = Number(f.principal);
+    const annualRate = Number(f.annualRate || 0);
+    const termMonths = parseInt(f.termMonths, 10);
+    const override = f.monthlyOverride ? Number(f.monthlyOverride) : null;
+    if (!f.title.trim() || !(principal > 0) || !(termMonths > 0) || !f.firstPaymentDate) {
+      showToast('נא למלא שם, סכום, מספר תשלומים ותאריך תשלום ראשון');
+      return false;
+    }
+    if (termMonths > 480 || annualRate < 0 || annualRate > 100 || override !== null && !(override > 0)) {
+      showToast('נא לבדוק את הריבית, מספר התשלומים וההחזר החודשי');
+      return false;
+    }
+    const row = {
+      title: f.title.trim(),
+      kind: f.kind,
+      lender: f.lender.trim(),
+      principal,
+      annualRate,
+      termMonths,
+      firstPaymentDate: f.firstPaymentDate,
+      method: f.method,
+      rateType: f.rateType,
+      monthlyOverride: override
+    };
+    const dbRow = {
+      title: row.title,
+      kind: row.kind,
+      lender: row.lender || null,
+      principal,
+      annual_rate: annualRate,
+      term_months: termMonths,
+      first_payment_date: row.firstPaymentDate,
+      method: row.method,
+      rate_type: row.rateType,
+      monthly_override: override
+    };
+    if (!editId && !isPremium && !isDemo && loans.length >= FREE_LOAN_LIMIT) {
+      showToast('בתוכנית החינמית אפשר לעקוב אחרי הלוואה אחת — שדרגו לפרימיום בהגדרות');
+      setActiveTab('settings');
+      return false;
+    }
+    if (editId) {
+      setLoans(prev => prev.map(x => x.id === editId ? {
+        ...x,
+        ...row
+      } : x));
+      if (!isDemo) await sb.from('loans').update(dbRow).eq('id', editId);
+      showToast('ההלוואה עודכנה');
+      return true;
+    }
+    if (isDemo) {
+      setLoans(prev => [{
+        id: nextId(),
+        ...row
+      }, ...prev]);
+    } else {
+      const {
+        data,
+        error
+      } = await sb.from('loans').insert({
+        family_id: familyId,
+        ...dbRow
+      }).select().single();
+      if (error) {
+        showToast(String(error.message || '').includes('free_tier_limit') ? 'בתוכנית החינמית אפשר לעקוב אחרי הלוואה אחת' : 'שגיאה בשמירה');
+        return false;
+      }
+      setLoans(prev => [mapLoanRow(data), ...prev]);
+    }
+    showToast('ההלוואה נוספה');
+    return true;
+  };
+  const deleteLoan = async id => {
+    setLoans(prev => prev.filter(x => x.id !== id));
+    if (!isDemo) await sb.from('loans').delete().eq('id', id);
+    showToast('ההלוואה נמחקה');
   };
   const submitNote = async () => {
     const f = formData.notes;
@@ -6002,7 +6112,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, "חיובים שטרם שולמו"), /*#__PURE__*/React.createElement("p", {
+  }, "הוראות קבע שטרם שולמו"), /*#__PURE__*/React.createElement("p", {
     className: "font-bold mt-1",
     style: {
       color: 'var(--bronze)'
@@ -6128,7 +6238,7 @@ function App() {
     }
   }, /*#__PURE__*/React.createElement(ICalendar, {
     size: 13
-  }), " החיוב הקרוב"), nextBill ? /*#__PURE__*/React.createElement("p", {
+  }), " הוראת הקבע הקרובה"), nextBill ? /*#__PURE__*/React.createElement("p", {
     className: "mt-1 font-semibold text-sm flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -6143,7 +6253,7 @@ function App() {
     style: {
       color: 'var(--text-dim)'
     }
-  }, "אין חיובים ממתינים")), /*#__PURE__*/React.createElement("div", {
+  }, "אין הוראות קבע ממתינות")), /*#__PURE__*/React.createElement("div", {
     onClick: () => setActiveTab('trips'),
     className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
   }, /*#__PURE__*/React.createElement("p", {
@@ -6423,6 +6533,8 @@ function App() {
   }, "↳ ", sub), /*#__PURE__*/React.createElement("td", null, currency, amt.toLocaleString('he-IL')))))), /*#__PURE__*/React.createElement("tr", {
     className: "total-row"
   }, /*#__PURE__*/React.createElement("td", null, "סה\"כ הוצאות", selectedMonth !== 'all' ? ` · ${monthLabelHe(selectedMonth)}` : ''), /*#__PURE__*/React.createElement("td", null, currency, Object.values(categoryBreakdown).reduce((s, d) => s + d.total, 0).toLocaleString('he-IL'))))))), activeTab === 'bills' && !isChild && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6"
+  }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between gap-3"
@@ -6430,7 +6542,7 @@ function App() {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-xl font-bold"
-  }, "חיובים והתחייבויות קבועות"), /*#__PURE__*/React.createElement("select", {
+  }, "הוראות קבע והתחייבויות"), /*#__PURE__*/React.createElement("select", {
     className: "ent-input px-3 py-1.5 rounded-xl text-xs outline-none",
     value: billsFilter,
     onChange: e => setBillsFilter(e.target.value)
@@ -6445,14 +6557,14 @@ function App() {
     className: "ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm"
   }, /*#__PURE__*/React.createElement(IPlus, {
     size: 16
-  }), " הוסף חיוב")), openForm === 'bills' && /*#__PURE__*/React.createElement("div", {
+  }), " הוסף הוראת קבע")), openForm === 'bills' && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl",
     style: {
       background: 'var(--navy-panel-2)'
     }
   }, /*#__PURE__*/React.createElement("input", {
     className: inputClass,
-    placeholder: "שם החיוב",
+    placeholder: "שם הוראת הקבע",
     value: formData.bills.title,
     onChange: e => updateField('bills', 'title', e.target.value)
   }), /*#__PURE__*/React.createElement("select", {
@@ -6483,7 +6595,7 @@ function App() {
     onClick: () => closeForm('bills'),
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
   }, "ביטול"))), visibleBills.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
-    text: "אין חיובים להצגה"
+    text: "אין הוראות קבע להצגה"
   }) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, visibleBills.map(b => /*#__PURE__*/React.createElement("div", {
@@ -6536,7 +6648,19 @@ function App() {
     onClick: () => deleteBill(b.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
-  }))))))), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement("div", {
+  }))))))), /*#__PURE__*/React.createElement(LoansCard, {
+    loans: loans,
+    currency: currency,
+    income: forecast.expectedIncome,
+    isPremium: isPremium,
+    inputClass: inputClass,
+    onSave: submitLoan,
+    onDelete: deleteLoan,
+    onUpgrade: () => {
+      showToast('בתוכנית החינמית אפשר לעקוב אחרי הלוואה אחת — שדרגו לפרימיום בהגדרות');
+      setActiveTab('settings');
+    }
+  })), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
@@ -7252,12 +7376,12 @@ function App() {
     style: {
       color: 'var(--bronze)'
     }
-  }, "תזרים חזוי: הלב של האפליקציה"), /*#__PURE__*/React.createElement("p", null, "בניגוד לעו\"ש שמראה מה כבר קרה, הדשבורד מחשב ", /*#__PURE__*/React.createElement("b", null, "כמה נשאר לכם להוציא החודש"), ": הכנסה צפויה, פחות מה שכבר הוצאתם, פחות חיובים שטרם שולמו. המספר מתורגם גם לקצב יומי ושבועי, כדי שתדעו מתי נכון לעצור."), /*#__PURE__*/React.createElement("p", {
+  }, "תזרים חזוי: הלב של האפליקציה"), /*#__PURE__*/React.createElement("p", null, "בניגוד לעו\"ש שמראה מה כבר קרה, הדשבורד מחשב ", /*#__PURE__*/React.createElement("b", null, "כמה נשאר לכם להוציא החודש"), ": הכנסה צפויה, פחות מה שכבר הוצאתם, פחות הוראות קבע והחזרי הלוואות שטרם שולמו. המספר מתורגם גם לקצב יומי ושבועי, כדי שתדעו מתי נכון לעצור."), /*#__PURE__*/React.createElement("p", {
     className: "mt-1.5",
     style: {
       color: 'var(--text-dim)'
     }
-  }, "כדי שהתחזית תהיה מדויקת, חשוב להזין את ההכנסות ואת החיובים הקבועים.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "כדי שהתחזית תהיה מדויקת, חשוב להזין את ההכנסות, ההוראות הקבע וההלוואות.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-1.5",
     style: {
       color: 'var(--bronze)'
@@ -8731,6 +8855,455 @@ const PREMIUM_PRICE_MONTHLY = 19.9; // תואם app_config.price_monthly_ils —
 const PREMIUM_PRICE_ANNUAL = 199; // תואם app_config.price_annual_ils
 const FREE_TRANSACTION_LIMIT = 40; // תואם app_config.free_transaction_limit — בדיקה כפולה: גם כאן (UX מיידי) וגם בטריגר בשרת (אכיפה אמיתית)
 const ROYAL_FAMILY_ID = 'b0519526-ef59-47ae-bdc3-1afb7452bc3c'; // המשפחה של מר הורביץ עצמו — תווית מיוחדת במסך המנוי
+/* ---- הלוואות: לוח סילוקין וסימולציות (חישוב בצד הלקוח; ריבית משתנה/הצמדה הן הערכה) ---- */
+const LOAN_KINDS = {
+  bank: 'הלוואה בנקאית',
+  mortgage: 'משכנתא',
+  car: 'הלוואת רכב',
+  other: 'אחר'
+};
+const LOAN_METHODS = {
+  spitzer: 'שפיצר (החזר קבוע)',
+  equal_principal: 'קרן שווה (החזר יורד)'
+};
+const LOAN_RATE_TYPES = {
+  fixed: 'קבועה לא צמודה',
+  fixed_cpi: 'קבועה צמודה למדד',
+  prime: 'פריים (משתנה)',
+  variable: 'משתנה אחרת'
+};
+const FREE_LOAN_LIMIT = 1; // תואם check_loan_limit ב-loans.sql
+const mapLoanRow = r => ({
+  id: r.id,
+  title: r.title,
+  kind: r.kind,
+  lender: r.lender || '',
+  principal: Number(r.principal),
+  annualRate: Number(r.annual_rate),
+  termMonths: r.term_months,
+  firstPaymentDate: r.first_payment_date,
+  method: r.method,
+  rateType: r.rate_type,
+  monthlyOverride: r.monthly_override ? Number(r.monthly_override) : null
+});
+const loanFmt = x => Math.round(x).toLocaleString('he-IL');
+function loanSchedule(principal, annualRate, months, method) {
+  const r = annualRate / 1200;
+  const spitzerPay = r === 0 ? principal / months : principal * r / (1 - Math.pow(1 + r, -months));
+  const rows = [];
+  let bal = principal;
+  for (let k = 1; k <= months; k++) {
+    const interest = bal * r;
+    let princ = method === 'equal_principal' ? principal / months : spitzerPay - interest;
+    if (k === months || princ > bal) princ = bal;
+    bal = Math.max(0, bal - princ);
+    rows.push({
+      n: k,
+      payment: princ + interest,
+      interest,
+      principal: princ,
+      balance: bal
+    });
+  }
+  return rows;
+}
+function loanPayDate(fp, k) {
+  const y = fp.getFullYear();
+  const m = fp.getMonth() + k;
+  const last = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(fp.getDate(), last));
+}
+function loanState(loan, now) {
+  const today = now || new Date();
+  const n = loan.termMonths;
+  const rows = loanSchedule(loan.principal, loan.annualRate, n, loan.method);
+  const fp = new Date(loan.firstPaymentDate + 'T00:00:00');
+  const monthsDiff = (today.getFullYear() - fp.getFullYear()) * 12 + (today.getMonth() - fp.getMonth());
+  const paid = Math.min(n, Math.max(0, monthsDiff + (today.getDate() >= fp.getDate() ? 1 : 0)));
+  const done = paid >= n;
+  const nextRow = rows[Math.min(paid, n - 1)];
+  const monthly = loan.monthlyOverride || nextRow.payment;
+  return {
+    rows,
+    paid,
+    done,
+    monthly,
+    balance: paid === 0 ? loan.principal : rows[paid - 1].balance,
+    totalInterest: rows.reduce((s, x) => s + x.interest, 0),
+    interestRemaining: rows.slice(paid).reduce((s, x) => s + x.interest, 0),
+    nextDate: done ? null : loanPayDate(fp, paid),
+    endDate: loanPayDate(fp, n - 1),
+    dueDay: fp.getDate(),
+    dueThisMonth: !done && monthsDiff >= 0 && monthsDiff < n && today.getDate() < fp.getDate()
+  };
+}
+// סימולציית תשלום חודשי נוסף מהיתרה הנוכחית
+function loanPrepay(loan, st, extra) {
+  const r = loan.annualRate / 1200;
+  const n = loan.termMonths;
+  const fixedPay = loan.monthlyOverride || st.rows[Math.min(st.paid, n - 1)].payment;
+  const pFix = loan.principal / n;
+  let bal = st.balance;
+  let months = 0;
+  let interest = 0;
+  while (bal > 0.005 && months < 600) {
+    const i = bal * r;
+    let princ = (loan.method === 'spitzer' ? fixedPay - i : pFix) + extra;
+    if (princ <= 0) return null;
+    if (princ > bal) princ = bal;
+    interest += i;
+    bal -= princ;
+    months++;
+  }
+  return {
+    months,
+    interest
+  };
+}
+const EMPTY_LOAN_FORM = {
+  title: '',
+  kind: 'bank',
+  lender: '',
+  principal: '',
+  annualRate: '',
+  termMonths: '',
+  firstPaymentDate: '',
+  method: 'spitzer',
+  rateType: 'fixed',
+  monthlyOverride: ''
+};
+function LoansCard({
+  loans,
+  currency,
+  income,
+  isPremium,
+  onSave,
+  onDelete,
+  onUpgrade,
+  inputClass
+}) {
+  const h = React.createElement;
+  const [formOpen, setFormOpen] = React.useState(false);
+  const [editingId, setEditingId] = React.useState(null);
+  const [form, setForm] = React.useState(EMPTY_LOAN_FORM);
+  const [expanded, setExpanded] = React.useState(null);
+  const [extra, setExtra] = React.useState({});
+  const set = (k, v) => setForm(p => ({
+    ...p,
+    [k]: v
+  }));
+  const muted = {
+    color: 'var(--text-muted)'
+  };
+  const panel = {
+    background: 'var(--navy-panel-2)'
+  };
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(EMPTY_LOAN_FORM);
+  };
+  const openNew = () => {
+    if (!isPremium && loans.length >= FREE_LOAN_LIMIT) return onUpgrade();
+    if (formOpen) return closeForm();
+    setForm(EMPTY_LOAN_FORM);
+    setEditingId(null);
+    setFormOpen(true);
+  };
+  const startEdit = l => {
+    setForm({
+      title: l.title,
+      kind: l.kind,
+      lender: l.lender || '',
+      principal: String(l.principal),
+      annualRate: String(l.annualRate),
+      termMonths: String(l.termMonths),
+      firstPaymentDate: l.firstPaymentDate,
+      method: l.method,
+      rateType: l.rateType,
+      monthlyOverride: l.monthlyOverride ? String(l.monthlyOverride) : ''
+    });
+    setEditingId(l.id);
+    setFormOpen(true);
+  };
+  const save = async () => {
+    const ok = await onSave(form, editingId);
+    if (ok) closeForm();
+  };
+  // תצוגה מקדימה חיה בזמן מילוי הטופס — גם מחשבון "כמה תעלה לי הלוואה" לפני שלוקחים
+  const P = Number(form.principal);
+  const T = parseInt(form.termMonths, 10);
+  const R = Number(form.annualRate || 0);
+  const preview = P > 0 && T > 0 && T <= 480 && R >= 0 ? (() => {
+    const rows = loanSchedule(P, R, T, form.method);
+    const total = rows.reduce((s, x) => s + x.payment, 0);
+    return {
+      first: rows[0].payment,
+      last: rows[rows.length - 1].payment,
+      total,
+      interest: total - P
+    };
+  })() : null;
+  const states = loans.map(l => ({
+    l,
+    st: loanState(l)
+  }));
+  const active = states.filter(x => !x.st.done);
+  const totMonthly = active.reduce((s, x) => s + x.st.monthly, 0);
+  const totBalance = active.reduce((s, x) => s + x.st.balance, 0);
+  const totInterest = active.reduce((s, x) => s + x.st.interestRemaining, 0);
+  const tile = (label, val) => h('div', {
+    className: 'ent-mini-card p-3 text-center'
+  }, h('p', {
+    className: 'text-xs',
+    style: muted
+  }, label), h('p', {
+    className: 'font-bold mt-1'
+  }, currency, loanFmt(val)));
+  const pill = txt => h('span', {
+    className: 'text-xs px-2 py-0.5 rounded-full',
+    style: {
+      background: 'var(--navy-panel)',
+      color: 'var(--text-muted)'
+    }
+  }, txt);
+  return h('div', {
+    className: 'ent-card p-6 space-y-4'
+  }, h('div', {
+    className: 'flex flex-wrap items-center justify-between gap-3'
+  }, h('h2', {
+    className: 'ent-heading text-xl font-bold flex items-center gap-2'
+  }, h(IBank, {
+    size: 20
+  }), ' הלוואות'), h('button', {
+    onClick: openNew,
+    className: 'ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm'
+  }, h(IPlus, {
+    size: 16
+  }), ' הוסף הלוואה')), h('details', {
+    className: 'text-sm rounded-xl p-3',
+    style: panel
+  }, h('summary', {
+    className: 'cursor-pointer font-semibold'
+  }, 'מה כדאי לדעת על הלוואות'), h('ul', {
+    className: 'list-disc pr-5 mt-2 space-y-1.5',
+    style: muted
+  }, h('li', null, h('b', null, 'שפיצר:'), ' החזר חודשי קבוע, אבל בהתחלה רוב התשלום הוא ריבית והקרן יורדת לאט. ', h('b', null, 'קרן שווה:'), ' החזר גבוה יותר בהתחלה שיורד עם הזמן, וסך הריבית נמוך יותר.'), h('li', null, h('b', null, 'פריים:'), ' ריבית בנק ישראל ועוד 1.5%. בהלוואה בפריים ההחזר משתנה כשבנק ישראל משנה את הריבית.'), h('li', null, h('b', null, 'הצמדה למדד:'), ' הקרן וההחזר גדלים עם עליית המדד, ולכן ההחזר בפועל גבוה מהחישוב כאן. אפשר להזין "החזר חודשי בפועל" מהבנק.'), h('li', null, h('b', null, 'פירעון מוקדם:'), ' חוסך ריבית, אבל הבנק עשוי לגבות עמלה. השתמשו בסימולטור בכל הלוואה, ובדקו מול הבנק את גובה העמלה.'), h('li', null, h('b', null, 'עלות אמיתית:'), ' בדקו במסמכי ההלוואה את שיעור העלות האפקטיבי (כולל עמלות), לא רק את הריבית הנקובה.'), h('li', null, h('b', null, 'כלל אצבע:'), ' סך ההחזרים החודשיים על הלוואות לא כדאי שיעלה על כ-30%-40% מההכנסה נטו.'), h('li', null, 'החישובים כאן הם הערכה בלבד ואינם ייעוץ פיננסי. הנתון המחייב הוא זה שבמסמכי הבנק.'))), active.length > 0 && h('div', {
+    className: 'grid grid-cols-1 sm:grid-cols-3 gap-3'
+  }, tile('החזר חודשי כולל', totMonthly), tile('יתרה לתשלום', totBalance), tile('ריבית שעוד תשולם', totInterest)), formOpen && h('div', {
+    className: 'grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl',
+    style: panel
+  }, h('input', {
+    className: inputClass + ' sm:col-span-2',
+    placeholder: 'שם ההלוואה (למשל: הלוואה לשיפוץ)',
+    value: form.title,
+    onChange: e => set('title', e.target.value)
+  }), h('select', {
+    className: inputClass,
+    'aria-label': 'סוג הלוואה',
+    value: form.kind,
+    onChange: e => set('kind', e.target.value)
+  }, Object.keys(LOAN_KINDS).map(k => h('option', {
+    key: k,
+    value: k
+  }, LOAN_KINDS[k]))), h('input', {
+    className: inputClass,
+    placeholder: 'הבנק / המלווה',
+    value: form.lender,
+    onChange: e => set('lender', e.target.value)
+  }), h('input', {
+    className: inputClass,
+    type: 'number',
+    inputMode: 'decimal',
+    placeholder: `סכום ההלוואה ${currency}`,
+    value: form.principal,
+    onChange: e => set('principal', e.target.value)
+  }), h('input', {
+    className: inputClass,
+    type: 'number',
+    inputMode: 'decimal',
+    step: '0.01',
+    placeholder: 'ריבית שנתית %',
+    value: form.annualRate,
+    onChange: e => set('annualRate', e.target.value)
+  }), h('input', {
+    className: inputClass,
+    type: 'number',
+    inputMode: 'numeric',
+    placeholder: 'מספר תשלומים (חודשים)',
+    value: form.termMonths,
+    onChange: e => set('termMonths', e.target.value)
+  }), h('label', {
+    className: 'text-xs flex flex-col gap-1',
+    style: muted
+  }, 'תאריך התשלום הראשון', h('input', {
+    className: inputClass,
+    type: 'date',
+    value: form.firstPaymentDate,
+    onChange: e => set('firstPaymentDate', e.target.value)
+  })), h('select', {
+    className: inputClass,
+    'aria-label': 'שיטת החזר',
+    value: form.method,
+    onChange: e => set('method', e.target.value)
+  }, Object.keys(LOAN_METHODS).map(k => h('option', {
+    key: k,
+    value: k
+  }, LOAN_METHODS[k]))), h('select', {
+    className: inputClass,
+    'aria-label': 'סוג ריבית',
+    value: form.rateType,
+    onChange: e => set('rateType', e.target.value)
+  }, Object.keys(LOAN_RATE_TYPES).map(k => h('option', {
+    key: k,
+    value: k
+  }, LOAN_RATE_TYPES[k]))), h('input', {
+    className: inputClass + ' sm:col-span-2',
+    type: 'number',
+    inputMode: 'decimal',
+    placeholder: 'החזר חודשי בפועל (רשות, אם שונה מהחישוב)',
+    value: form.monthlyOverride,
+    onChange: e => set('monthlyOverride', e.target.value)
+  }), preview && h('div', {
+    className: 'sm:col-span-4 rounded-xl p-3 text-sm space-y-1',
+    style: {
+      background: 'var(--navy-panel)'
+    }
+  }, h('p', null, form.method === 'spitzer' ? 'החזר חודשי משוער: ' : 'החזר חודשי משוער (ראשון עד אחרון): ', h('b', null, currency, loanFmt(preview.first), form.method === 'spitzer' ? '' : ` עד ${currency}${loanFmt(preview.last)}`)), h('p', {
+    style: muted
+  }, 'סך הריבית: ', currency, loanFmt(preview.interest), ' · סך הכל לתשלום: ', currency, loanFmt(preview.total)), income > 0 && (() => {
+    const pct = Math.round(preview.first / income * 100);
+    return h('p', {
+      style: {
+        color: pct > 35 ? 'var(--danger, #d9534f)' : 'var(--text-muted)'
+      }
+    }, `ההחזר הוא כ-${pct}% מההכנסה החודשית הצפויה שלכם${pct > 35 ? ' — גבוה מכלל האצבע' : ''}.`);
+  })()), h('div', {
+    className: 'flex gap-2 sm:col-span-4'
+  }, h('button', {
+    onClick: save,
+    className: 'ent-pill-btn solid-bronze px-5 py-2 text-sm'
+  }, editingId ? 'עדכון' : 'שמור'), h('button', {
+    onClick: closeForm,
+    className: 'ent-pill-btn ghost px-5 py-2 text-sm'
+  }, 'ביטול'))), states.length === 0 ? h(EmptyState, {
+    text: 'עוד לא הוספתם הלוואות'
+  }) : h('div', {
+    className: 'space-y-3'
+  }, states.map(({
+    l,
+    st
+  }) => {
+    const open = expanded === l.id;
+    const pct = Math.round(st.paid / l.termMonths * 100);
+    const ex = Number(extra[l.id] || 0);
+    const base = open && !st.done ? loanPrepay(l, st, 0) : null;
+    const sim = open && !st.done && ex > 0 ? loanPrepay(l, st, ex) : null;
+    return h('div', {
+      key: l.id,
+      className: 'rounded-xl p-3 space-y-3',
+      style: panel
+    }, h('div', {
+      className: 'flex items-center justify-between gap-3'
+    }, h('div', {
+      className: 'min-w-0'
+    }, h('p', {
+      className: 'font-semibold'
+    }, l.title), h('p', {
+      className: 'text-xs flex flex-wrap gap-1.5 mt-1',
+      style: muted
+    }, pill(LOAN_KINDS[l.kind]), l.lender ? pill(l.lender) : null, pill(`${l.annualRate}% · ${LOAN_RATE_TYPES[l.rateType]}`))), h('div', {
+      className: 'flex items-center gap-2 shrink-0'
+    }, h('div', {
+      className: 'text-left'
+    }, h('p', {
+      className: 'font-bold'
+    }, st.done ? 'שולמה במלואה' : `${currency}${loanFmt(st.monthly)}`), !st.done && h('p', {
+      className: 'text-xs',
+      style: muted
+    }, 'לחודש')), h('button', {
+      className: 'ent-icon-btn',
+      style: muted,
+      'aria-label': `עריכת ${l.title}`,
+      onClick: () => startEdit(l)
+    }, h(IEdit, {
+      size: 15
+    })), h('button', {
+      className: 'ent-icon-btn',
+      'aria-label': `מחיקת ${l.title}`,
+      onClick: () => onDelete(l.id)
+    }, h(ITrash, {
+      size: 16
+    })))), h('div', null, h('div', {
+      className: 'h-2 rounded-full overflow-hidden',
+      style: {
+        background: 'var(--navy-panel)'
+      },
+      role: 'progressbar',
+      'aria-valuenow': pct,
+      'aria-valuemin': 0,
+      'aria-valuemax': 100,
+      'aria-label': `התקדמות ההחזר של ${l.title}`
+    }, h('div', {
+      style: {
+        width: pct + '%',
+        height: '100%',
+        background: 'var(--bronze)'
+      }
+    })), h('p', {
+      className: 'text-xs mt-1 flex justify-between',
+      style: muted
+    }, h('span', null, `שולמו ${st.paid} מתוך ${l.termMonths} תשלומים`), h('span', null, st.done ? '' : `יתרה ${currency}${loanFmt(st.balance)}`))), h('button', {
+      onClick: () => setExpanded(open ? null : l.id),
+      className: 'text-xs flex items-center gap-1',
+      style: {
+        color: 'var(--bronze)'
+      },
+      'aria-expanded': open
+    }, open ? 'הסתר פירוט' : 'פירוט וסימולטור פירעון מוקדם', h(IChevronDown, {
+      size: 13
+    })), open && h('div', {
+      className: 'space-y-3 text-sm'
+    }, h('div', {
+      className: 'grid grid-cols-2 gap-2'
+    }, [['התשלום הבא', st.nextDate ? st.nextDate.toLocaleDateString('he-IL') : '—'], ['סיום צפוי', st.endDate.toLocaleDateString('he-IL')], ['סך הריבית בהלוואה', currency + loanFmt(st.totalInterest)], ['ריבית שנותרה', currency + loanFmt(st.interestRemaining)]].map(([a, b]) => h('div', {
+      key: a,
+      className: 'rounded-lg p-2',
+      style: {
+        background: 'var(--navy-panel)'
+      }
+    }, h('p', {
+      className: 'text-xs',
+      style: muted
+    }, a), h('p', {
+      className: 'font-semibold'
+    }, b)))), l.rateType !== 'fixed' && h('p', {
+      className: 'text-xs',
+      style: muted
+    }, 'הלוח מבוסס על הריבית שהזנתם. בהלוואה צמודה או משתנה ההחזר בפועל ישתנה. עדכנו "החזר חודשי בפועל" בעריכה.'), !st.done && h('div', {
+      className: 'rounded-lg p-3 space-y-2',
+      style: {
+        background: 'var(--navy-panel)'
+      }
+    }, h('p', {
+      className: 'font-semibold'
+    }, 'סימולטור פירעון מוקדם'), h('input', {
+      className: inputClass,
+      type: 'number',
+      inputMode: 'decimal',
+      placeholder: `כמה תוסיפו לתשלום כל חודש ${currency}`,
+      'aria-label': 'תשלום חודשי נוסף',
+      value: extra[l.id] || '',
+      onChange: e => setExtra(p => ({
+        ...p,
+        [l.id]: e.target.value
+      }))
+    }), sim && base ? h('p', null, `תסיימו ${base.months - sim.months} חודשים מוקדם יותר (בעוד ${sim.months} חודשים במקום ${base.months}) ותחסכו כ-${currency}${loanFmt(base.interest - sim.interest)} ריבית. לפני שמחליטים, בדקו מול הבנק אם יש עמלת פירעון מוקדם.`) : h('p', {
+      className: 'text-xs',
+      style: muted
+    }, 'הזינו סכום כדי לראות כמה זמן וכמה ריבית אפשר לחסוך.'))));
+  })));
+}
 function SubscriptionCard({
   familyPlan,
   subscription,
