@@ -8,12 +8,14 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Homey — כל הכסף של המשפחה, במקום אחד" />
 <meta property="og:description" content="עו״ש, חסכונות, הלוואות, הוצאות וגם הכסף של הילדים — תמונה פיננסית אחת למשפחה. מתחילים בחינם, בלי כרטיס אשראי." />
-<meta property="og:image" content="https://homey-app-one.vercel.app/icon-512.png" />
+<meta property="og:image" content="https://homey-app-one.vercel.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta property="og:locale" content="he_IL" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Homey — כל הכסף של המשפחה, במקום אחד" />
 <meta name="twitter:description" content="תמונה פיננסית אחת לכל המשפחה — עו״ש, חסכונות, הלוואות והכסף של הילדים, במקום אחד." />
-<meta name="twitter:image" content="https://homey-app-one.vercel.app/icon-512.png" />
+<meta name="twitter:image" content="https://homey-app-one.vercel.app/og-image.png" />
 <link rel="icon" type="image/png" href="icon-512.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <meta name="theme-color" content="#0A0D13" />
@@ -87,7 +89,11 @@
   .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
   .section { padding: 64px 0; }
   .section-alt { background: var(--surface-2); }
+  .section-curve { position: relative; height: 0; }
+  .section-curve svg { position: absolute; top: -59px; right: 0; width: 100%; height: 60px; display: block; }
   .eyebrow { color: var(--bronze-text); font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 10px; }
+  .eyebrow-num { font-family: var(--font-serif); font-weight: 500; color: var(--text-dim); margin-left: 8px; letter-spacing: 0; }
+  section[id] { scroll-margin-top: 76px; }
   h2.h2 { font-size: 30px; line-height: 1.28; margin-bottom: 14px; letter-spacing: -.01em; }
   .lead { color: var(--text-muted); font-size: 16px; max-width: 620px; }
   .center { text-align: center; margin-left: auto; margin-right: auto; }
@@ -106,6 +112,10 @@
     background: linear-gradient(90deg, var(--cyan-text), var(--bronze-text));
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--bronze-text);
   }
+  .header-nav { display: none; align-items: center; gap: 22px; }
+  .header-nav a { font-size: 14px; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: color .15s ease; }
+  .header-nav a:hover { color: var(--bronze-text); }
+  @media (min-width: 960px) { .header-nav { display: flex; } }
   .nav-cta { display: flex; gap: 10px; }
 
   .btn {
@@ -176,10 +186,12 @@
   .showcase-card .mock-row { color: var(--dark-text); }
 
   table.compare { width: 100%; border-collapse: collapse; margin-top: 28px; background: var(--surface); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--card-shadow); }
-  table.compare th, table.compare td { padding: 14px 16px; text-align: center; font-size: 14px; border-bottom: 1px solid var(--line); }
+  table.compare th, table.compare td { padding: 14px 16px; text-align: center; font-size: 14px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
   table.compare th { background: var(--surface-2); font-weight: 700; }
   table.compare td:first-child, table.compare th:first-child { text-align: right; color: var(--text-muted); }
   table.compare tr:last-child td { border-bottom: none; }
+  table.compare tbody tr { transition: background-color .15s ease; }
+  table.compare tbody tr:hover { background-color: var(--surface-2); }
   .compare-soon { color: var(--cyan-text); font-weight: 700; }
   .compare-check { color: var(--pos); font-weight: 700; }
   .compare-note { color: var(--text-dim); font-size: 13px; margin-top: 14px; }
@@ -308,9 +320,16 @@
     overflow: hidden;
     transform: perspective(1600px) rotateY(-7deg) rotateX(3deg);
     transform-origin: 50% 50%;
+    transition: transform .6s ease;
   }
+  @keyframes demoSway {
+    0%, 100% { transform: perspective(1600px) rotateY(-9deg) rotateX(3deg); }
+    50%      { transform: perspective(1600px) rotateY(-5deg) rotateX(3deg); }
+  }
+  .hero-demo-frame:hover { animation: demoSway 3.6s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce), (max-width: 1024px) {
     .hero-demo-frame { transform: none; }
+    .hero-demo-frame:hover { animation: none; }
   }
   .hero-demo-bar {
     display: flex; align-items: center; gap: 8px; padding: 10px 14px;
@@ -416,6 +435,12 @@
       </svg>
       <span class="logo-word">Homey</span>
     </div>
+    <nav class="header-nav" aria-label="ניווט בעמוד">
+      <a href="#features">מה זה Homey</a>
+      <a href="#pricing">מחירים</a>
+      <a href="#how">איך זה עובד</a>
+      <a href="#faq">שאלות</a>
+    </nav>
     <div class="nav-cta">
       <a href="index.html?demo=parent" class="btn btn-ghost btn-sm">נסו בלי הרשמה</a>
       <a href="index.html" class="btn btn-solid btn-sm">הצטרפו בחינם</a>
@@ -485,17 +510,18 @@
 
   <!-- הבעיה -->
   <section class="section section-alt">
+    <div class="section-curve" aria-hidden="true"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,60 C360,4 1080,4 1440,60 L1440,60 L0,60 Z" style="fill:var(--surface-2)"></path></svg></div>
     <div class="wrap reveal">
-      <div class="eyebrow">הבעיה</div>
+      <div class="eyebrow"><span class="eyebrow-num">01</span>הבעיה</div>
       <h2 class="h2">למה זה תמיד מרגיש מבולגן?</h2>
       <p class="lead">ההוצאות באפליקציית הבנק, החיסכון בפיקדון אחר, ההלוואה במסמך PDF ששכחתם איפה שמרתם, ודמי הכיס של הילדים — בראש. כל אחד מהם לבד זה בסדר. יחד, קשה לדעת איפה המשפחה עומדת ברגע נתון, ועוד יותר קשה לתכנן קדימה.</p>
     </div>
   </section>
 
   <!-- מה זה Homey -->
-  <section class="section">
+  <section class="section" id="features">
     <div class="wrap">
-      <div class="eyebrow reveal">מה זה Homey</div>
+      <div class="eyebrow reveal"><span class="eyebrow-num">02</span>מה זה Homey</div>
       <h2 class="h2 reveal">Homey נותן למשפחה תמונה אחת, מעודכנת, ומשותפת</h2>
       <p class="lead reveal">כל בן משפחה נכנס עם החשבון שלו, רואה את מה שרלוונטי אליו, ותורם לתמונה הכוללת. הורים רואים תחזית חודשית, חסכונות, הלוואות ושווי נטו. ילדים מקבלים מסך משלהם שמלמד אותם לנהל כסף בעצמם.</p>
 
@@ -558,9 +584,10 @@
   </section>
 
   <!-- חינם מול פרימיום -->
-  <section class="section section-alt">
+  <section class="section section-alt" id="pricing">
+    <div class="section-curve" aria-hidden="true"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,60 C360,4 1080,4 1440,60 L1440,60 L0,60 Z" style="fill:var(--surface-2)"></path></svg></div>
     <div class="wrap reveal">
-      <div class="eyebrow center">חינם מול פרימיום</div>
+      <div class="eyebrow center"><span class="eyebrow-num">03</span>חינם מול פרימיום</div>
       <h2 class="h2 center">מתחילים בחינם, בלי כרטיס אשראי</h2>
       <table class="compare">
         <thead>
@@ -581,9 +608,9 @@
   </section>
 
   <!-- איך זה עובד -->
-  <section class="section">
+  <section class="section" id="how">
     <div class="wrap">
-      <div class="eyebrow center">איך זה עובד</div>
+      <div class="eyebrow center"><span class="eyebrow-num">04</span>איך זה עובד</div>
       <h2 class="h2 center">שלושה צעדים, ואתם בפנים</h2>
       <div class="steps">
         <div class="step reveal">
@@ -607,6 +634,7 @@
 
   <!-- CTA חוזר -->
   <section class="section section-alt cta-repeat">
+    <div class="section-curve" aria-hidden="true"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,60 C360,4 1080,4 1440,60 L1440,60 L0,60 Z" style="fill:var(--surface-2)"></path></svg></div>
     <div class="wrap reveal">
       <h2 class="h2 center">תנו ל-Homey לסדר לכם את <span class="accent-serif">התמונה</span></h2>
       <div class="hero-ctas center" style="justify-content:center">
@@ -617,9 +645,9 @@
   </section>
 
   <!-- שאלות נפוצות -->
-  <section class="section">
+  <section class="section" id="faq">
     <div class="wrap" style="max-width:760px">
-      <div class="eyebrow">שאלות נפוצות</div>
+      <div class="eyebrow"><span class="eyebrow-num">05</span>שאלות נפוצות</div>
       <h2 class="h2" style="margin-bottom:24px">מה שווה לדעת לפני שמתחילים</h2>
 
       <div class="faq-item reveal">
