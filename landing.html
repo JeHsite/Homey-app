@@ -37,8 +37,8 @@
     --bg: #F8F5EF;
     --surface: #FFFFFF;
     --surface-2: #F1ECE1;
-    --bronze: #CBA05A;
-    --bronze-text: #9C7830;
+    --bronze: #D98B5F;
+    --bronze-text: #B4562D;
     --cyan: #4FD8FF;
     --cyan-text: #0E8FAE;
     --line: rgba(26, 29, 36, 0.1);
@@ -60,13 +60,11 @@
   body {
     background-color: var(--bg);
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23CBA05A' stroke-width='0.5' opacity='0.07'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Cg fill='none' stroke='%23CBA05A' stroke-linecap='round' opacity='0.16'%3E%3Cpath stroke-width='3' d='M-96,886 C480,853 960,670 1382,389 C1613,238 1786,130 2016,0'/%3E%3Cpath stroke-width='2.2' d='M-38,961 C499,929 998,745 1440,443 C1670,292 1843,184 2035,65'/%3E%3Cpath stroke-width='1.6' d='M19,1026 C538,994 1056,810 1498,497 C1728,346 1901,248 2074,130'/%3E%3C/g%3E%3C/svg%3E"),
-      radial-gradient(ellipse 65% 55% at 90% 10%, rgba(203, 160, 90, 0.16), transparent 75%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M48 0H0V48' fill='none' stroke='%23B4562D' stroke-width='0.5' opacity='0.08'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Cg fill='none' stroke='%23B4562D' stroke-linecap='round' opacity='0.18'%3E%3Cpath stroke-width='3' d='M-96,886 C480,853 960,670 1382,389 C1613,238 1786,130 2016,0'/%3E%3Cpath stroke-width='2.2' d='M-38,961 C499,929 998,745 1440,443 C1670,292 1843,184 2035,65'/%3E%3Cpath stroke-width='1.6' d='M19,1026 C538,994 1056,810 1498,497 C1728,346 1901,248 2074,130'/%3E%3C/g%3E%3C/svg%3E"),
       linear-gradient(135deg, #FAF8F3 0%, #F8F5EF 50%, #F3EFE6 100%);
-    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
-    background-size: 300px 300px, 48px 48px, cover, cover, cover;
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-size: 48px 48px, cover, cover;
     background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-ui);
@@ -407,9 +405,9 @@
 
 <div id="introOverlay" class="intro-overlay" aria-hidden="true">
   <svg width="72" height="72" viewBox="0 0 110 110">
-    <path class="intro-path" d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="#CBA05A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
-    <path class="intro-path" d="M16 52 L44 26 L62 42 L94 16" fill="none" stroke="#CBA05A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
-    <path class="intro-path" d="M94 16 L94 34 M94 16 L76 16" fill="none" stroke="#CBA05A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+    <path class="intro-path" d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="#B4562D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+    <path class="intro-path" d="M16 52 L44 26 L62 42 L94 16" fill="none" stroke="#B4562D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+    <path class="intro-path" d="M94 16 L94 34 M94 16 L76 16" fill="none" stroke="#B4562D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 </div>
 <script>
@@ -440,7 +438,7 @@
         <defs>
           <linearGradient id="homeyBlobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#4FD8FF" />
-            <stop offset="100%" stop-color="#CBA05A" />
+            <stop offset="100%" stop-color="#B4562D" />
           </linearGradient>
         </defs>
         <path d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="url(#homeyBlobGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
@@ -521,7 +519,7 @@
                 <defs>
                   <linearGradient id="homeyBackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#4FD8FF" />
-                    <stop offset="100%" stop-color="#CBA05A" />
+                    <stop offset="100%" stop-color="#D98B5F" />
                   </linearGradient>
                 </defs>
                 <path d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="url(#homeyBackGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
