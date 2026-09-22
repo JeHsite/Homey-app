@@ -539,6 +539,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-note-card { background: rgba(203, 160, 90, 0.08); border: 1px solid rgba(203, 160, 90, 0.25); }
   .ent-trip-card { background: rgba(79, 216, 255, 0.06); border: 1px solid rgba(79, 216, 255, 0.22); }
   .ent-input { background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text); }
+  /* input[type=date] מרנדר גובה תוכן פנימי גדול ולא עקבי במובייל (בעיקר iOS Safari) לעומת שאר השדות.
+     בכוונה בלי -webkit-appearance:none — זה מוכר כפוגע באייקון הלוח-שנה הילידי ב-iOS. */
+  input[type="date"].ent-input, .ent-input[type="date"] { min-height: 44px; padding-top: 0; padding-bottom: 0; display: flex; align-items: center; }
+  /* חייב specificity גבוה מהכלל הכללי למעלה (שני class+attribute), אחרת הוא לא מנצח למרות שהוא מוגדר אחריו */
+  input[type="date"].ent-input.ent-floating-date, .ent-input.ent-floating-date[type="date"] { min-height: 52px; padding-top: 18px; }
   .ent-input:focus { border-color: var(--cyan); outline: none; }
   .ent-input::placeholder { color: var(--text-dim); }
   .ent-icon-btn { color: var(--text-dim); transition: color .15s ease; }
@@ -1588,7 +1593,7 @@ function DateField({
       color: 'var(--text-dim)'
     }
   }, label), /*#__PURE__*/React.createElement("input", {
-    className: "ent-input w-full px-4 pt-5 pb-1.5 rounded-xl text-sm outline-none",
+    className: "ent-input ent-floating-date w-full px-4 pt-5 pb-1.5 rounded-xl text-sm outline-none",
     type: "date",
     value: value || '',
     onChange: e => onChange(e.target.value)
@@ -2966,6 +2971,8 @@ function LoginScreen({
   const [mode, setMode] = useState('login');
   const [signupType, setSignupType] = useState('create');
   const [name, setName] = useState('');
+  const [familyDisplayName, setFamilyDisplayName] = useState('');
+  const [familyNameTouched, setFamilyNameTouched] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -3025,7 +3032,7 @@ function LoginScreen({
             data: family,
             error: famErr
           } = await sb.from('families').insert({
-            name: name + ' Family',
+            name: familyDisplayName.trim() || `משפחת ${name.trim()}`,
             group_code: code
           }).select().single();
           if (famErr) throw famErr;
@@ -3221,6 +3228,14 @@ function LoginScreen({
     placeholder: "שם מלא",
     value: name,
     onChange: e => setName(e.target.value)
+  }), mode === 'signup' && signupType === 'create' && /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    placeholder: "שם המשפחה/קבוצה (יוצג לבני המשפחה שלכם)",
+    value: familyNameTouched ? familyDisplayName : familyDisplayName || (name.trim() ? `משפחת ${name.trim()}` : ''),
+    onChange: e => {
+      setFamilyNameTouched(true);
+      setFamilyDisplayName(e.target.value);
+    }
   }), /*#__PURE__*/React.createElement("input", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
     type: "email",
@@ -4193,6 +4208,7 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [bills, setBills] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [notes, setNotes] = useState([]);
   const [trips, setTrips] = useState([]);
   const [gifts, setGifts] = useState([]);
@@ -4542,11 +4558,12 @@ function App() {
   }, [compactMode]);
   const resetAllData = async () => {
     if (!isDemo) {
-      await Promise.all(['transactions', 'bills', 'loans', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories'].map(t => sb.from(t).delete().eq('family_id', familyId)));
+      await Promise.all(['transactions', 'bills', 'loans', 'bank_accounts', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories'].map(t => sb.from(t).delete().eq('family_id', familyId)));
     }
     setTransactions([]);
     setBills([]);
     setLoans([]);
+    setBankAccounts([]);
     setNotes([]);
     setTrips([]);
     setGifts([]);
@@ -4565,6 +4582,7 @@ function App() {
           transactions,
           bills,
           loans,
+          bankAccounts,
           notes,
           trips,
           gifts,
@@ -4573,11 +4591,12 @@ function App() {
           customCategories: Object.keys(customCategories)
         };
       } else {
-        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg, ln] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals', 'loans'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
+        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg, ln, ba] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals', 'loans', 'bank_accounts'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
         data = {
           transactions: tx.data ?? [],
           bills: bl.data ?? [],
           loans: ln.data ?? [],
+          bankAccounts: ba.data ?? [],
           notes: nt.data ?? [],
           trips: tr.data ?? [],
           gifts: gf.data ?? [],
@@ -4773,6 +4792,17 @@ function App() {
         rateType: 'fixed',
         monthlyOverride: null
       }]);
+      setBankAccounts([{
+        id: 'demo-bank-1',
+        label: 'בנק לאומי — איתמר',
+        balance: 10000,
+        currency: null
+      }, {
+        id: 'demo-bank-2',
+        label: 'בנק מרכנתיל — נועה',
+        balance: 2000,
+        currency: null
+      }]);
       setBills([{
         id: 1,
         title: 'ארנונה',
@@ -4868,9 +4898,9 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId)]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId)]);
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
@@ -4881,6 +4911,12 @@ function App() {
         date: r.date
       })));
       setLoans((ln?.data || []).map(mapLoanRow));
+      setBankAccounts((ba?.data || []).map(r => ({
+        id: r.id,
+        label: r.label,
+        balance: Number(r.balance),
+        currency: r.currency || null
+      })));
       setBills((bl.data || []).map(r => ({
         id: r.id,
         title: r.title,
@@ -4967,12 +5003,26 @@ function App() {
     const v = toPrimary(a.value, a.currency, currency, rates);
     return v === null ? s : s + v;
   }, 0);
-  const netWorth = balance + totalSavings + totalAssets;
   const monthKey = d => {
     if (!d) return null;
     const dt = new Date(d);
     return isNaN(dt) ? null : `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
   };
+  const totalBankBalance = bankAccounts.reduce((s, b) => {
+    const v = toPrimary(b.balance, b.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0);
+  const thisKey = monthKey(new Date().toISOString());
+  const monthIncome = transactions.filter(t => t.type === 'income' && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
+  const monthExpense = transactions.filter(t => t.type === 'expense' && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
+  // אין חשבונות עו"ש רשומים -> נופל לנוסחה הישנה (income/expense מצטברים) כדי שכל המשפחות
+  // (כולן ביום הפריסה, וכל משפחה חינמית לצמיתות) ימשיכו לראות מספר משמעותי, לא ₪0.
+  const currentBalance = bankAccounts.length > 0 ? totalBankBalance + (monthIncome - monthExpense) : balance;
+  const totalLoanBalance = loans.reduce((s, l) => {
+    const st = loanState(l);
+    return st.done ? s : s + st.balance;
+  }, 0);
+  const netWorth = currentBalance + totalSavings + totalAssets - totalLoanBalance;
   const monthLabelHe = key => {
     if (key === 'all') return 'כל התקופות';
     const [y, m] = key.split('-');
@@ -5476,6 +5526,66 @@ function App() {
     setLoans(prev => prev.filter(x => x.id !== id));
     if (!isDemo) await sb.from('loans').delete().eq('id', id);
     showToast('ההלוואה נמחקה');
+  };
+  const submitBankAccount = async (f, editId) => {
+    const balanceNum = Number(f.balance);
+    if (!f.label.trim() || !Number.isFinite(balanceNum)) {
+      showToast('נא למלא שם חשבון וסכום');
+      return false;
+    }
+    if (!editId && !isPremium && !isDemo) {
+      showToast('ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+      return false;
+    }
+    const row = {
+      label: f.label.trim(),
+      balance: balanceNum,
+      currency: f.currency || null
+    };
+    if (editId) {
+      setBankAccounts(prev => prev.map(x => x.id === editId ? {
+        ...x,
+        ...row
+      } : x));
+      if (!isDemo) await sb.from('bank_accounts').update({
+        ...row,
+        updated_at: new Date().toISOString()
+      }).eq('id', editId);
+      showToast('החשבון עודכן');
+      return true;
+    }
+    if (isDemo) {
+      setBankAccounts(prev => [{
+        id: nextId(),
+        ...row
+      }, ...prev]);
+    } else {
+      const {
+        data,
+        error
+      } = await sb.from('bank_accounts').insert({
+        family_id: familyId,
+        ...row
+      }).select().single();
+      if (error) {
+        showToast(String(error.message || '').includes('premium_required') ? 'ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות' : 'שגיאה בשמירה');
+        return false;
+      }
+      setBankAccounts(prev => [{
+        id: data.id,
+        label: data.label,
+        balance: Number(data.balance),
+        currency: data.currency || null
+      }, ...prev]);
+    }
+    showToast('החשבון נוסף');
+    return true;
+  };
+  const deleteBankAccount = async id => {
+    setBankAccounts(prev => prev.filter(x => x.id !== id));
+    if (!isDemo) await sb.from('bank_accounts').delete().eq('id', id);
+    showToast('החשבון נמחק');
   };
   const submitNote = async () => {
     const f = formData.notes;
@@ -5997,9 +6107,21 @@ function App() {
     className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs"
   }, "שדרוג")), newsState === 'ok' && news.length > 0 && /*#__PURE__*/React.createElement(NewsTicker, {
     items: news
+  }), !isChild && /*#__PURE__*/React.createElement(BankAccountsCard, {
+    bankAccounts: bankAccounts,
+    currency: currency,
+    rates: rates,
+    isPremium: isPremium,
+    inputClass: inputClass,
+    onSave: submitBankAccount,
+    onDelete: deleteBankAccount,
+    onUpgrade: () => {
+      showToast('ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+    }
   }), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-  }, [[IDollar, 'יתרה נוכחית', balance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
+  }, [[IDollar, 'יתרה חודשית נוכחית', currentBalance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
     key: label,
     onClick: tab ? () => setActiveTab(tab) : undefined,
     className: `ent-card ent-stat ent-tilt p-6 relative overflow-hidden${tab ? ' cursor-pointer' : ''}`,
@@ -9303,6 +9425,151 @@ function LoansCard({
       style: muted
     }, 'הזינו סכום כדי לראות כמה זמן וכמה ריבית אפשר לחסוך.'))));
   })));
+}
+const EMPTY_BANK_ACCOUNT_FORM = {
+  label: '',
+  balance: '',
+  currency: ''
+};
+function BankAccountsCard({
+  bankAccounts,
+  currency,
+  rates,
+  isPremium,
+  onSave,
+  onDelete,
+  onUpgrade,
+  inputClass
+}) {
+  const h = React.createElement;
+  const [formOpen, setFormOpen] = React.useState(false);
+  const [editingId, setEditingId] = React.useState(null);
+  const [form, setForm] = React.useState(EMPTY_BANK_ACCOUNT_FORM);
+  const set = (k, v) => setForm(p => ({
+    ...p,
+    [k]: v
+  }));
+  const muted = {
+    color: 'var(--text-muted)'
+  };
+  const panel = {
+    background: 'var(--navy-panel-2)'
+  };
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(EMPTY_BANK_ACCOUNT_FORM);
+  };
+  const openNew = () => {
+    if (!isPremium) return onUpgrade();
+    if (formOpen) return closeForm();
+    setForm(EMPTY_BANK_ACCOUNT_FORM);
+    setEditingId(null);
+    setFormOpen(true);
+  };
+  const startEdit = b => {
+    setForm({
+      label: b.label,
+      balance: String(b.balance),
+      currency: b.currency || ''
+    });
+    setEditingId(b.id);
+    setFormOpen(true);
+  };
+  const save = async () => {
+    const ok = await onSave({
+      ...form,
+      currency: form.currency || null
+    }, editingId);
+    if (ok) closeForm();
+  };
+  const totalBankBalance = bankAccounts.reduce((s, b) => {
+    const v = toPrimary(b.balance, b.currency, currency, rates);
+    return v === null ? s : s + v;
+  }, 0);
+  return h('div', {
+    className: 'ent-card p-6 space-y-4'
+  }, h('div', {
+    className: 'flex flex-wrap items-center justify-between gap-3'
+  }, h('h2', {
+    className: 'ent-heading text-xl font-bold flex items-center gap-2'
+  }, h(IBank, {
+    size: 20
+  }), ' עובר ושב'), h('button', {
+    onClick: openNew,
+    className: 'ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm'
+  }, !isPremium && h(ILock, {
+    size: 14
+  }), h(IPlus, {
+    size: 16
+  }), ' הוסף חשבון')), bankAccounts.length > 0 && h('div', {
+    className: 'ent-mini-card p-3.5 text-center'
+  }, h('p', {
+    className: 'text-xs',
+    style: muted
+  }, 'סה״כ בעו״ש'), h('p', {
+    className: 'font-bold mt-1'
+  }, currency, Math.round(totalBankBalance).toLocaleString('he-IL'))), formOpen && h('div', {
+    className: 'grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl',
+    style: panel
+  }, h('input', {
+    className: inputClass + ' sm:col-span-2',
+    placeholder: 'שם החשבון (למשל: בנק לאומי — איתמר)',
+    value: form.label,
+    onChange: e => set('label', e.target.value)
+  }), h('input', {
+    className: inputClass,
+    type: 'number',
+    inputMode: 'decimal',
+    placeholder: `יתרה ${currency}`,
+    value: form.balance,
+    onChange: e => set('balance', e.target.value)
+  }), h('select', {
+    className: inputClass,
+    'aria-label': 'מטבע',
+    value: form.currency,
+    onChange: e => set('currency', e.target.value)
+  }, h('option', {
+    value: ''
+  }, `${currency} (מטבע ראשי)`), CURRENCY_LIST.filter(c => c.code !== (CURRENCY_SYMBOL_TO_CODE[currency] || 'ILS')).map(c => h('option', {
+    key: c.code,
+    value: c.code
+  }, `${c.name} (${c.code})`))), h('div', {
+    className: 'flex gap-2 sm:col-span-4'
+  }, h('button', {
+    onClick: save,
+    className: 'ent-pill-btn solid-bronze px-5 py-2 text-sm'
+  }, editingId ? 'עדכון' : 'שמור'), h('button', {
+    onClick: closeForm,
+    className: 'ent-pill-btn ghost px-5 py-2 text-sm'
+  }, 'ביטול'))), bankAccounts.length === 0 ? h(EmptyState, {
+    text: 'עוד לא הוספתם חשבון עו"ש'
+  }) : h('div', {
+    className: 'space-y-3'
+  }, bankAccounts.map(b => h('div', {
+    key: b.id,
+    className: 'flex items-center justify-between p-3 rounded-xl',
+    style: panel
+  }, h('p', {
+    className: 'font-semibold'
+  }, b.label), h('div', {
+    className: 'flex items-center gap-3'
+  }, h('span', {
+    className: 'font-bold'
+  }, currencyDisplay(b.currency) || currency, Math.round(b.balance).toLocaleString('he-IL')), h('button', {
+    className: 'ent-icon-btn',
+    style: muted,
+    'aria-label': `עריכת ${b.label}`,
+    onClick: () => startEdit(b)
+  }, h(IEdit, {
+    size: 15
+  })), h('button', {
+    className: 'ent-icon-btn',
+    'aria-label': `מחיקת ${b.label}`,
+    onClick: () => onDelete(b.id)
+  }, h(ITrash, {
+    size: 16
+  })))))));
 }
 function SubscriptionCard({
   familyPlan,

@@ -39,6 +39,7 @@ begin
       delete from public.gifts where family_id = v_fam;
       delete from public.savings_pots where family_id = v_fam;
       delete from public.assets where family_id = v_fam;
+      delete from public.bank_accounts where family_id = v_fam;
       delete from public.custom_categories where family_id = v_fam;
       delete from public.children where family_id = v_fam;
       delete from public.families where id = v_fam;
