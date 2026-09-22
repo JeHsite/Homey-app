@@ -55,7 +55,11 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 65% 55% at 90% 10%, rgba(203, 160, 90, 0.16), transparent 75%),
+      linear-gradient(135deg, #FAF8F3 0%, #F8F5EF 50%, #F3EFE6 100%);
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-ui);
     line-height: 1.55;
