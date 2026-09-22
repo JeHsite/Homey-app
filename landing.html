@@ -317,22 +317,34 @@
 
   .hero-demo-frame {
     position: relative; z-index: 1;
+    transform: perspective(1600px) rotateY(-7deg) rotateX(3deg);
+    transform-origin: 50% 50%;
+  }
+  @media (prefers-reduced-motion: reduce), (max-width: 1024px) {
+    .hero-demo-frame { transform: none; }
+  }
+  .demo-flip {
+    position: relative; transform-style: preserve-3d;
+    transform: perspective(1600px) rotateY(0deg);
+    transition: transform .9s cubic-bezier(.65,0,.35,1);
+  }
+  .hero-demo-frame:hover .demo-flip { transform: perspective(1600px) rotateY(180deg); }
+  @media (prefers-reduced-motion: reduce) {
+    .demo-flip, .hero-demo-frame:hover .demo-flip { transition: none; transform: perspective(1600px) rotateY(0deg); }
+  }
+  .demo-face {
+    backface-visibility: hidden;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
     box-shadow: var(--card-shadow), 12px 32px 48px -22px rgba(32,28,21,.28);
     overflow: hidden;
-    transform: perspective(1600px) rotateY(-7deg) rotateX(3deg);
-    transform-origin: 50% 50%;
-    transition: transform .6s ease;
   }
-  @keyframes demoSway {
-    0%, 100% { transform: perspective(1600px) rotateY(-9deg) rotateX(3deg); }
-    50%      { transform: perspective(1600px) rotateY(-5deg) rotateX(3deg); }
+  .demo-back {
+    position: absolute; inset: 0; transform: rotateY(180deg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    background: linear-gradient(160deg, var(--navy-panel) 0%, #191F2C 100%);
   }
-  .hero-demo-frame:hover { animation: demoSway 3.6s ease-in-out infinite; }
-  @media (prefers-reduced-motion: reduce), (max-width: 1024px) {
-    .hero-demo-frame { transform: none; }
-    .hero-demo-frame:hover { animation: none; }
-  }
+  .demo-back .logo-word { font-size: 28px; }
+  .demo-back p { color: var(--dark-text-muted); font-size: 13px; }
   .hero-demo-bar {
     display: flex; align-items: center; gap: 8px; padding: 10px 14px;
     border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-dim); font-weight: 700;
@@ -492,15 +504,34 @@
           </div>
         </div>
         <div class="hero-demo-frame">
-          <div class="hero-demo-bar">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span>Homey — דמו חי</span>
-            <span class="live"><span class="dot"></span>LIVE</span>
+          <div class="demo-flip">
+            <div class="demo-face demo-front">
+              <div class="hero-demo-bar">
+                <span class="dots"><span></span><span></span><span></span></span>
+                <span>Homey — דמו חי</span>
+                <span class="live"><span class="dot"></span>LIVE</span>
+              </div>
+              <div class="hero-demo-viewport">
+                <iframe src="index.html?demo=parent" title="דמו חי של אפליקציית Homey" loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms" tabindex="-1" aria-hidden="true"></iframe>
+              </div>
+              <a class="hero-demo-cta" href="index.html?demo=parent" target="_blank" rel="noopener">פתחו את הדמו במסך מלא ↗</a>
+            </div>
+            <div class="demo-face demo-back" aria-hidden="true">
+              <svg width="44" height="44" viewBox="0 0 110 110">
+                <defs>
+                  <linearGradient id="homeyBackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4FD8FF" />
+                    <stop offset="100%" stop-color="#CBA05A" />
+                  </linearGradient>
+                </defs>
+                <path d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="url(#homeyBackGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M16 52 L44 26 L62 42 L94 16" fill="none" stroke="url(#homeyBackGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M94 16 L94 34 M94 16 L76 16" fill="none" stroke="url(#homeyBackGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="logo-word">Homey</span>
+              <p>כל הכסף של המשפחה, במקום אחד</p>
+            </div>
           </div>
-          <div class="hero-demo-viewport">
-            <iframe src="index.html?demo=parent" title="דמו חי של אפליקציית Homey" loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms" tabindex="-1" aria-hidden="true"></iframe>
-          </div>
-          <a class="hero-demo-cta" href="index.html?demo=parent" target="_blank" rel="noopener">פתחו את הדמו במסך מלא ↗</a>
         </div>
         <div class="trust-badge">
           <span class="ic">🔒</span>
