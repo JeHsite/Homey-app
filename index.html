@@ -2320,14 +2320,71 @@ function parseCardMessage(text, categories) {
   };
   let dm = src.match(/(?:ביום|בתאריך|תאריך|ב-?)\s*(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/) || src.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/) || src.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
   if (dm) out.date = toIso(dm[1], dm[2], dm[3]);
-  const hay = out.merchant || src;
+  Object.assign(out, guessCategory(out.merchant || src, categories));
+  return out;
+}
+function guessCategory(hay, categories) {
   for (const [re, cat, sub] of MERCHANT_CATEGORY_RULES) {
     if (re.test(hay) && categories && categories[cat]) {
-      out.category = cat;
-      out.sub = categories[cat].subs.includes(sub) ? sub : categories[cat].subs[0];
+      return {
+        category: cat,
+        sub: categories[cat].subs.includes(sub) ? sub : categories[cat].subs[0]
+      };
+    }
+  }
+  return {
+    category: '',
+    sub: ''
+  };
+}
+// קריאת קבלה מטקסט OCR (רועש): מחזירה סכום סביר ראשון + עוד מועמדים לבחירה, שם בית עסק, תאריך וקטגוריה
+function parseReceiptText(text, categories) {
+  const out = {
+    amount: 0,
+    merchant: '',
+    date: '',
+    category: '',
+    sub: '',
+    candidates: []
+  };
+  const lines = String(text || '').replace(/[‎‏]/g, '').split(/\n+/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!lines.length) return out;
+  const MONEY = /(?<!\d)(?:\d{1,3}(?:,\d{3})+|\d{1,6})[.,]\d{2}(?!\d)/g;
+  const toNum = s => Number(s.includes(',') && s.includes('.') ? s.replace(/,/g, '') : s.replace(',', '.'));
+  const TOTAL_KW = /סה["״'׳]?כ|לתשלום|לחיוב|total|amount|סכום|sum/i;
+  const NOT_TOTAL_KW = /מע["״'׳]?מ|מעמ|vat|עודף|מזומן|כרטיס|אשראי|change|cash|לפני|הנחה|חיסכון/i;
+  const scored = new Map();
+  const add = (n, score) => {
+    if (!(n > 0 && n < 100000)) return;
+    scored.set(n, Math.max(scored.get(n) ?? -9, score));
+  };
+  lines.forEach((line, i) => {
+    if (/(?<!\d)\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/.test(line)) return;
+    const nums = (line.match(MONEY) || []).map(toNum);
+    const kw = TOTAL_KW.test(line);
+    const bad = NOT_TOTAL_KW.test(line);
+    if (nums.length) nums.forEach(n => add(n, kw && !bad ? 3 : bad ? -1 : 0));else if (kw && lines[i + 1]) (lines[i + 1].match(MONEY) || []).map(toNum).forEach(n => add(n, 2));
+  });
+  out.candidates = [...scored.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]).map(([n]) => n).slice(0, 5);
+  out.amount = out.candidates[0] || 0;
+  const SKIP = /קבלה|חשבונית|מס\b|עוסק|ח\.?\s?פ|טלפון|טל[.:]|tel|www|@|\d{5,}|כתובת|רחוב|תאריך|שעה|קופה|מספר|receipt|invoice/i;
+  for (const line of lines.slice(0, 7)) {
+    const letters = (line.match(/[A-Za-z֐-׿]/g) || []).length;
+    if (letters >= 3 && letters / line.length >= 0.55 && !SKIP.test(line)) {
+      out.merchant = line.replace(/^[^A-Za-z֐-׿]+|[^A-Za-z֐-׿)"']+$/g, '').slice(0, 40);
       break;
     }
   }
+  const dm = lines.join(' ').match(/(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4}|\d{2})(?!\d)/);
+  if (dm) {
+    const day = Number(dm[1]),
+      month = Number(dm[2]);
+    let year = Number(dm[3]);
+    if (year < 100) year += 2000;
+    const d = new Date(year, month - 1, day);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && d - new Date() < 7 * 864e5) out.date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  Object.assign(out, guessCategory(out.merchant + ' ' + lines.slice(0, 8).join(' '), categories));
   return out;
 }
 /* ---- ריבוי מטבעות: קופות חיסכון ונכסים יכולים להיות במטבע שונה מהמטבע הראשי של המשפחה ---- */
@@ -4788,17 +4845,35 @@ function App() {
   };
   const receiptInputRef = useRef(null);
   const [scanBusy, setScanBusy] = useState(false);
-  const downscaleToJpeg = file => new Promise((resolve, reject) => {
+  const [scanProgress, setScanProgress] = useState('');
+  const [receiptDraft, setReceiptDraft] = useState(null);
+  const loadTesseract = () => window.Tesseract ? Promise.resolve(window.Tesseract) : new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
+    s.onload = () => resolve(window.Tesseract);
+    s.onerror = () => reject(new Error('load_failed'));
+    document.head.appendChild(s);
+  });
+  const prepareReceiptCanvas = file => new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
       const c = document.createElement('canvas');
       c.width = Math.round(img.width * scale);
       c.height = Math.round(img.height * scale);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+      const px = ctx.getImageData(0, 0, c.width, c.height);
+      const d = px.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const v = Math.max(0, Math.min(255, (g - 128) * 1.5 + 128));
+        d[i] = d[i + 1] = d[i + 2] = v;
+      }
+      ctx.putImageData(px, 0, 0);
+      resolve(c);
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
@@ -4808,42 +4883,51 @@ function App() {
   });
   const scanReceipt = async file => {
     if (!file) return;
-    if (isDemo) return showToast('צילום קבלה עובד באפליקציה עצמה, לא בדמו');
-    if (!isPremium) {
-      showToast('צילום קבלה הוא תכונת פרימיום — שדרגו בהגדרות');
-      setActiveTab('settings');
-      return;
-    }
     setScanBusy(true);
+    setScanProgress('מכינים את התמונה...');
+    let worker = null;
     try {
-      const image = await downscaleToJpeg(file);
-      const categoriesForAi = Object.fromEntries(Object.entries(allExpenseCategories).map(([k, v]) => [k, v.subs]));
-      const {
-        data,
-        error
-      } = await sb.functions.invoke('scan-receipt', {
-        body: {
-          image,
-          media_type: 'image/jpeg',
-          categories: categoriesForAi
+      const canvas = await prepareReceiptCanvas(file);
+      const T = await loadTesseract();
+      worker = await T.createWorker('heb+eng', 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') setScanProgress(`קורא את הקבלה... ${Math.round((m.progress || 0) * 100)}%`);else if (m.status && m.status.includes('loading')) setScanProgress('מורידים רכיבי קריאה (רק בפעם הראשונה)...');
         }
       });
-      if (error) {
-        let code = '';
-        try {
-          code = (await error.context.json()).error;
-        } catch (_e) {}
-        showToast(code === 'monthly_limit' ? 'הגעתם למכסת הסריקות החודשית' : code === 'premium_required' ? 'צילום קבלה הוא תכונת פרימיום' : code === 'no_api_key' ? 'סריקת הקבלות עוד לא הופעלה' : code === 'no_total' || code === 'unreadable' ? 'לא הצלחתי לקרוא את הקבלה — נסו צילום ברור יותר או מלאו ידנית' : 'הסריקה נכשלה, נסו שוב');
-        return;
-      }
-      fillFromParsed(data);
-      showToast('הקבלה נקראה — בדקו ושמרו');
+      const {
+        data
+      } = await worker.recognize(canvas);
+      const parsed = parseReceiptText(data.text, allExpenseCategories);
+      setReceiptDraft({
+        merchant: parsed.merchant,
+        amount: parsed.amount ? String(parsed.amount) : '',
+        date: parsed.date,
+        category: parsed.category,
+        sub: parsed.sub,
+        candidates: parsed.candidates
+      });
+      if (!parsed.amount) showToast('לא זיהיתי סכום — הזינו ידנית');
     } catch (_e) {
-      showToast('לא הצלחתי לפתוח את התמונה');
+      showToast('לא הצלחתי לקרוא את הקבלה — נסו שוב או מלאו ידנית');
     } finally {
+      if (worker) worker.terminate().catch(() => {});
       setScanBusy(false);
+      setScanProgress('');
       if (receiptInputRef.current) receiptInputRef.current.value = '';
     }
+  };
+  const confirmReceiptDraft = () => {
+    const amount = Number(receiptDraft.amount);
+    if (!(amount > 0)) return showToast('נא להזין סכום');
+    fillFromParsed({
+      amount,
+      merchant: receiptDraft.merchant,
+      date: receiptDraft.date,
+      category: receiptDraft.category,
+      sub: receiptDraft.sub
+    });
+    setReceiptDraft(null);
+    showToast('הועבר לטופס — בדקו ושמרו');
   };
   const applyPastedMessage = () => {
     const parsed = parseCardMessage(pasteText, allExpenseCategories);
@@ -6651,7 +6735,56 @@ function App() {
     style: {
       background: 'var(--navy-panel-2)'
     }
-  }, !editingId && /*#__PURE__*/React.createElement("div", {
+  }, !editingId && receiptDraft && /*#__PURE__*/React.createElement("div", {
+    className: "sm:col-span-2 space-y-3 p-4 rounded-xl",
+    style: {
+      border: '1px dashed var(--bronze)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "בדקו את מה שנקרא מהקבלה"), /*#__PURE__*/React.createElement("input", {
+    className: inputClass,
+    placeholder: "שם בית העסק / מוצר",
+    "aria-label": "שם בית העסק",
+    value: receiptDraft.merchant,
+    onChange: e => setReceiptDraft(d => ({
+      ...d,
+      merchant: e.target.value
+    }))
+  }), /*#__PURE__*/React.createElement("input", {
+    className: inputClass,
+    type: "number",
+    inputMode: "decimal",
+    placeholder: `סכום ${currency}`,
+    "aria-label": "סכום",
+    value: receiptDraft.amount,
+    onChange: e => setReceiptDraft(d => ({
+      ...d,
+      amount: e.target.value
+    }))
+  }), receiptDraft.candidates.length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap items-center gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "סכומים נוספים שנקראו:"), receiptDraft.candidates.map(n => /*#__PURE__*/React.createElement("button", {
+    key: n,
+    onClick: () => setReceiptDraft(d => ({
+      ...d,
+      amount: String(n)
+    })),
+    className: "ent-pill-btn ghost px-3 py-1 text-xs"
+  }, currency, n.toLocaleString('he-IL')))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: confirmReceiptDraft,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, "אישור"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setReceiptDraft(null),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))), !editingId && !receiptDraft && /*#__PURE__*/React.createElement("div", {
     className: "sm:col-span-2 space-y-2"
   }, /*#__PURE__*/React.createElement("textarea", {
     className: inputClass,
@@ -6668,10 +6801,8 @@ function App() {
   }, "מלא מההודעה"), /*#__PURE__*/React.createElement("button", {
     onClick: () => receiptInputRef.current && receiptInputRef.current.click(),
     disabled: scanBusy,
-    className: "ent-pill-btn ghost px-4 py-1.5 text-xs flex items-center gap-1.5"
-  }, !isPremium && !isDemo && /*#__PURE__*/React.createElement(ILock, {
-    size: 12
-  }), scanBusy ? 'קורא את הקבלה...' : 'צילום קבלה'), /*#__PURE__*/React.createElement("input", {
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+  }, scanBusy ? scanProgress || 'קורא את הקבלה...' : 'צילום קבלה'), /*#__PURE__*/React.createElement("input", {
     ref: receiptInputRef,
     type: "file",
     accept: "image/*",
