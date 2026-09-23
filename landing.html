@@ -443,6 +443,26 @@
   }
   .demo-back .logo-word { font-size: 28px; }
   .demo-back p { color: var(--dark-text-muted); font-size: 13px; }
+  .demo-back > :not(.demo-graphs) { position: relative; z-index: 1; }
+  .demo-graphs { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: .8; }
+  .demo-back::after {
+    content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse 46% 30% at 50% 50%, rgba(16,20,29,.92) 0%, rgba(16,20,29,.7) 55%, rgba(16,20,29,0) 100%);
+  }
+  .demo-graphs .g-grid { stroke: rgba(245,243,238,.07); stroke-width: 1; }
+  .demo-graphs .g-line { fill: none; stroke-width: 2.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .demo-graphs .g-gold { stroke: #CBA05A; }
+  .demo-graphs .g-cyan { stroke: #4FD8FF; }
+  .demo-graphs .g-area-gold { fill: url(#graphAreaGold); }
+  .demo-graphs .g-scroll { animation: graphScroll 9s linear infinite; }
+  .demo-graphs .g-scroll-slow { animation-duration: 15s; }
+  .demo-graphs .g-bar {
+    fill: rgba(203,160,90,.28); transform-box: fill-box; transform-origin: 50% 100%;
+    animation: graphBar 3.6s ease-in-out infinite;
+  }
+  @keyframes graphScroll { from { transform: translateX(0); } to { transform: translateX(-400px); } }
+  @keyframes graphBar { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .demo-graphs .g-scroll, .demo-graphs .g-bar { animation: none; } }
   .hero-demo-bar {
     display: flex; align-items: center; gap: 8px; padding: 10px 14px;
     border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-dim); font-weight: 700;
@@ -637,6 +657,31 @@
               <a class="hero-demo-cta" href="index.html?demo=parent" target="_blank" rel="noopener">פתחו את הדמו במסך מלא ↗</a>
             </div>
             <div class="demo-face demo-back" aria-hidden="true">
+              <svg class="demo-graphs" viewBox="0 0 400 300" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="graphAreaGold" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#CBA05A" stop-opacity=".28" />
+                    <stop offset="100%" stop-color="#CBA05A" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path class="g-grid" d="M0 75H400M0 150H400M0 225H400" />
+                <rect class="g-bar" x="14" y="190" width="24" height="90" rx="4" style="animation-delay:0s" />
+                <rect class="g-bar" x="58" y="170" width="24" height="110" rx="4" style="animation-delay:-.5s" />
+                <rect class="g-bar" x="102" y="200" width="24" height="80" rx="4" style="animation-delay:-1s" />
+                <rect class="g-bar" x="146" y="160" width="24" height="120" rx="4" style="animation-delay:-1.5s" />
+                <rect class="g-bar" x="190" y="185" width="24" height="95" rx="4" style="animation-delay:-2s" />
+                <rect class="g-bar" x="234" y="150" width="24" height="130" rx="4" style="animation-delay:-2.5s" />
+                <rect class="g-bar" x="278" y="180" width="24" height="100" rx="4" style="animation-delay:-3s" />
+                <rect class="g-bar" x="322" y="165" width="24" height="115" rx="4" style="animation-delay:-.8s" />
+                <rect class="g-bar" x="366" y="195" width="24" height="85" rx="4" style="animation-delay:-1.8s" />
+                <g class="g-scroll g-scroll-slow">
+                  <path class="g-line g-cyan" d="M0,120 C50,70 100,70 150,105 S260,170 320,100 S380,80 400,120 C450,70 500,70 550,105 S660,170 720,100 S780,80 800,120" />
+                </g>
+                <g class="g-scroll">
+                  <path class="g-area-gold" d="M0,190 C60,130 110,130 160,170 S260,250 320,170 S380,140 400,190 C460,130 510,130 560,170 S660,250 720,170 S780,140 800,190 V300 H0 Z" />
+                  <path class="g-line g-gold" d="M0,190 C60,130 110,130 160,170 S260,250 320,170 S380,140 400,190 C460,130 510,130 560,170 S660,250 720,170 S780,140 800,190" />
+                </g>
+              </svg>
               <svg width="44" height="44" viewBox="0 0 110 110">
                 <defs>
                   <linearGradient id="homeyBackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
