@@ -4786,9 +4786,73 @@ function App() {
     }) : await sb.from('category_budgets').delete().eq('family_id', familyId).eq('category', category);
     if (error) showToast('שגיאה בשמירת התקציב');else showToast(next > 0 ? 'התקציב נשמר' : 'התקציב הוסר');
   };
+  const receiptInputRef = useRef(null);
+  const [scanBusy, setScanBusy] = useState(false);
+  const downscaleToJpeg = file => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.82).split(',')[1]);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('bad_image'));
+    };
+    img.src = url;
+  });
+  const scanReceipt = async file => {
+    if (!file) return;
+    if (isDemo) return showToast('צילום קבלה עובד באפליקציה עצמה, לא בדמו');
+    if (!isPremium) {
+      showToast('צילום קבלה הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+      return;
+    }
+    setScanBusy(true);
+    try {
+      const image = await downscaleToJpeg(file);
+      const categoriesForAi = Object.fromEntries(Object.entries(allExpenseCategories).map(([k, v]) => [k, v.subs]));
+      const {
+        data,
+        error
+      } = await sb.functions.invoke('scan-receipt', {
+        body: {
+          image,
+          media_type: 'image/jpeg',
+          categories: categoriesForAi
+        }
+      });
+      if (error) {
+        let code = '';
+        try {
+          code = (await error.context.json()).error;
+        } catch (_e) {}
+        showToast(code === 'monthly_limit' ? 'הגעתם למכסת הסריקות החודשית' : code === 'premium_required' ? 'צילום קבלה הוא תכונת פרימיום' : code === 'no_api_key' ? 'סריקת הקבלות עוד לא הופעלה' : code === 'no_total' || code === 'unreadable' ? 'לא הצלחתי לקרוא את הקבלה — נסו צילום ברור יותר או מלאו ידנית' : 'הסריקה נכשלה, נסו שוב');
+        return;
+      }
+      fillFromParsed(data);
+      showToast('הקבלה נקראה — בדקו ושמרו');
+    } catch (_e) {
+      showToast('לא הצלחתי לפתוח את התמונה');
+    } finally {
+      setScanBusy(false);
+      if (receiptInputRef.current) receiptInputRef.current.value = '';
+    }
+  };
   const applyPastedMessage = () => {
     const parsed = parseCardMessage(pasteText, allExpenseCategories);
     if (!parsed.amount) return showToast('לא זיהיתי סכום בהודעה — אפשר למלא ידנית');
+    fillFromParsed(parsed);
+    setPasteText('');
+    showToast('מולא מההודעה — בדקו ושמרו');
+  };
+  const fillFromParsed = parsed => {
     setFormData(prev => ({
       ...prev,
       expenses: {
@@ -4801,8 +4865,6 @@ function App() {
         date: parsed.date || prev.expenses.date
       }
     }));
-    setPasteText('');
-    showToast('מולא מההודעה — בדקו ושמרו');
   };
   const budgetAlertFor = (category, dateStr, addedAmount) => {
     const budget = categoryBudgets[category];
@@ -6598,10 +6660,26 @@ function App() {
     "aria-label": "הודעת אשראי להדבקה",
     value: pasteText,
     onChange: e => setPasteText(e.target.value)
-  }), pasteText.trim() && /*#__PURE__*/React.createElement("button", {
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, pasteText.trim() && /*#__PURE__*/React.createElement("button", {
     onClick: applyPastedMessage,
     className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
-  }, "מלא מההודעה")), /*#__PURE__*/React.createElement("select", {
+  }, "מלא מההודעה"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => receiptInputRef.current && receiptInputRef.current.click(),
+    disabled: scanBusy,
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs flex items-center gap-1.5"
+  }, !isPremium && !isDemo && /*#__PURE__*/React.createElement(ILock, {
+    size: 12
+  }), scanBusy ? 'קורא את הקבלה...' : 'צילום קבלה'), /*#__PURE__*/React.createElement("input", {
+    ref: receiptInputRef,
+    type: "file",
+    accept: "image/*",
+    className: "ent-sr-only",
+    tabIndex: -1,
+    "aria-label": "בחירת תמונת קבלה",
+    onChange: e => scanReceipt(e.target.files && e.target.files[0])
+  }))), /*#__PURE__*/React.createElement("select", {
     className: inputClass,
     value: formData.expenses.type,
     onChange: e => {
