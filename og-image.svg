@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="base" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FAF8F3" />
-      <stop offset="50%" stop-color="#F8F5EF" />
-      <stop offset="100%" stop-color="#F3EFE6" />
+      <stop offset="0%" stop-color="#F5F4F1" />
+      <stop offset="50%" stop-color="#F2F1EE" />
+      <stop offset="100%" stop-color="#EDECE7" />
     </linearGradient>
     <radialGradient id="glow" cx="88%" cy="8%" r="70%">
       <stop offset="0%" stop-color="#D98B5F" stop-opacity="0.22" />
       <stop offset="45%" stop-color="#DFBD82" stop-opacity="0.12" />
-      <stop offset="100%" stop-color="#F8F5EF" stop-opacity="0" />
+      <stop offset="100%" stop-color="#F2F1EE" stop-opacity="0" />
     </radialGradient>
     <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4FD8FF" />
