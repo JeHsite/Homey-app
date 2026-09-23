@@ -519,9 +519,13 @@
   var entranceStarted = false;
   function startHeroEntrance() {
     if (entranceStarted) return;
-    entranceStarted = true;
     var hv = document.querySelector('.hero-visual');
-    if (!hv) return;
+    if (!hv) {
+      /* הרכיב עוד לא פורסר (הסקריפט רץ מוקדם) — ננסה שוב בפריים הבא במקום להיכשל לצמיתות */
+      requestAnimationFrame(startHeroEntrance);
+      return;
+    }
+    entranceStarted = true;
     requestAnimationFrame(function () { requestAnimationFrame(function () { hv.classList.add('entered'); }); });
   }
   /* רשת ביטחון: לא משנה מה קורה למעלה, ההירו לא יישאר שקוף לצמיתות */
