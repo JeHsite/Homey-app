@@ -484,25 +484,37 @@
 </div>
 <script>
 (function () {
-  var overlay = document.getElementById('introOverlay');
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var entranceStarted = false;
   function startHeroEntrance() {
+    if (entranceStarted) return;
+    entranceStarted = true;
     var hv = document.querySelector('.hero-visual');
     if (!hv) return;
     requestAnimationFrame(function () { requestAnimationFrame(function () { hv.classList.add('entered'); }); });
   }
-  var seen = false;
-  try { seen = sessionStorage.getItem('homey_landing_intro_seen') === '1'; } catch (e) {}
-  if (reduce || seen) { overlay.remove(); startHeroEntrance(); }
-  else {
-    try { sessionStorage.setItem('homey_landing_intro_seen', '1'); } catch (e) {}
-    document.documentElement.style.overflow = 'hidden';
-    setTimeout(function () {
-      overlay.classList.add('hide');
-      document.documentElement.style.overflow = '';
+  /* רשת ביטחון: לא משנה מה קורה למעלה, ההירו לא יישאר שקוף לצמיתות */
+  setTimeout(startHeroEntrance, 2500);
+
+  try {
+    var overlay = document.getElementById('introOverlay');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var seen = false;
+    try { seen = sessionStorage.getItem('homey_landing_intro_seen') === '1'; } catch (e) {}
+    if (reduce || seen || !overlay) {
+      if (overlay) overlay.remove();
       startHeroEntrance();
-      setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 550);
-    }, 1200);
+    } else {
+      try { sessionStorage.setItem('homey_landing_intro_seen', '1'); } catch (e) {}
+      document.documentElement.style.overflow = 'hidden';
+      setTimeout(function () {
+        overlay.classList.add('hide');
+        document.documentElement.style.overflow = '';
+        startHeroEntrance();
+        setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 550);
+      }, 1200);
+    }
+  } catch (e) {
+    startHeroEntrance();
   }
 })();
 </script>
