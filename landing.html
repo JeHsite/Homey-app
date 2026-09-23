@@ -90,6 +90,40 @@
   .section-curve { position: relative; height: 0; }
   .section-curve svg { position: absolute; top: -59px; right: 0; width: 100%; height: 60px; display: block; }
   .eyebrow { color: var(--bronze-text); font-size: 13px; font-weight: 700; letter-spacing: .04em; margin-bottom: 10px; }
+
+  .converge-visual { position: relative; height: 260px; max-width: 460px; margin: 36px auto 0; }
+  .converge-item {
+    position: absolute; top: 50%; left: 50%;
+    width: 54px; height: 54px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--card-shadow);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 1s cubic-bezier(.6,0,.3,1), opacity .8s ease;
+  }
+  .citem-1 { transform: translate(calc(-50% - 170px), calc(-50% - 70px)) rotate(-16deg); transition-delay: 0s; }
+  .citem-2 { transform: translate(calc(-50% + 150px), calc(-50% - 55px)) rotate(13deg); transition-delay: .1s; }
+  .citem-3 { transform: translate(calc(-50% - 140px), calc(-50% + 80px)) rotate(9deg); transition-delay: .2s; }
+  .citem-4 { transform: translate(calc(-50% + 160px), calc(-50% + 70px)) rotate(-12deg); transition-delay: .3s; }
+  .converge-visual.in-view .converge-item { transform: translate(-50%, -50%) scale(.4); opacity: 0; }
+  .converge-target {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.3);
+    width: 88px; height: 88px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--card-shadow);
+    display: flex; align-items: center; justify-content: center; opacity: 0;
+    transition: transform 1s cubic-bezier(.34,1.4,.4,1) .5s, opacity .8s ease .5s;
+  }
+  .converge-visual.in-view .converge-target { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .converge-item, .converge-target { transition: none; }
+    .converge-visual.in-view .converge-item { opacity: 0; }
+    .converge-visual.in-view .converge-target { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  }
+  @media (max-width: 560px) {
+    .converge-visual { height: 220px; }
+    .citem-1 { transform: translate(calc(-50% - 90px), calc(-50% - 60px)) rotate(-16deg); }
+    .citem-2 { transform: translate(calc(-50% + 85px), calc(-50% - 45px)) rotate(13deg); }
+    .citem-3 { transform: translate(calc(-50% - 80px), calc(-50% + 65px)) rotate(9deg); }
+    .citem-4 { transform: translate(calc(-50% + 90px), calc(-50% + 55px)) rotate(-12deg); }
+  }
   section[id] { scroll-margin-top: 76px; }
   h2.h2 { font-size: 30px; line-height: 1.28; margin-bottom: 14px; letter-spacing: -.01em; }
   .lead { color: var(--text-muted); font-size: 16px; max-width: 620px; }
@@ -551,6 +585,34 @@
       <div class="eyebrow">הבעיה</div>
       <h2 class="h2">למה זה תמיד מרגיש מבולגן?</h2>
       <p class="lead">ההוצאות באפליקציית הבנק, החיסכון בפיקדון אחר, ההלוואה במסמך PDF ששכחתם איפה שמרתם, ודמי הכיס של הילדים — בראש. כל אחד מהם לבד זה בסדר. יחד, קשה לדעת איפה המשפחה עומדת ברגע נתון, ועוד יותר קשה לתכנן קדימה.</p>
+
+      <div class="converge-visual" aria-hidden="true">
+        <div class="converge-item citem-1">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><path d="M3 10l9-6 9 6" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9M9.5 10v9M14.5 10v9M19 10v9M3 21h18" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="converge-item citem-2">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><path d="M5 19L19 5" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="7" r="2.2" stroke="var(--bronze-text)" stroke-width="1.8"/><circle cx="17" cy="17" r="2.2" stroke="var(--bronze-text)" stroke-width="1.8"/></svg>
+        </div>
+        <div class="converge-item citem-3">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><rect x="3" y="9" width="15" height="9" rx="4.5" stroke="var(--bronze-text)" stroke-width="1.8"/><path d="M18 12h2.5v3H18" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 9V7a2 2 0 012-2h1" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="13.5" r=".9" fill="var(--bronze-text)"/></svg>
+        </div>
+        <div class="converge-item citem-4">
+          <svg viewBox="0 0 24 24" fill="none" width="24" height="24"><path d="M3 3v18h18" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-4 3 3 6-7" stroke="var(--bronze-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="converge-target">
+          <svg width="34" height="34" viewBox="0 0 110 110" aria-hidden="true">
+            <defs>
+              <linearGradient id="convergeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4FD8FF" />
+                <stop offset="100%" stop-color="#B4562D" />
+              </linearGradient>
+            </defs>
+            <path d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="url(#convergeGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M16 52 L44 26 L62 42 L94 16" fill="none" stroke="url(#convergeGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M94 16 L94 34 M94 16 L76 16" fill="none" stroke="url(#convergeGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -796,6 +858,23 @@
     revealEls.forEach(function (el) { io.observe(el); });
   } else {
     revealEls.forEach(function (el) { el.classList.add('in-view'); });
+  }
+
+  var convergeEls = document.querySelectorAll('.converge-visual');
+  if (convergeEls.length) {
+    if ('IntersectionObserver' in window) {
+      var ioConverge = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            ioConverge.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.4 });
+      convergeEls.forEach(function (el) { ioConverge.observe(el); });
+    } else {
+      convergeEls.forEach(function (el) { el.classList.add('in-view'); });
+    }
   }
 
   function formatILS(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
