@@ -60,7 +60,10 @@ Deno.serve(async (req) => {
   );
 
   const input = await req.json().catch(() => ({}));
-  const messages = new Map<string, { title: string; body: string }>(); // family_id -> הודעה
+  type Msg = { title: string; body: string; tag: string };
+  const messages = new Map<string, Msg[]>(); // family_id -> הודעות
+  const addMessage = (familyId: string, m: Msg) => messages.set(familyId, [...(messages.get(familyId) ?? []), m]);
+  const alertLog: { family_id: string; category: string; month: string; level: number }[] = [];
 
   if (input.test) {
     // הודעה ידנית (מוגנת ב-CRON_SECRET): כותרת וטקסט אופציונליים, ואפשר להגביל למשפחה אחת עם family_id
@@ -69,7 +72,7 @@ Deno.serve(async (req) => {
     const { data: subs } = await q;
     const title = String(input.title || "Homey").slice(0, 60);
     const body = String(input.body || "בדיקה — ההתראות עובדות 🎉").slice(0, 180);
-    for (const s of subs ?? []) messages.set(s.family_id, { title, body });
+    for (const s of subs ?? []) messages.set(s.family_id, [{ title, body, tag: "homey-test" }]);
   } else {
     const upcoming = upcomingDueDays();
     const { data: bills, error } = await supabase
@@ -105,12 +108,54 @@ Deno.serve(async (req) => {
 
     for (const [familyId, list] of byFamily) {
       list.sort((a, b) => a.ahead - b.ahead);
-      messages.set(familyId, list.length === 1
-        ? { title: "Homey — תזכורת תשלום", body: `${list[0].title} (₪${list[0].amount}) לתשלום ${whenText(list[0].ahead)}` }
+      addMessage(familyId, list.length === 1
+        ? { title: "Homey — תזכורת תשלום", body: `${list[0].title} (₪${list[0].amount}) לתשלום ${whenText(list[0].ahead)}`, tag: "homey-bills" }
         : {
           title: `Homey — ${list.length} תשלומים קרובים`,
           body: list.map((x) => `${x.title} (₪${x.amount}) — ${whenText(x.ahead)}`).join("\n"),
+          tag: "homey-bills",
         });
+    }
+
+    // התראות תקציב לפי קטגוריה: כל שעה, בלי קשר לשעות התזכורות. כל רמה (80% / חריגה) נשלחת פעם אחת לחודש לכל קטגוריה
+    // (הטבלה category_budget_alerts מונעת שליחה כפולה).
+    const { y, m } = israelDate();
+    const month = `${y}-${String(m).padStart(2, "0")}`;
+    const monthStart = `${month}-01`;
+    const monthEnd = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    const { data: budgets } = await supabase.from("category_budgets").select("family_id, category, monthly_amount");
+    if (budgets?.length) {
+      const famIds = [...new Set(budgets.map((b) => b.family_id))];
+      const { data: tx } = await supabase
+        .from("transactions").select("family_id, category, amount")
+        .eq("type", "expense").gte("date", monthStart).lt("date", monthEnd).in("family_id", famIds);
+      const spent = new Map<string, number>();
+      for (const t of tx ?? []) {
+        const k = `${t.family_id}|${t.category}`;
+        spent.set(k, (spent.get(k) ?? 0) + Number(t.amount));
+      }
+      const { data: logged, error: logErr } = await supabase
+        .from("category_budget_alerts").select("family_id, category, level").eq("month", month).in("family_id", famIds);
+      const done = new Set((logged ?? []).map((l) => `${l.family_id}|${l.category}|${l.level}`));
+      const lines = new Map<string, string[]>();
+      // בלי טבלת הלוג (לא הורץ budget-alerts.sql) לא שולחים — אחרת ההתראה הייתה חוזרת בכל שעה
+      if (logErr) console.error("category_budget_alerts missing?", logErr.message);
+      for (const b of logErr ? [] : budgets) {
+        const budget = Number(b.monthly_amount);
+        const s = spent.get(`${b.family_id}|${b.category}`) ?? 0;
+        const level = s > budget ? 100 : s >= budget * 0.8 ? 80 : 0;
+        if (!level || done.has(`${b.family_id}|${b.category}|${level}`)) continue;
+        const fmt = (n: number) => `₪${Math.round(n).toLocaleString("he-IL")}`;
+        const line = level === 100
+          ? `חרגתם מתקציב "${b.category}": ${fmt(s)} מתוך ${fmt(budget)}`
+          : `הגעתם ל-80% מתקציב "${b.category}": ${fmt(s)} מתוך ${fmt(budget)}`;
+        lines.set(b.family_id, [...(lines.get(b.family_id) ?? []), line]);
+        alertLog.push({ family_id: b.family_id, category: b.category, month, level });
+        if (level === 100) alertLog.push({ family_id: b.family_id, category: b.category, month, level: 80 });
+      }
+      for (const [familyId, list] of lines) {
+        addMessage(familyId, { title: "Homey — התראת תקציב", body: list.join("\n"), tag: "homey-budget" });
+      }
     }
   }
 
@@ -122,14 +167,15 @@ Deno.serve(async (req) => {
 
   let sent = 0, removed = 0, failed = 0;
   await Promise.all((subs ?? []).map(async (s) => {
-    const msg = messages.get(s.family_id)!;
     try {
-      await webpush.sendNotification(
-        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        JSON.stringify({ ...msg, url: "./", tag: "homey-bills" }),
-        { TTL: 60 * 60 * 12 },
-      );
-      sent++;
+      for (const msg of messages.get(s.family_id) ?? []) {
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          JSON.stringify({ title: msg.title, body: msg.body, url: "./", tag: msg.tag }),
+          { TTL: 60 * 60 * 12 },
+        );
+        sent++;
+      }
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;
       if (code === 404 || code === 410) {
@@ -142,6 +188,13 @@ Deno.serve(async (req) => {
       }
     }
   }));
+
+  if (alertLog.length) {
+    const { error: logWriteErr } = await supabase
+      .from("category_budget_alerts")
+      .upsert(alertLog, { onConflict: "family_id,category,month,level", ignoreDuplicates: true });
+    if (logWriteErr) console.error("alert log write failed", logWriteErr.message);
+  }
 
   return json({ sent, removed, failed });
 });
