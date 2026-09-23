@@ -2265,6 +2265,71 @@ function generateFamilyCode(name) {
   const digits = String(Math.floor(10 + Math.random() * 90));
   return prefix + digits;
 }
+// קישור הזמנה: ?join=AB12 פותח ישר את מסך "הצטרפות למשפחה" עם הקוד מולא
+function getInviteCodeFromUrl() {
+  try {
+    const raw = new URLSearchParams(window.location.search).get('join') || '';
+    return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  } catch (e) {
+    return '';
+  }
+}
+function buildInviteUrl(code) {
+  return window.location.origin + window.location.pathname + '?join=' + encodeURIComponent(code);
+}
+// קליטת הוצאה מהודעת אשראי/SMS מודבקת: סכום, בית עסק, תאריך וקטגוריה משוערת. הכול מקומי, בלי AI.
+const MERCHANT_CATEGORY_RULES = [[/סופר[- ]?פארם|super[- ]?pharm|בי[- ]?פארם|be[- ]?pharm|בית מרקחת/i, 'בריאות', 'תרופות'], [/וולט|wolt|10bis|תן[- ]?ביס|ten[- ]?bis|משלוח/i, 'מזון', 'משלוחים'], [/ארומה|aroma|קפה|cafe|coffee|גרג|greg|לנדוור|landwer|רולדין|roladin/i, 'מזון', 'בית קפה'], [/מקדונלד|mcdonald|בורגר|burger|פיצה|pizza|מסעדה|שווארמה|סושי|דומינו|domino|קפה|restaurant/i, 'מזון', 'מסעדות'], [/שופרסל|shufersal|רמי לוי|יוחננוף|ויקטורי|victory|מגה|אושר עד|טיב טעם|חצי חינם|יינות ביתן|סופר|מינימרקט|מרקט|שוק/i, 'מזון', 'סופר'], [/דלק|סונול|sonol|דור אלון|delek|(?<![א-ת])פז(?![א-ת])|yellow|(?<![א-ת])טן(?![א-ת])/i, 'רכב', 'דלק'], [/כביש 6|חוצה ישראל|חניה|פנגו|pango|סלופארק|cellopark|אחוזות החוף/i, 'רכב', 'חניה וכבישי אגרה'], [/מוסך|צמיגים|טסט/i, 'רכב', 'טיפולים ומוסך'], [/רב[- ]?קו|rav[- ]?kav|גט|gett|uber|אובר|מונית/i, 'תחבורה', 'מוניות'], [/רכבת ישראל|רכבת/i, 'תחבורה', 'רכבת'], [/אוטובוס|אגד|דן |egged|קווים/i, 'תחבורה', 'תחבורה ציבורית'], [/פלאפון|סלקום|פרטנר|גולן טלקום|רמי לוי תקשורת|019|012/i, 'תקשורת', 'סלולר'], [/בזק|הוט|hot|yes|partner tv/i, 'תקשורת', 'אינטרנט'], [/נטפליקס|netflix|spotify|disney|apple\.com|google[ *]?(play|one)|youtube|prime video|hbo/i, 'תקשורת', 'סטרימינג'], [/מכבי|כללית|מאוחדת|לאומית שירותי|קופת חולים|מרפאה|רופא|בית חולים/i, 'בריאות', 'רופאים'], [/קסטרו|castro|זארה|zara|h&m|הוניגמן|fox|פוקס|גולף|golf|טרמינל|terminal x|shein|שיין|renuar|רנואר|אמריקן איגל/i, 'בגדים', 'נשים'], [/איקאה|ikea|ace |אייס|הום סנטר|homecenter|זול סטוק/i, 'קניות', 'בית ותחזוקה'], [/אמזון|amazon|aliexpress|עלי אקספרס|ksp|באג|bug|ivory|איבורי|מחסני חשמל|צ'ק ?פוינט/i, 'קניות', 'אלקטרוניקה'], [/גן |צהרון|חוג/i, 'ילדים', 'חוגים']];
+function parseCardMessage(text, categories) {
+  const out = {
+    amount: 0,
+    merchant: '',
+    date: '',
+    category: '',
+    sub: ''
+  };
+  const src = String(text || '').replace(/‏|‎/g, '').replace(/\s+/g, ' ').trim();
+  if (!src) return out;
+  const num = s => Number(String(s).replace(/,/g, ''));
+  const NUM = '(\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?|\\d+(?:\\.\\d{1,2})?)';
+  const amountPatterns = [new RegExp('(?:בסך|ע"ס|עס|על סך|בסכום|סכום|סך)\\s*:?\\s*₪?\\s*' + NUM), new RegExp(NUM + '\\s*(?:₪|ש"ח|שח|שקל|ILS|NIS)', 'i'), new RegExp('(?:₪|ILS|NIS)\\s*' + NUM, 'i')];
+  for (const re of amountPatterns) {
+    const m = src.match(re);
+    if (m && num(m[1]) > 0) {
+      out.amount = num(m[1]);
+      break;
+    }
+  }
+  const merchantPatterns = [/בית(?: ה)?[- ]?עסק\s*:?\s*(.+?)(?=\s+(?:ביום|בתאריך|תאריך|בשעה|ליום|בכרטיס|סכום)(?![א-ת])|[.,;]|\s\d{1,2}[./]\d{1,2}|\sב[-־]?\d|$)/, /(?:אצל|בחנות)\s+(.+?)(?=\s+(?:ביום|בתאריך|תאריך|בשעה)(?![א-ת])|[.,;]|\s\d{1,2}[./]\d{1,2}|\sב[-־]?\d|$)/, /(?:₪|ש"ח|שח|שקל)\s+(?:ב[-־]?|אצל\s+)([^\d.,;]+?)(?=\s+(?:ביום|בתאריך|תאריך|בשעה)(?![א-ת])|[.,;]|\s\d{1,2}[./]\d{1,2}|\sב[-־]?\d|$)/, /(?<![א-ת\w])ב[-־]([A-Za-z֐-׿][^\d.,;]*?)(?=\s+(?:ביום|בתאריך|תאריך|בשעה)(?![א-ת])|[.,;]|\s\d{1,2}[./]\d{1,2}|\sב[-־]?\d|$)/];
+  for (const re of merchantPatterns) {
+    const m = src.match(re);
+    if (m && m[1].trim().length >= 2) {
+      out.merchant = m[1].trim().replace(/\s+/g, ' ').slice(0, 60);
+      break;
+    }
+  }
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const toIso = (d, mo, y) => {
+    let year = y ? Number(y) : now.getFullYear();
+    if (year < 100) year += 2000;
+    const day = Number(d),
+      month = Number(mo);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+    if (!y && new Date(year, month - 1, day) - now > 31 * 864e5) year -= 1;
+    return `${year}-${pad(month)}-${pad(day)}`;
+  };
+  let dm = src.match(/(?:ביום|בתאריך|תאריך|ב-?)\s*(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/) || src.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/) || src.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if (dm) out.date = toIso(dm[1], dm[2], dm[3]);
+  const hay = out.merchant || src;
+  for (const [re, cat, sub] of MERCHANT_CATEGORY_RULES) {
+    if (re.test(hay) && categories && categories[cat]) {
+      out.category = cat;
+      out.sub = categories[cat].subs.includes(sub) ? sub : categories[cat].subs[0];
+      break;
+    }
+  }
+  return out;
+}
 /* ---- ריבוי מטבעות: קופות חיסכון ונכסים יכולים להיות במטבע שונה מהמטבע הראשי של המשפחה ---- */
 // רשימת מטבעות נתמכים (קוד ISO + שם עברי) — מ-Frankfurter /currencies, קבוע בקוד
 const WEEKDAY_LABELS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']; // 0=ראשון...6=שבת (כמו Date.getDay())
@@ -2967,16 +3032,17 @@ function OnboardingTour({
 function LoginScreen({
   onEnter
 }) {
+  const [invitedCode] = useState(() => getInviteCodeFromUrl());
   const [legalDoc, setLegalDoc] = useState(null);
-  const [mode, setMode] = useState('login');
-  const [signupType, setSignupType] = useState('create');
+  const [mode, setMode] = useState(invitedCode ? 'signup' : 'login');
+  const [signupType, setSignupType] = useState(invitedCode ? 'join' : 'create');
   const [name, setName] = useState('');
   const [familyDisplayName, setFamilyDisplayName] = useState('');
   const [familyNameTouched, setFamilyNameTouched] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [groupCode, setGroupCode] = useState('');
+  const [groupCode, setGroupCode] = useState(invitedCode);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -4224,6 +4290,8 @@ function App() {
   const [giftsMonth, setGiftsMonth] = useState('all');
   const [billsFilter, setBillsFilter] = useState('all');
   const [customCategories, setCustomCategories] = useState({});
+  const [categoryBudgets, setCategoryBudgets] = useState({});
+  const [pasteText, setPasteText] = useState('');
   const [familyInfo, setFamilyInfo] = useState(null);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   useEffect(() => {
@@ -4695,9 +4763,63 @@ function App() {
     if (!isDemo && cat && cat._dbId) await sb.from('custom_categories').delete().eq('id', cat._dbId);
     showToast('הקטגוריה נמחקה');
   };
+  const saveCategoryBudget = async (category, raw) => {
+    const amount = Number(raw);
+    const next = Number.isFinite(amount) && amount > 0 ? amount : 0;
+    if ((categoryBudgets[category] || 0) === next) return;
+    setCategoryBudgets(prev => {
+      const c = {
+        ...prev
+      };
+      if (next > 0) c[category] = next;else delete c[category];
+      return c;
+    });
+    if (isDemo) return;
+    const {
+      error
+    } = next > 0 ? await sb.from('category_budgets').upsert({
+      family_id: familyId,
+      category,
+      monthly_amount: next
+    }, {
+      onConflict: 'family_id,category'
+    }) : await sb.from('category_budgets').delete().eq('family_id', familyId).eq('category', category);
+    if (error) showToast('שגיאה בשמירת התקציב');else showToast(next > 0 ? 'התקציב נשמר' : 'התקציב הוסר');
+  };
+  const applyPastedMessage = () => {
+    const parsed = parseCardMessage(pasteText, allExpenseCategories);
+    if (!parsed.amount) return showToast('לא זיהיתי סכום בהודעה — אפשר למלא ידנית');
+    setFormData(prev => ({
+      ...prev,
+      expenses: {
+        ...prev.expenses,
+        type: 'expense',
+        category: parsed.category || (prev.expenses.type === 'expense' ? prev.expenses.category : Object.keys(allExpenseCategories)[0]),
+        sub: parsed.category ? parsed.sub : prev.expenses.type === 'expense' ? prev.expenses.sub : allExpenseCategories[Object.keys(allExpenseCategories)[0]].subs[0],
+        amount: String(parsed.amount),
+        description: parsed.merchant || prev.expenses.description,
+        date: parsed.date || prev.expenses.date
+      }
+    }));
+    setPasteText('');
+    showToast('מולא מההודעה — בדקו ושמרו');
+  };
+  const budgetAlertFor = (category, dateStr, addedAmount) => {
+    const budget = categoryBudgets[category];
+    if (!budget) return '';
+    const key = dateStr ? String(dateStr).slice(0, 7) : new Date().toISOString().slice(0, 7);
+    const before = transactions.filter(t => t.type === 'expense' && t.category === category && String(t.date || '').slice(0, 7) === key).reduce((s, t) => s + t.amount, 0);
+    const after = before + addedAmount;
+    if (after > budget && before <= budget) return `חרגתם מתקציב "${category}" (${currency}${budget.toLocaleString('he-IL')})`;
+    if (after >= budget * 0.8 && before < budget * 0.8) return `הגעתם ל-80% מתקציב "${category}"`;
+    return '';
+  };
   useEffect(() => {
     if (authStage !== 'app' || !familyId) return;
     if (isDemo) {
+      setCategoryBudgets({
+        'מזון': 1500
+      });
       setTransactions([{
         id: 1,
         type: 'expense',
@@ -4898,9 +5020,10 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba, cb] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId)]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId)]);
+      setCategoryBudgets(Object.fromEntries((cb?.data || []).map(r => [r.category, Number(r.monthly_amount)])));
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
@@ -5354,6 +5477,7 @@ function App() {
       showToast('הרשומה עודכנה');
       return;
     }
+    const budgetMsg = row.type === 'expense' ? budgetAlertFor(row.category, row.date, row.amount) : '';
     if (isDemo) {
       setTransactions(prev => [{
         id: nextId(),
@@ -5374,7 +5498,7 @@ function App() {
       }, ...prev]);
     }
     closeForm('expenses');
-    showToast('הרשומה נוספה');
+    showToast(budgetMsg ? `הרשומה נוספה · ${budgetMsg}` : 'הרשומה נוספה');
   };
   const deleteTransaction = async id => {
     setTransactions(prev => prev.filter(x => x.id !== id));
@@ -6465,7 +6589,19 @@ function App() {
     style: {
       background: 'var(--navy-panel-2)'
     }
-  }, /*#__PURE__*/React.createElement("select", {
+  }, !editingId && /*#__PURE__*/React.createElement("div", {
+    className: "sm:col-span-2 space-y-2"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    className: inputClass,
+    rows: 2,
+    placeholder: "הדביקו כאן הודעת אשראי או SMS מהבנק, ונמלא את הטופס בשבילכם",
+    "aria-label": "הודעת אשראי להדבקה",
+    value: pasteText,
+    onChange: e => setPasteText(e.target.value)
+  }), pasteText.trim() && /*#__PURE__*/React.createElement("button", {
+    onClick: applyPastedMessage,
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs"
+  }, "מלא מההודעה")), /*#__PURE__*/React.createElement("select", {
     className: inputClass,
     value: formData.expenses.type,
     onChange: e => {
@@ -6624,7 +6760,52 @@ function App() {
     className: "ent-pill-btn ghost px-3 py-1.5 text-xs flex items-center gap-1.5"
   }, !isPremium && /*#__PURE__*/React.createElement(ILock, {
     size: 12
-  }), "ייצוא דוח"))), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+  }), "ייצוא דוח"))), (() => {
+    const entries = Object.entries(categoryBudgets).filter(([cat, b]) => b > 0 && allExpenseCategories[cat]);
+    if (entries.length === 0) return null;
+    const key = selectedMonth !== 'all' ? selectedMonth : thisKey;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-3 p-4 rounded-2xl mb-4",
+      style: {
+        background: 'var(--navy-panel-2)'
+      }
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm font-semibold"
+    }, "תקציב לפי קטגוריה · ", monthLabelHe(key)), entries.map(([cat, budget]) => {
+      const spent = transactions.filter(t => t.type === 'expense' && t.category === cat && monthKey(t.date) === key).reduce((s, t) => s + t.amount, 0);
+      const pct = Math.round(spent / budget * 100);
+      const color = pct >= 100 ? 'var(--neg)' : pct >= 80 ? 'var(--bronze)' : 'var(--cyan)';
+      return /*#__PURE__*/React.createElement("div", {
+        key: cat
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "flex items-center justify-between text-xs mb-1"
+      }, /*#__PURE__*/React.createElement("span", null, cat), /*#__PURE__*/React.createElement("span", {
+        style: {
+          color
+        }
+      }, currency, spent.toLocaleString('he-IL'), " / ", currency, budget.toLocaleString('he-IL'), " · ", pct, "%")), /*#__PURE__*/React.createElement("div", {
+        role: "progressbar",
+        "aria-label": `תקציב ${cat}`,
+        "aria-valuenow": Math.min(pct, 100),
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        style: {
+          height: 8,
+          borderRadius: 999,
+          background: 'var(--line)',
+          overflow: 'hidden'
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          width: `${Math.min(pct, 100)}%`,
+          height: '100%',
+          background: color,
+          borderRadius: 999,
+          transition: 'width .5s ease'
+        }
+      })));
+    }));
+  })(), Object.keys(categoryBreakdown).length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: selectedMonth === 'all' ? 'אין הוצאות עדיין' : 'אין הוצאות בחודש שנבחר'
   }) : /*#__PURE__*/React.createElement("table", {
     className: "ent-table w-full"
@@ -7871,7 +8052,50 @@ function App() {
     size: 16
   }))))), /*#__PURE__*/React.createElement(NewCategoryForm, {
     onAdd: addCustomCategory
-  })), /*#__PURE__*/React.createElement(SettingsSection, {
+  })), currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement(SettingsSection, {
+    icon: ITarget,
+    title: "תקציב חודשי לקטגוריות",
+    subtitle: "קבלו התראה כשמתקרבים לתקציב או חורגים ממנו"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הגדירו סכום חודשי לקטגוריה. בכל הוספת הוצאה תופיע התראה ב-80% מהתקציב וגם בחריגה. השאירו ריק כדי לא להגביל."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, Object.keys(allExpenseCategories).map(cat => /*#__PURE__*/React.createElement("div", {
+    key: cat,
+    className: "flex items-center justify-between gap-3 p-3 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-2 text-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--bronze)'
+    }
+  }, /*#__PURE__*/React.createElement(CatIcon, {
+    cat: cat,
+    map: allExpenseCategories,
+    size: 16
+  })), cat), /*#__PURE__*/React.createElement("input", {
+    key: `${cat}:${categoryBudgets[cat] || ''}`,
+    type: "number",
+    inputMode: "numeric",
+    min: "0",
+    className: "ent-input",
+    style: {
+      width: 120
+    },
+    placeholder: `${currency} ללא הגבלה`,
+    "aria-label": `תקציב חודשי ל${cat}`,
+    defaultValue: categoryBudgets[cat] || '',
+    onBlur: e => saveCategoryBudget(cat, e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.target.blur();
+    }
+  }))))), /*#__PURE__*/React.createElement(SettingsSection, {
     icon: IClipboard,
     title: "גיבוי נתונים",
     subtitle: "הורדת עותק מקומי של כל הנתונים שלכם"
@@ -7948,7 +8172,30 @@ function App() {
       letterSpacing: 3,
       color: 'var(--bronze)'
     }
-  }, familyInfo.groupCode))), /*#__PURE__*/React.createElement("p", {
+  }, familyInfo.groupCode)), /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      const url = buildInviteUrl(familyInfo.groupCode);
+      const text = `הצטרפו למשפחה שלנו ב-Homey: ${url}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: 'הזמנה ל-Homey',
+            text
+          });
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('קישור ההזמנה הועתק');
+      } catch (e) {
+        showToast(url);
+      }
+    },
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm w-full mt-3"
+  }, "שליחת קישור הזמנה")), /*#__PURE__*/React.createElement("p", {
     className: "text-center text-xs pt-2"
   }, "Homey פותחה על ידי ", LEGAL_OWNER)))), toast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
