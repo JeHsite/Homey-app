@@ -6,13 +6,13 @@
       <stop offset="100%" stop-color="#EDECE7" />
     </linearGradient>
     <radialGradient id="glow" cx="88%" cy="8%" r="70%">
-      <stop offset="0%" stop-color="#D98B5F" stop-opacity="0.22" />
-      <stop offset="45%" stop-color="#DFBD82" stop-opacity="0.12" />
+      <stop offset="0%" stop-color="#CBA05A" stop-opacity="0.22" />
+      <stop offset="45%" stop-color="#4FD8FF" stop-opacity="0.1" />
       <stop offset="100%" stop-color="#F2F1EE" stop-opacity="0" />
     </radialGradient>
     <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4FD8FF" />
-      <stop offset="100%" stop-color="#B4562D" />
+      <stop offset="100%" stop-color="#9C7830" />
     </linearGradient>
     <filter id="grain">
       <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" />
@@ -24,7 +24,7 @@
   <rect width="1200" height="630" fill="url(#glow)" />
   <rect width="1200" height="630" filter="url(#grain)" opacity="0.045" />
 
-  <g fill="none" stroke="#B4562D" stroke-linecap="round" opacity="0.18">
+  <g fill="none" stroke="#9C7830" stroke-linecap="round" opacity="0.18">
     <path stroke-width="2.5" d="M-60,560 C320,530 640,400 940,220 C1060,148 1150,80 1260,-10" />
     <path stroke-width="1.8" d="M-30,600 C360,572 680,442 970,262 C1080,192 1170,124 1270,44" />
   </g>
@@ -33,16 +33,16 @@
     <path d="M22 60 L22 88 C22 91 24 93 27 93 L83 93 C86 93 88 91 88 88 L88 60" fill="none" stroke="url(#logoGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
     <path d="M16 52 L44 26 L62 42 L94 16" fill="none" stroke="url(#logoGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
     <path d="M94 16 L94 34 M94 16 L76 16" fill="none" stroke="url(#logoGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
-    <text x="118" y="72" font-family="'Segoe UI', Arial, sans-serif" font-size="34" font-weight="700" fill="#B4562D">Homey</text>
+    <text x="118" y="72" font-family="'Segoe UI', Arial, sans-serif" font-size="34" font-weight="700" fill="#9C7830">Homey</text>
   </g>
 
   <text x="1120" y="270" text-anchor="end" font-family="'Segoe UI', Arial, sans-serif" font-size="64" font-weight="700" fill="#201C15">,כל הכסף של המשפחה</text>
-  <text x="1120" y="345" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="600" fill="#B4562D">במקום אחד</text>
+  <text x="1120" y="345" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="600" fill="#9C7830">במקום אחד</text>
 
   <text x="1120" y="410" text-anchor="end" font-family="'Segoe UI', Arial, sans-serif" font-size="26" fill="#635E54">תמונה אחת ברורה — עו״ש, חסכונות, הלוואות והכסף של הילדים</text>
 
   <g transform="translate(1120,470)">
-    <rect x="-260" y="0" width="260" height="52" rx="26" fill="#D98B5F" />
+    <rect x="-260" y="0" width="260" height="52" rx="26" fill="#CBA05A" />
     <text x="-130" y="34" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="700" fill="#1a1206">הצטרפו בחינם</text>
   </g>
 </svg>
