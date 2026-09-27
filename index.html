@@ -519,7 +519,13 @@ body[data-compact="1"] main { gap: .75rem; }
   }
   .ent-root h1, .ent-root h2, .ent-root h3, .ent-root .ent-heading { font-family: 'Rubik', sans-serif; }
   .homey-word { font-family: 'Quicksand', sans-serif; font-weight: 600; }
-  .ent-header { background: var(--navy); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  /* מר הורביץ אישר בפועל: כרטיסיית התפריט הפעילה ("סקירה כללית") צפה מעל שורת הכותרת
+     כשפותחים את התפריט בנייד — קבוע, לא רק פריים באמצע אנימציה. הכותרת עם z-index:50 אמורה
+     לנצח את המגירה עם z-index:40, אבל ל-backdrop-filter יש באג ידוע ב-WebKit/iOS Safari:
+     הוא לפעמים יוצר שכבת קומפוזיציה נפרדת שלא משתתפת נכון בסדר ה-z-index מול אחים עם
+     position:fixed. isolation:isolate + הכנסה לשכבת GPU משלה (translateZ) מכריחות סדר ציור
+     נכון בלי לשנות שום דבר חזותי. */
+  .ent-header { background: var(--navy); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); isolation: isolate; transform: translateZ(0); }
   .ent-horizon { height: 2px; width: 100%; background: linear-gradient(90deg, var(--cyan), var(--bronze), var(--cyan)); background-size: 200% 100%; animation: ent-horizon-move 6s linear infinite; }
   @keyframes ent-horizon-move { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
   .ent-status-pill { background: rgba(79, 216, 255, 0.1); border: 1px solid rgba(79, 216, 255, 0.35); color: var(--cyan); }
