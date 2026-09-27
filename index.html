@@ -551,6 +551,12 @@ body[data-compact="1"] main { gap: .75rem; }
      ידוע ברינדור הוידג'ט הילידי של iOS Safari בתוך עמוד RTL. */
   input[type="date"].ent-input, .ent-input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; direction: ltr; text-align: right; }
   .ent-floating-date-wrap { min-width: 0; }
+  /* עדיין חורג אחרי שני התיקונים למעלה: זו כנראה לא בעיית פריסה בכלל אלא זום-פוקוס של iOS Safari.
+     ה-viewport meta כאן מבקש maximum-scale=1/user-scalable=no, אבל Safari מתעלם מזה בכוונה
+     (משיקולי נגישות) ומזה כל שדה עם font-size מתחת ל-16px כשלוחצים עליו — text-sm (14px) שהשדה
+     יורש מ-inputClass הוא בדיוק מתחת לסף. הזום מגדיל את כל העמוד סביב השדה, מה שנראה כאילו
+     "חורג מהגבולות". 16px מונע את הזום מהיסוד, בלי לגעת ב-user-scalable בשאר האתר. */
+  input[type="date"].ent-input, .ent-input[type="date"] { font-size: 16px; }
   .ent-input:focus { border-color: var(--cyan); outline: none; }
   .ent-input::placeholder { color: var(--text-dim); }
   .ent-icon-btn { color: var(--text-dim); transition: color .15s ease; }
