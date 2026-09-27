@@ -547,9 +547,10 @@ body[data-compact="1"] main { gap: .75rem; }
   /* עדיין חורג מהגבולות במובייל למרות התיקון למעלה: לרכיבי טופס יש min-width:auto כברירת מחדל
      בתוך grid/flex, וה-min-content הטבעי של input[type=date] (בעיקר ב-iOS Safari) גדול משהעמודה
      מאפשרת — זה דוחף אותו לחרוג מהמלבן למרות width:100%. min-width:0 מתיר לו להתכווץ בפועל.
-     direction:ltr על ה-input עצמו (התוכן עדיין מוצג לפי אזור הזמן/שפה של המכשיר) פותר גם עיוות
-     ידוע ברינדור הוידג'ט הילידי של iOS Safari בתוך עמוד RTL. */
-  input[type="date"].ent-input, .ent-input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; direction: ltr; text-align: right; }
+     (הוסר: direction:ltr — בפועל זה גרם ל-iOS להציג את התאריך בסדר שבור כמו "בספט' 2026 27"
+     במקום הפורמט הרגיל שלו, וזה בדיוק מה שהאריך את הטקסט וגרם לחריגה. עדיף לתת ל-iOS את
+     הכיווניות הטבעית שלו ולפתור את הרוחב בדרכים אחרות.) */
+  input[type="date"].ent-input, .ent-input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; text-align: right; }
   .ent-floating-date-wrap { min-width: 0; }
   /* עדיין חורג אחרי שני התיקונים למעלה: זו כנראה לא בעיית פריסה בכלל אלא זום-פוקוס של iOS Safari.
      ה-viewport meta כאן מבקש maximum-scale=1/user-scalable=no, אבל Safari מתעלם מזה בכוונה
