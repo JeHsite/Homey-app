@@ -544,6 +544,13 @@ body[data-compact="1"] main { gap: .75rem; }
   input[type="date"].ent-input, .ent-input[type="date"] { min-height: 44px; padding-top: 0; padding-bottom: 0; display: flex; align-items: center; }
   /* חייב specificity גבוה מהכלל הכללי למעלה (שני class+attribute), אחרת הוא לא מנצח למרות שהוא מוגדר אחריו */
   input[type="date"].ent-input.ent-floating-date, .ent-input.ent-floating-date[type="date"] { min-height: 52px; padding-top: 18px; }
+  /* עדיין חורג מהגבולות במובייל למרות התיקון למעלה: לרכיבי טופס יש min-width:auto כברירת מחדל
+     בתוך grid/flex, וה-min-content הטבעי של input[type=date] (בעיקר ב-iOS Safari) גדול משהעמודה
+     מאפשרת — זה דוחף אותו לחרוג מהמלבן למרות width:100%. min-width:0 מתיר לו להתכווץ בפועל.
+     direction:ltr על ה-input עצמו (התוכן עדיין מוצג לפי אזור הזמן/שפה של המכשיר) פותר גם עיוות
+     ידוע ברינדור הוידג'ט הילידי של iOS Safari בתוך עמוד RTL. */
+  input[type="date"].ent-input, .ent-input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; direction: ltr; text-align: right; }
+  .ent-floating-date-wrap { min-width: 0; }
   .ent-input:focus { border-color: var(--cyan); outline: none; }
   .ent-input::placeholder { color: var(--text-dim); }
   .ent-icon-btn { color: var(--text-dim); transition: color .15s ease; }
@@ -1586,7 +1593,7 @@ function DateField({
   onChange
 }) {
   return /*#__PURE__*/React.createElement("div", {
-    className: "relative"
+    className: "relative ent-floating-date-wrap"
   }, /*#__PURE__*/React.createElement("label", {
     className: "absolute right-4 top-1 text-[10px] pointer-events-none",
     style: {
@@ -5064,12 +5071,14 @@ function App() {
         id: 'demo-bank-1',
         label: 'בנק לאומי — איתמר',
         balance: 10000,
-        currency: null
+        currency: null,
+        isPrimary: true
       }, {
         id: 'demo-bank-2',
         label: 'בנק מרכנתיל — נועה',
         balance: 2000,
-        currency: null
+        currency: null,
+        isPrimary: false
       }]);
       setBills([{
         id: 1,
@@ -5177,14 +5186,16 @@ function App() {
         sub: r.sub,
         amount: Number(r.amount),
         description: r.description,
-        date: r.date
+        date: r.date,
+        accountId: r.account_id || null
       })));
       setLoans((ln?.data || []).map(mapLoanRow));
       setBankAccounts((ba?.data || []).map(r => ({
         id: r.id,
         label: r.label,
         balance: Number(r.balance),
-        currency: r.currency || null
+        currency: r.currency || null,
+        isPrimary: !!r.is_primary
       })));
       setBills((bl.data || []).map(r => ({
         id: r.id,
@@ -5284,9 +5295,13 @@ function App() {
   const thisKey = monthKey(new Date().toISOString());
   const monthIncome = transactions.filter(t => t.type === 'income' && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
   const monthExpense = transactions.filter(t => t.type === 'expense' && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
+  // הוצאות/הכנסות שמקושרות לחשבון עו"ש כבר מעדכנות את היתרה שלו ישירות (ראו applyAccountDelta) —
+  // כאן מוסיפים רק את מה שלא מקושר לאף חשבון (למשל מזומן), כדי לא לספור פעמיים.
+  const unlinkedMonthIncome = transactions.filter(t => t.type === 'income' && !t.accountId && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
+  const unlinkedMonthExpense = transactions.filter(t => t.type === 'expense' && !t.accountId && monthKey(t.date) === thisKey).reduce((s, t) => s + t.amount, 0);
   // אין חשבונות עו"ש רשומים -> נופל לנוסחה הישנה (income/expense מצטברים) כדי שכל המשפחות
   // (כולן ביום הפריסה, וכל משפחה חינמית לצמיתות) ימשיכו לראות מספר משמעותי, לא ₪0.
-  const currentBalance = bankAccounts.length > 0 ? totalBankBalance + (monthIncome - monthExpense) : balance;
+  const currentBalance = bankAccounts.length > 0 ? totalBankBalance + (unlinkedMonthIncome - unlinkedMonthExpense) : balance;
   const totalLoanBalance = loans.reduce((s, l) => {
     const st = loanState(l);
     return st.done ? s : s + st.balance;
@@ -5525,7 +5540,8 @@ function App() {
       sub: EXPENSE_CATEGORIES['מזון'].subs[0],
       description: '',
       amount: '',
-      date: ''
+      date: '',
+      accountId: ''
     },
     bills: {
       title: '',
@@ -5593,6 +5609,17 @@ function App() {
     setEditingId(record.id);
     setOpenForm(tab);
   };
+  // רק חשבונות באותו מטבע של המשפחה נכנסים לשיוך האוטומטי (בלי המרת מטבע בזמן חיוב/זיכוי)
+  const linkableAccounts = bankAccounts.filter(b => !b.currency);
+  const primaryLinkableAccount = linkableAccounts.find(b => b.isPrimary);
+  const defaultAccountId = primaryLinkableAccount ? primaryLinkableAccount.id : linkableAccounts.length === 1 ? linkableAccounts[0].id : '';
+  const applyAccountDelta = (accountId, delta) => {
+    if (!accountId || !delta) return;
+    setBankAccounts(prev => prev.map(a => a.id === accountId ? {
+      ...a,
+      balance: a.balance + delta
+    } : a));
+  };
   const submitExpense = async () => {
     const f = formData.expenses;
     if (!f.amount) return showToast('נא למלא סכום');
@@ -5605,20 +5632,34 @@ function App() {
         return;
       }
     }
+    // '' (לא נגעו בבחירה) -> ברירת המחדל של החשבון הראשי; 'none' (נבחר במפורש) -> ללא קישור
+    const accountId = f.accountId === 'none' ? null : f.accountId || defaultAccountId || null;
     const row = {
       type: f.type,
       category: f.category,
       sub: f.type === 'expense' ? f.sub : '',
       amount: Number(f.amount),
       description: f.description,
-      date: f.date || null
+      date: f.date || null,
+      accountId
     };
     if (editingId) {
+      const old = transactions.find(x => x.id === editingId);
       setTransactions(prev => prev.map(x => x.id === editingId ? {
         ...x,
         ...row
       } : x));
-      if (!isDemo) await sb.from('transactions').update(row).eq('id', editingId);
+      if (!isDemo) await sb.from('transactions').update({
+        type: row.type,
+        category: row.category,
+        sub: row.sub,
+        amount: row.amount,
+        description: row.description,
+        date: row.date,
+        account_id: row.accountId
+      }).eq('id', editingId);
+      if (old) applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
+      applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
       closeForm('expenses');
       showToast('הרשומה עודכנה');
       return;
@@ -5634,7 +5675,13 @@ function App() {
         data,
         error
       } = await sb.from('transactions').insert({
-        ...row,
+        type: row.type,
+        category: row.category,
+        sub: row.sub,
+        amount: row.amount,
+        description: row.description,
+        date: row.date,
+        account_id: row.accountId,
         family_id: familyId
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
@@ -5643,12 +5690,15 @@ function App() {
         ...row
       }, ...prev]);
     }
+    applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
     closeForm('expenses');
     showToast(budgetMsg ? `הרשומה נוספה · ${budgetMsg}` : 'הרשומה נוספה');
   };
   const deleteTransaction = async id => {
+    const old = transactions.find(x => x.id === id);
     setTransactions(prev => prev.filter(x => x.id !== id));
     if (!isDemo) await sb.from('transactions').delete().eq('id', id);
+    if (old) applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
     showToast('הרשומה נמחקה');
   };
   const submitBill = async () => {
@@ -5825,9 +5875,11 @@ function App() {
       showToast('החשבון עודכן');
       return true;
     }
+    const isFirst = bankAccounts.length === 0; // החשבון הראשון נקבע כראשי אוטומטית
     if (isDemo) {
       setBankAccounts(prev => [{
         id: nextId(),
+        isPrimary: isFirst,
         ...row
       }, ...prev]);
     } else {
@@ -5836,6 +5888,7 @@ function App() {
         error
       } = await sb.from('bank_accounts').insert({
         family_id: familyId,
+        is_primary: isFirst,
         ...row
       }).select().single();
       if (error) {
@@ -5846,15 +5899,41 @@ function App() {
         id: data.id,
         label: data.label,
         balance: Number(data.balance),
-        currency: data.currency || null
+        currency: data.currency || null,
+        isPrimary: !!data.is_primary
       }, ...prev]);
     }
     showToast('החשבון נוסף');
     return true;
   };
+  const setPrimaryBankAccount = async id => {
+    setBankAccounts(prev => prev.map(x => ({
+      ...x,
+      isPrimary: x.id === id
+    })));
+    if (!isDemo) {
+      await sb.from('bank_accounts').update({
+        is_primary: false
+      }).eq('family_id', familyId).eq('is_primary', true);
+      await sb.from('bank_accounts').update({
+        is_primary: true
+      }).eq('id', id);
+    }
+    showToast('נקבע כחשבון ראשי');
+  };
   const deleteBankAccount = async id => {
-    setBankAccounts(prev => prev.filter(x => x.id !== id));
-    if (!isDemo) await sb.from('bank_accounts').delete().eq('id', id);
+    const wasPrimary = bankAccounts.find(x => x.id === id)?.isPrimary;
+    const remaining = bankAccounts.filter(x => x.id !== id);
+    setBankAccounts(remaining.map((x, i) => wasPrimary && i === 0 ? {
+      ...x,
+      isPrimary: true
+    } : x));
+    if (!isDemo) {
+      await sb.from('bank_accounts').delete().eq('id', id);
+      if (wasPrimary && remaining.length) await sb.from('bank_accounts').update({
+        is_primary: true
+      }).eq('id', remaining[0].id);
+    }
     showToast('החשבון נמחק');
   };
   const submitNote = async () => {
@@ -6385,6 +6464,7 @@ function App() {
     inputClass: inputClass,
     onSave: submitBankAccount,
     onDelete: deleteBankAccount,
+    onSetPrimary: setPrimaryBankAccount,
     onUpgrade: () => {
       showToast('ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות');
       setActiveTab('settings');
@@ -6870,7 +6950,19 @@ function App() {
     label: "תאריך",
     value: formData.expenses.date,
     onChange: v => updateField('expenses', 'date', v)
-  }), /*#__PURE__*/React.createElement("div", {
+  }), linkableAccounts.length > 1 && /*#__PURE__*/React.createElement("select", {
+    className: inputClass,
+    "aria-label": "מאיזה חשבון",
+    value: formData.expenses.accountId,
+    onChange: e => updateField('expenses', 'accountId', e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, primaryLinkableAccount ? `ברירת מחדל — ${primaryLinkableAccount.label}` : "בחרו חשבון"), linkableAccounts.map(a => /*#__PURE__*/React.createElement("option", {
+    key: a.id,
+    value: a.id
+  }, a.label)), /*#__PURE__*/React.createElement("option", {
+    value: "none"
+  }, "ללא חשבון מקושר")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 sm:col-span-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: submitExpense,
@@ -6922,7 +7014,7 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, t.description, " • ", fmtDateHe(t.date)))),/*#__PURE__*/React.createElement("div", {
+  }, t.description, " • ", fmtDateHe(t.date), t.accountId && bankAccounts.find(a => a.id === t.accountId) && ` • ${bankAccounts.find(a => a.id === t.accountId).label}`))),/*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold",
@@ -6941,7 +7033,8 @@ function App() {
       sub: r.sub || '',
       description: r.description || '',
       amount: String(r.amount),
-      date: r.date || ''
+      date: r.date || '',
+      accountId: r.accountId || 'none'
     }))
   }, /*#__PURE__*/React.createElement(IEdit, {
     size: 15
@@ -9894,6 +9987,7 @@ function BankAccountsCard({
   isPremium,
   onSave,
   onDelete,
+  onSetPrimary,
   onUpgrade,
   inputClass
 }) {
@@ -9959,12 +10053,18 @@ function BankAccountsCard({
   }), h(IPlus, {
     size: 16
   }), ' הוסף חשבון')), bankAccounts.length > 0 && h('div', {
-    className: 'ent-mini-card p-3.5 text-center'
+    className: 'ent-mini-card p-6 text-center relative overflow-hidden',
+    style: {
+      background: 'radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, var(--cyan) 16%, transparent), transparent 70%), var(--navy-panel-2)'
+    }
   }, h('p', {
     className: 'text-xs',
     style: muted
   }, 'סה״כ בעו״ש'), h('p', {
-    className: 'font-bold mt-1'
+    className: 'ent-hero-num mt-1',
+    style: {
+      color: 'var(--cyan)'
+    }
   }, currency, Math.round(totalBankBalance).toLocaleString('he-IL'))), formOpen && h('div', {
     className: 'grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-xl',
     style: panel
@@ -10006,9 +10106,21 @@ function BankAccountsCard({
     key: b.id,
     className: 'flex items-center justify-between p-3 rounded-xl',
     style: panel
+  }, h('div', {
+    className: 'flex items-center gap-2'
   }, h('p', {
     className: 'font-semibold'
-  }, b.label), h('div', {
+  }, b.label), b.isPrimary ? h('span', {
+    className: 'text-xs font-semibold px-2 py-0.5 rounded-full',
+    style: {
+      color: 'var(--cyan)',
+      background: 'rgba(79,216,255,0.12)'
+    }
+  }, 'ראשי') : h('button', {
+    className: 'text-xs',
+    style: muted,
+    onClick: () => onSetPrimary(b.id)
+  }, 'הגדר כראשי')), h('div', {
     className: 'flex items-center gap-3'
   }, h('span', {
     className: 'font-bold'
