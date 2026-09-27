@@ -557,6 +557,12 @@ body[data-compact="1"] main { gap: .75rem; }
      יורש מ-inputClass הוא בדיוק מתחת לסף. הזום מגדיל את כל העמוד סביב השדה, מה שנראה כאילו
      "חורג מהגבולות". 16px מונע את הזום מהיסוד, בלי לגעת ב-user-scalable בשאר האתר. */
   input[type="date"].ent-input, .ent-input[type="date"] { font-size: 16px; }
+  /* המשתמש אישר בפועל: רק שורת התאריך יוצאת שמאלה מעבר לשאר השורות (שכולן באותו רוחב) —
+     זה בדיוק החתימה של min-width:auto על פריט grid: iOS Safari כנראה לא מכבד את min-width:0
+     שהוגדר למעלה על ה-wrapper עבור התוכן הפנימי (הרכיב הילידי) כמו שכרום עושה. overflow:hidden
+     על ה-wrapper הוא רשת ביטחון קשיחה — גם אם ה-input מתעקש על רוחב פנימי גדול יותר, הוא ייחתך
+     ולא ידחוף את שורת ה-grid לצאת מהעמודה. ה-picker של iOS הוא שכבת מערכת נפרדת ולא נחתך מזה. */
+  .ent-floating-date-wrap { min-width: 0; max-width: 100%; overflow: hidden; }
   .ent-input:focus { border-color: var(--cyan); outline: none; }
   .ent-input::placeholder { color: var(--text-dim); }
   .ent-icon-btn { color: var(--text-dim); transition: color .15s ease; }
