@@ -383,14 +383,10 @@
   .faq-q:focus-visible { box-shadow: 0 0 0 2px var(--bronze-text); border-radius: 6px; }
   .faq-chevron { flex-shrink: 0; color: var(--text-dim); transition: transform .25s ease, color .25s ease; }
   .faq-item.open .faq-chevron { transform: rotate(180deg); color: var(--bronze-text); }
-  .faq-answer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
-  .faq-answer > div { overflow: hidden; }
-  .faq-item.open .faq-answer { grid-template-rows: 1fr; }
+  /* גובה מונפש ב-JS (מ-0 לגובה האמיתי בפיקסלים). מעבר על grid-template-rows (0fr→1fr) לא חלק בכל הדפדפנים בנייד */
+  .faq-answer { height: 0; overflow: hidden; transition: height .32s cubic-bezier(.4,0,.2,1); }
+  @media (prefers-reduced-motion: reduce) { .faq-answer { transition: none; } }
   .faq-answer p { padding-top: 10px; }
-  @media (hover: hover) and (pointer: fine) {
-    .faq-item:hover .faq-chevron { transform: rotate(180deg); color: var(--bronze-text); }
-    .faq-item:hover .faq-answer { grid-template-rows: 1fr; }
-  }
 
   .mobile-sticky-cta {
     position: fixed; bottom: 0; right: 0; left: 0; z-index: 150;
@@ -1117,16 +1113,32 @@
     }, { threshold: [0, 0.2] }).observe(heroVisual);
   }
 
-  document.querySelectorAll('.faq-q').forEach(function (q) {
-    function toggle() {
-      var item = q.closest('.faq-item');
-      var open = item.classList.toggle('open');
-      q.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    q.addEventListener('click', toggle);
-    q.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); }
+  function setFaqOpen(item, open) {
+    if (item.classList.contains('open') === open) return;
+    var ans = item.querySelector('.faq-answer');
+    item.classList.toggle('open', open);
+    item.querySelector('.faq-q').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (reduceMotion) { ans.style.height = open ? 'auto' : '0px'; return; }
+    ans.style.height = ans.getBoundingClientRect().height + 'px';
+    void ans.offsetHeight;
+    ans.style.height = (open ? ans.scrollHeight : 0) + 'px';
+    ans.addEventListener('transitionend', function done(e) {
+      if (e.propertyName !== 'height') return;
+      ans.removeEventListener('transitionend', done);
+      if (item.classList.contains('open')) ans.style.height = 'auto';
     });
+  }
+  var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  document.querySelectorAll('.faq-item').forEach(function (item) {
+    var q = item.querySelector('.faq-q');
+    q.addEventListener('click', function () { setFaqOpen(item, !item.classList.contains('open')); });
+    q.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setFaqOpen(item, !item.classList.contains('open')); }
+    });
+    if (canHover) {
+      item.addEventListener('mouseenter', function () { setFaqOpen(item, true); });
+      item.addEventListener('mouseleave', function () { setFaqOpen(item, false); });
+    }
   });
 })();
 </script>

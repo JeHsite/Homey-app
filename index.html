@@ -519,13 +519,7 @@ body[data-compact="1"] main { gap: .75rem; }
   }
   .ent-root h1, .ent-root h2, .ent-root h3, .ent-root .ent-heading { font-family: 'Rubik', sans-serif; }
   .homey-word { font-family: 'Quicksand', sans-serif; font-weight: 600; }
-  /* מר הורביץ אישר בפועל: כרטיסיית התפריט הפעילה ("סקירה כללית") צפה מעל שורת הכותרת
-     כשפותחים את התפריט בנייד — קבוע, לא רק פריים באמצע אנימציה. הכותרת עם z-index:50 אמורה
-     לנצח את המגירה עם z-index:40, אבל ל-backdrop-filter יש באג ידוע ב-WebKit/iOS Safari:
-     הוא לפעמים יוצר שכבת קומפוזיציה נפרדת שלא משתתפת נכון בסדר ה-z-index מול אחים עם
-     position:fixed. isolation:isolate + הכנסה לשכבת GPU משלה (translateZ) מכריחות סדר ציור
-     נכון בלי לשנות שום דבר חזותי. */
-  .ent-header { background: var(--navy); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); isolation: isolate; transform: translateZ(0); }
+  .ent-header { background: var(--navy); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
   .ent-horizon { height: 2px; width: 100%; background: linear-gradient(90deg, var(--cyan), var(--bronze), var(--cyan)); background-size: 200% 100%; animation: ent-horizon-move 6s linear infinite; }
   @keyframes ent-horizon-move { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
   .ent-status-pill { background: rgba(79, 216, 255, 0.1); border: 1px solid rgba(79, 216, 255, 0.35); color: var(--cyan); }
@@ -545,31 +539,14 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-note-card { background: rgba(203, 160, 90, 0.08); border: 1px solid rgba(203, 160, 90, 0.25); }
   .ent-trip-card { background: rgba(79, 216, 255, 0.06); border: 1px solid rgba(79, 216, 255, 0.22); }
   .ent-input { background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text); }
-  /* input[type=date] מרנדר גובה תוכן פנימי גדול ולא עקבי במובייל (בעיקר iOS Safari) לעומת שאר השדות.
-     בכוונה בלי -webkit-appearance:none — זה מוכר כפוגע באייקון הלוח-שנה הילידי ב-iOS. */
-  input[type="date"].ent-input, .ent-input[type="date"] { min-height: 44px; padding-top: 0; padding-bottom: 0; display: flex; align-items: center; }
-  /* חייב specificity גבוה מהכלל הכללי למעלה (שני class+attribute), אחרת הוא לא מנצח למרות שהוא מוגדר אחריו */
-  input[type="date"].ent-input.ent-floating-date, .ent-input.ent-floating-date[type="date"] { min-height: 52px; padding-top: 18px; }
-  /* עדיין חורג מהגבולות במובייל למרות התיקון למעלה: לרכיבי טופס יש min-width:auto כברירת מחדל
-     בתוך grid/flex, וה-min-content הטבעי של input[type=date] (בעיקר ב-iOS Safari) גדול משהעמודה
-     מאפשרת — זה דוחף אותו לחרוג מהמלבן למרות width:100%. min-width:0 מתיר לו להתכווץ בפועל.
-     (הוסר: direction:ltr — בפועל זה גרם ל-iOS להציג את התאריך בסדר שבור כמו "בספט' 2026 27"
-     במקום הפורמט הרגיל שלו, וזה בדיוק מה שהאריך את הטקסט וגרם לחריגה. עדיף לתת ל-iOS את
-     הכיווניות הטבעית שלו ולפתור את הרוחב בדרכים אחרות.) */
-  input[type="date"].ent-input, .ent-input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; text-align: right; }
-  .ent-floating-date-wrap { min-width: 0; }
-  /* עדיין חורג אחרי שני התיקונים למעלה: זו כנראה לא בעיית פריסה בכלל אלא זום-פוקוס של iOS Safari.
-     ה-viewport meta כאן מבקש maximum-scale=1/user-scalable=no, אבל Safari מתעלם מזה בכוונה
-     (משיקולי נגישות) ומזה כל שדה עם font-size מתחת ל-16px כשלוחצים עליו — text-sm (14px) שהשדה
-     יורש מ-inputClass הוא בדיוק מתחת לסף. הזום מגדיל את כל העמוד סביב השדה, מה שנראה כאילו
-     "חורג מהגבולות". 16px מונע את הזום מהיסוד, בלי לגעת ב-user-scalable בשאר האתר. */
-  input[type="date"].ent-input, .ent-input[type="date"] { font-size: 16px; }
-  /* המשתמש אישר בפועל: רק שורת התאריך יוצאת שמאלה מעבר לשאר השורות (שכולן באותו רוחב) —
-     זה בדיוק החתימה של min-width:auto על פריט grid: iOS Safari כנראה לא מכבד את min-width:0
-     שהוגדר למעלה על ה-wrapper עבור התוכן הפנימי (הרכיב הילידי) כמו שכרום עושה. overflow:hidden
-     על ה-wrapper הוא רשת ביטחון קשיחה — גם אם ה-input מתעקש על רוחב פנימי גדול יותר, הוא ייחתך
-     ולא ידחוף את שורת ה-grid לצאת מהעמודה. ה-picker של iOS הוא שכבת מערכת נפרדת ולא נחתך מזה. */
-  .ent-floating-date-wrap { min-width: 0; max-width: 100%; overflow: hidden; }
+  /* שדה תאריך: רואים div שלנו (.ent-date-display), וה-input הילידי שקוף ומתוח מעליו רק לפתיחת הבורר.
+     כך הרוחב של הרכיב הילידי ב-iOS Safari לא משפיע על הפריסה. font-size 16px מונע זום-פוקוס ב-iOS. */
+  .ent-date-wrap { position: relative; min-width: 0; overflow: hidden; border-radius: var(--r-sm); }
+  .ent-date-display { display: flex; align-items: center; min-height: 44px; padding-top: .625rem; padding-bottom: .625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ent-date-display.ent-date-display-floating { min-height: 52px; padding-top: 1.25rem; padding-bottom: .375rem; }
+  .ent-date-native { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; font-size: 16px; background: transparent; color: transparent; -webkit-appearance: none; appearance: none; z-index: 1; }
+  .ent-date-native::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; opacity: 0; }
+  .ent-date-wrap:focus-within .ent-date-display { border-color: var(--bronze); box-shadow: inset 0 0 0 1px var(--bronze); }
   .ent-input:focus { border-color: var(--cyan); outline: none; }
   .ent-input::placeholder { color: var(--text-dim); }
   .ent-icon-btn { color: var(--text-dim); transition: color .15s ease; }
@@ -586,7 +563,12 @@ body[data-compact="1"] main { gap: .75rem; }
   @media (max-width: 767px) {
     .ent-sidebar { position: fixed; top: 66px; bottom: 0; right: 0; z-index: 40; overflow-y: auto; background: var(--navy); box-shadow: -8px 0 24px rgba(0,0,0,.35); transform: translateX(100%); visibility: hidden; transition: transform .25s ease, visibility .25s; }
     .ent-sidebar.open { transform: translateX(0); visibility: visible; }
-    .ent-menu-backdrop { display: block; position: fixed; inset: 66px 0 0 0; z-index: 39; background: rgba(0,0,0,.4); }
+    .ent-menu-backdrop { display: block; position: fixed; inset: 66px 0 0 0; z-index: 39; background: rgba(0,0,0,.4); touch-action: none; }
+    /* כשהתפריט פתוח: גלילה בתוכו לא עוברת לדף, והדף מאחור נעול. בלי זה iOS גורר את הדף (והכותרת
+       הדביקה) למטה בקפיצת הגלילה בזמן שהתפריט הקבוע נשאר במקום — הכותרת "נופלת" מתחת לפריט הראשון. */
+    .ent-sidebar { overscroll-behavior: contain; }
+    /* רק על html: overflow על body הופך אותו למיכל גלילה, ואז הכותרת הדביקה מפסיקה להידבק */
+    html.ent-menu-open { overflow: hidden; overscroll-behavior: none; }
   }
   /* מחלקות עזר שלא קיימות ב-CSS המקומפל (Tailwind כאן מוכן מראש, לא JIT) */
   .max-w-md { max-width: 28rem; } .max-w-lg { max-width: 32rem; }
@@ -1606,23 +1588,54 @@ function ConnectionDot({
     }
   }, title), body));
 }
+// מה שרואים הוא div שלנו; ה-input[type=date] האמיתי שקוף ומתוח מעליו רק כדי לפתוח את הבורר.
+// ב-iOS Safari הרכיב הילידי מצויר רחב מהשורה לא משנה איזה רוחב נותנים לו (ארבעה ניסיונות CSS נכשלו),
+// ככה הוא לא קובע יותר את הפריסה.
 function DateField({
   label,
   value,
-  onChange
+  onChange,
+  ariaLabel
 }) {
+  const ref = useRef(null);
+  const openPicker = () => {
+    try {
+      if (ref.current && ref.current.showPicker) ref.current.showPicker();
+    } catch (_e) {}
+  };
+  const shown = value ? (() => {
+    const d = new Date(String(value).slice(0, 10) + 'T00:00:00');
+    return isNaN(d) ? value : d.toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  })() : 'בחרו תאריך';
   return /*#__PURE__*/React.createElement("div", {
-    className: "relative ent-floating-date-wrap"
-  }, /*#__PURE__*/React.createElement("label", {
+    className: "ent-date-wrap"
+  }, label && /*#__PURE__*/React.createElement("span", {
     className: "absolute right-4 top-1 text-[10px] pointer-events-none",
+    "aria-hidden": "true",
     style: {
       color: 'var(--text-dim)'
     }
-  }, label), /*#__PURE__*/React.createElement("input", {
-    className: "ent-input ent-floating-date w-full px-4 pt-5 pb-1.5 rounded-xl text-sm outline-none",
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: `ent-input ent-date-display w-full px-4 rounded-xl text-sm${label ? ' ent-date-display-floating' : ''}`,
+    "aria-hidden": "true",
+    style: {
+      color: value ? 'var(--text)' : 'var(--text-dim)'
+    }
+  }, shown), /*#__PURE__*/React.createElement("input", {
+    ref: ref,
     type: "date",
+    className: "ent-date-native",
+    "aria-label": ariaLabel || label || 'תאריך',
     value: value || '',
-    onChange: e => onChange(e.target.value)
+    onChange: e => onChange(e.target.value),
+    onClick: openPicker,
+    onKeyDown: e => {
+      if (e.key === 'Enter') openPicker();
+    }
   }));
 }
 function CatIcon({
@@ -1661,6 +1674,11 @@ const NAV_ITEMS_ALL = [{
   id: 'dashboard',
   label: 'סקירה כללית',
   icon: IHome
+}, {
+  id: 'reviews',
+  label: 'סקירה שבועית',
+  icon: ISparkles,
+  parentOnly: true
 }, {
   id: 'kidmoney',
   label: 'הכסף שלי',
@@ -4307,6 +4325,10 @@ function App() {
   const [restoring, setRestoring] = useState(true);
   const [currentProfile, setCurrentProfile] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    document.documentElement.classList.toggle('ent-menu-open', mobileMenuOpen);
+    return () => document.documentElement.classList.remove('ent-menu-open');
+  }, [mobileMenuOpen]);
   const [activeTab, setActiveTabRaw] = useState('dashboard');
   const navLock = React.useRef(false);
 
@@ -4833,6 +4855,28 @@ function App() {
       }));
     }
     showToast('הקטגוריה נוספה');
+  };
+  const updateCustomCategorySubs = async (name, subs) => {
+    const cat = customCategories[name];
+    if (!cat) return;
+    const clean = [...new Set(subs.map(s => s.trim()).filter(Boolean))];
+    if (clean.length === 0) return showToast('צריך להשאיר לפחות תת-נושא אחד');
+    setCustomCategories(prev => ({
+      ...prev,
+      [name]: {
+        ...prev[name],
+        subs: clean
+      }
+    }));
+    if (!isDemo && cat._dbId) {
+      const {
+        error
+      } = await sb.from('custom_categories').update({
+        subs: clean
+      }).eq('id', cat._dbId);
+      if (error) return showToast('שגיאה בשמירת תתי-הנושאים');
+    }
+    showToast('תתי-הנושאים עודכנו');
   };
   const deleteCustomCategory = async name => {
     const cat = customCategories[name];
@@ -6460,8 +6504,9 @@ function App() {
   }, /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
     familyId: familyId,
     isDemo: isDemo,
-    isPremium: isPremium
-  }), !isPremium && /*#__PURE__*/React.createElement("div", {
+    isPremium: isPremium,
+    onOpenAll: () => setActiveTab('reviews')
+  }), !isPremium &&/*#__PURE__*/React.createElement("div", {
     className: "ent-card ent-review p-4 flex items-center justify-between gap-3 flex-wrap"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
@@ -6951,7 +6996,7 @@ function App() {
     className: inputClass,
     value: formData.expenses.sub,
     onChange: e => updateField('expenses', 'sub', e.target.value)
-  }, allExpenseCategories[formData.expenses.category].subs.map(s => /*#__PURE__*/React.createElement("option", {
+  }, [...new Set([...allExpenseCategories[formData.expenses.category].subs, formData.expenses.sub].filter(Boolean))].map(s => /*#__PURE__*/React.createElement("option", {
     key: s,
     value: s
   }, s))), /*#__PURE__*/React.createElement("input", {
@@ -7947,6 +7992,11 @@ function App() {
     currency: currency,
     showToast: showToast,
     isPremium: isPremium
+  }), activeTab === 'reviews' && !isChild && /*#__PURE__*/React.createElement(WeeklyReviewsPage, {
+    familyId: familyId,
+    isDemo: isDemo,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
   }), activeTab === 'admin' && isAdmin && !isChild && familyId === ROYAL_FAMILY_ID && /*#__PURE__*/React.createElement(AdminPanel, {
     showToast: showToast
   }), activeTab === 'help' && /*#__PURE__*/React.createElement("div", {
@@ -8341,37 +8391,13 @@ function App() {
     }
   }, "הוסיפו קטגוריות נוספות מעבר לברירת המחדל (מזון, בגדים, קניות וכו'), לפי מה שמתאים למשפחה שלכם."), Object.keys(customCategories).length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, Object.entries(customCategories).map(([name, data]) => /*#__PURE__*/React.createElement("div", {
+  }, Object.entries(customCategories).map(([name, data]) => /*#__PURE__*/React.createElement(CustomCategoryRow, {
     key: name,
-    className: "flex items-center justify-between p-3 rounded-xl",
-    style: {
-      background: 'var(--navy-panel-2)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, (() => {
-    const C = data.Icon || ITag;
-    return /*#__PURE__*/React.createElement(C, {
-      size: 18
-    });
-  })()), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "font-semibold text-sm"
-  }, name), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, data.subs.join(', ')))), /*#__PURE__*/React.createElement("button", {
-    className: "ent-icon-btn",
-    "aria-label": `מחיקת קטגוריית ${name}`,
-    onClick: () => deleteCustomCategory(name)
-  }, /*#__PURE__*/React.createElement(ITrash, {
-    size: 16
-  }))))), /*#__PURE__*/React.createElement(NewCategoryForm, {
+    name: name,
+    data: data,
+    onDelete: () => deleteCustomCategory(name),
+    onSubsChange: subs => updateCustomCategorySubs(name, subs)
+  }))), /*#__PURE__*/React.createElement(NewCategoryForm, {
     onAdd: addCustomCategory
   })), currentProfile?.role !== 'child' && /*#__PURE__*/React.createElement(SettingsSection, {
     icon: ITarget,
@@ -9826,11 +9852,10 @@ function LoansCard({
   }), h('label', {
     className: 'text-xs flex flex-col gap-1',
     style: muted
-  }, 'תאריך התשלום הראשון', h('input', {
-    className: inputClass,
-    type: 'date',
+  }, 'תאריך התשלום הראשון', h(DateField, {
+    ariaLabel: 'תאריך התשלום הראשון',
     value: form.firstPaymentDate,
-    onChange: e => set('firstPaymentDate', e.target.value)
+    onChange: v => set('firstPaymentDate', v)
   })), h('select', {
     className: inputClass,
     'aria-label': 'שיטת החזר',
@@ -10613,106 +10638,20 @@ const REVIEW_DEMO = {
     }]
   }
 };
-function WeeklyReviewBanner({
-  familyId,
-  isDemo,
-  isPremium
+function ReviewBody({
+  content,
+  isSum
 }) {
-  const slot = useMemo(() => reviewSlot(new Date()), []);
-  const key = slot || {
-    kind: 'start',
-    week: 'demo'
-  };
-  const dismissKey = `homey_review_x_${key.kind}_${key.week}`;
-  const [review, setReview] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState(() => lsGet(dismissKey) === '1');
-  useEffect(() => {
-    if (!isPremium) return; // תכונת פרימיום — לא טוענים בכלל למשפחה חינמית
-    if (isDemo) {
-      setReview({
-        kind: key.kind,
-        content: REVIEW_DEMO[key.kind]
-      });
-      return;
-    }
-    if (!slot || !familyId) return;
-    let alive = true;
-    // לפני weekly_review.sql הטבלה לא קיימת, ואז פשוט אין מלבן
-    sb.from('weekly_reviews').select('kind, week_start, content').eq('family_id', familyId).eq('kind', slot.kind).eq('week_start', slot.week).maybeSingle().then(({
-      data
-    }) => {
-      if (alive && data && data.content) setReview(data);
-    }, () => {});
-    return () => {
-      alive = false;
-    };
-  }, [familyId, isDemo, isPremium]);
-  if (!isPremium || !review || hidden) return null;
-  const c = review.content || {};
-  const isSum = review.kind === 'summary';
+  const c = content || {};
   const tips = (c.tips || []).slice(0, 3);
   const goals = (c.goals || []).slice(0, 3);
-  const ticker = [c.headline, ...tips].filter(Boolean);
-  const dismiss = () => {
-    lsSet(dismissKey, '1');
-    setHidden(true);
-  };
-  const tickCopy = dup => /*#__PURE__*/React.createElement("span", {
-    className: "ent-review-copy",
-    "aria-hidden": dup ? 'true' : undefined
-  }, ticker.map((t, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "ent-review-item"
-  }, t)));
   const label = t => /*#__PURE__*/React.createElement("p", {
     className: "text-xs font-semibold",
     style: {
       color: 'var(--text-muted)'
     }
   }, t);
-  return /*#__PURE__*/React.createElement("section", {
-    className: "ent-card ent-review p-5 space-y-3",
-    "aria-label": isSum ? 'סיכום השבוע' : 'פתיחת שבוע'
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-review-head"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-icon-badge"
-  }, /*#__PURE__*/React.createElement(ISparkles, {
-    size: 18
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "grow"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-sm font-semibold",
-    style: {
-      color: 'var(--text)'
-    }
-  }, isSum ? 'סיכום השבוע' : 'פתיחת שבוע'), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, isSum ? 'מוצאי שבת, 20:00' : 'יום ראשון, 8:00', " · נכתב עם AI")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpen(!open),
-    "aria-expanded": open,
-    className: "ent-pill-btn ghost px-4 py-2 text-xs"
-  }, open ? 'פחות' : 'לסקירה המלאה'), /*#__PURE__*/React.createElement("button", {
-    onClick: dismiss,
-    className: "ent-icon-btn",
-    "aria-label": "הסתרה עד הסקירה הבאה",
-    title: "הסתרה עד הסקירה הבאה"
-  }, /*#__PURE__*/React.createElement(IX, {
-    size: 16
-  }))), !open ? /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpen(true),
-    className: "ent-review-tick text-sm",
-    style: {
-      color: 'var(--text-2)'
-    },
-    "aria-label": `${c.headline || ''}. לפתיחת הסקירה המלאה`
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-review-track"
-  }, tickCopy(false), tickCopy(true))) : /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "text-lg font-semibold",
@@ -10766,7 +10705,231 @@ function WeeklyReviewBanner({
         color: met ? 'var(--pos)' : 'var(--text-dim)'
       }
     }, met ? 'עמדתם' : 'לא הפעם'));
-  }))))));
+  })))));
+}
+function WeeklyReviewBanner({
+  familyId,
+  isDemo,
+  isPremium,
+  onOpenAll
+}) {
+  const slot = useMemo(() => reviewSlot(new Date()), []);
+  const key = slot || {
+    kind: 'start',
+    week: 'demo'
+  };
+  const dismissKey = `homey_review_x_${key.kind}_${key.week}`;
+  const [review, setReview] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(() => lsGet(dismissKey) === '1');
+  useEffect(() => {
+    if (!isPremium) return; // תכונת פרימיום — לא טוענים בכלל למשפחה חינמית
+    if (isDemo) {
+      setReview({
+        kind: key.kind,
+        content: REVIEW_DEMO[key.kind]
+      });
+      return;
+    }
+    if (!slot || !familyId) return;
+    let alive = true;
+    // לפני weekly_review.sql הטבלה לא קיימת, ואז פשוט אין מלבן
+    sb.from('weekly_reviews').select('kind, week_start, content').eq('family_id', familyId).eq('kind', slot.kind).eq('week_start', slot.week).maybeSingle().then(({
+      data
+    }) => {
+      if (alive && data && data.content) setReview(data);
+    }, () => {});
+    return () => {
+      alive = false;
+    };
+  }, [familyId, isDemo, isPremium]);
+  if (!isPremium || !review || hidden) return null;
+  const c = review.content || {};
+  const isSum = review.kind === 'summary';
+  const tips = (c.tips || []).slice(0, 3);
+  const ticker = [c.headline, ...tips].filter(Boolean);
+  const dismiss = () => {
+    lsSet(dismissKey, '1');
+    setHidden(true);
+  };
+  const tickCopy = dup => /*#__PURE__*/React.createElement("span", {
+    className: "ent-review-copy",
+    "aria-hidden": dup ? 'true' : undefined
+  }, ticker.map((t, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "ent-review-item"
+  }, t)));
+  return /*#__PURE__*/React.createElement("section", {
+    className: "ent-card ent-review p-5 space-y-3",
+    "aria-label": isSum ? 'סיכום השבוע' : 'פתיחת שבוע'
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-review-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-icon-badge"
+  }, /*#__PURE__*/React.createElement(ISparkles, {
+    size: 18
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grow"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, isSum ? 'סיכום השבוע' : 'פתיחת שבוע'), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, isSum ? 'מוצאי שבת, 20:00' : 'יום ראשון, 8:00', " · נכתב עם AI")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(!open),
+    "aria-expanded": open,
+    className: "ent-pill-btn ghost px-4 py-2 text-xs"
+  }, open ? 'פחות' : 'לסקירה המלאה'), onOpenAll && /*#__PURE__*/React.createElement("button", {
+    onClick: onOpenAll,
+    className: "ent-pill-btn ghost px-4 py-2 text-xs"
+  }, "כל הסקירות"), /*#__PURE__*/React.createElement("button", {
+    onClick: dismiss,
+    className: "ent-icon-btn",
+    "aria-label": "הסתרה עד הסקירה הבאה",
+    title: "הסתרה עד הסקירה הבאה"
+  }, /*#__PURE__*/React.createElement(IX, {
+    size: 16
+  }))), !open ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpen(true),
+    className: "ent-review-tick text-sm",
+    style: {
+      color: 'var(--text-2)'
+    },
+    "aria-label": `${c.headline || ''}. לפתיחת הסקירה המלאה`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-review-track"
+  }, tickCopy(false), tickCopy(true))) : /*#__PURE__*/React.createElement(ReviewBody, {
+    content: c,
+    isSum: isSum
+  }));
+}
+// גישה קבועה לכל הסקירות השבועיות — בלי תלות בחלון הזמן של הבאנר בדשבורד
+function WeeklyReviewsPage({
+  familyId,
+  isDemo,
+  isPremium,
+  onUpgrade
+}) {
+  const [rows, setRows] = useState(null);
+  const [openId, setOpenId] = useState(null);
+  useEffect(() => {
+    if (!isPremium) return;
+    if (isDemo) {
+      const now = new Date();
+      const sunday = new Date(now);
+      sunday.setDate(now.getDate() - now.getDay());
+      const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const prev = new Date(sunday);
+      prev.setDate(sunday.getDate() - 7);
+      setRows([{
+        id: 'demo-start',
+        kind: 'start',
+        week_start: iso(sunday),
+        content: REVIEW_DEMO.start
+      }, {
+        id: 'demo-summary',
+        kind: 'summary',
+        week_start: iso(prev),
+        content: REVIEW_DEMO.summary
+      }]);
+      return;
+    }
+    if (!familyId) return;
+    let alive = true;
+    sb.from('weekly_reviews').select('id, kind, week_start, content, created_at').eq('family_id', familyId).order('week_start', {
+      ascending: false
+    }).order('created_at', {
+      ascending: false
+    }).limit(30).then(({
+      data
+    }) => {
+      if (alive) setRows(data || []);
+    }, () => {
+      if (alive) setRows([]);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [familyId, isDemo, isPremium]);
+  const muted = {
+    color: 'var(--text-muted)'
+  };
+  if (!isPremium) return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ISparkles, {
+    size: 20
+  }), " סקירה שבועית"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: muted
+  }, "בכל מוצאי שבת ויום ראשון בבוקר נכתבת סקירה של השבוע עם טיפים ויעדים. זו תכונת פרימיום."), /*#__PURE__*/React.createElement("button", {
+    onClick: onUpgrade,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, "שדרוג לפרימיום"));
+  const weekLabel = r => {
+    const d = new Date(String(r.week_start) + 'T00:00:00');
+    const txt = isNaN(d) ? '' : d.toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: 'long'
+    });
+    return `${r.kind === 'summary' ? 'סיכום שבוע' : 'פתיחת שבוע'} · שבוע של ${txt}`;
+  };
+  const latestId = rows && rows[0] ? rows[0].id : null;
+  const isOpen = r => openId === null ? r.id === latestId : openId === r.id;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-1"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-xl font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ISparkles, {
+    size: 20
+  }), " סקירה שבועית"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: muted
+  }, "סיכום שבוע במוצאי שבת ב-20:00, ופתיחת שבוע ביום ראשון ב-8:00. כל הסקירות נשמרות כאן.")), rows === null ? /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, /*#__PURE__*/React.createElement(Skeleton, {
+    rows: 3
+  })) : rows.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, /*#__PURE__*/React.createElement(EmptyState, {
+    text: "עוד לא נכתבה סקירה. הראשונה תופיע כאן במוצאי שבת או ביום ראשון בבוקר."
+  })) : rows.map(r => /*#__PURE__*/React.createElement("section", {
+    key: r.id,
+    className: "ent-card ent-review p-5 space-y-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpenId(isOpen(r) ? '' : r.id),
+    "aria-expanded": isOpen(r),
+    className: "w-full flex items-center justify-between gap-3 text-right"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    className: "block text-sm font-semibold",
+    style: {
+      color: 'var(--text)'
+    }
+  }, r.content && r.content.headline), /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs mt-0.5",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, weekLabel(r))), /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 18,
+    style: {
+      flexShrink: 0,
+      color: 'var(--text-dim)',
+      transform: isOpen(r) ? 'rotate(180deg)' : 'none',
+      transition: 'transform .2s ease'
+    }
+  })), isOpen(r) && /*#__PURE__*/React.createElement(ReviewBody, {
+    content: r.content,
+    isSum: r.kind === 'summary'
+  }))));
 }
 function DeleteAccountCard({
   onDeleted
@@ -11389,11 +11552,10 @@ function PersonalGoals({
     style: {
       color: 'var(--text-muted)'
     }
-  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (אופציונלי)"), /*#__PURE__*/React.createElement("input", {
-    className: goalInputCls,
-    type: "date",
+  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (אופציונלי)"), /*#__PURE__*/React.createElement(DateField, {
+    ariaLabel: "עד מתי",
     value: deadline,
-    onChange: e => setDeadline(e.target.value)
+    onChange: v => setDeadline(v)
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
@@ -11702,11 +11864,10 @@ function GoalsPanel({
     style: {
       color: 'var(--text-muted)'
     }
-  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (לא חובה. נחשב כמה צריך לחסוך בחודש)"), /*#__PURE__*/React.createElement("input", {
-    className: goalInputCls,
-    type: "date",
+  }, /*#__PURE__*/React.createElement("span", null, "עד מתי? (לא חובה. נחשב כמה צריך לחסוך בחודש)"), /*#__PURE__*/React.createElement(DateField, {
+    ariaLabel: "עד מתי",
     value: deadline,
-    onChange: e => setDeadline(e.target.value)
+    onChange: v => setDeadline(v)
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
@@ -12457,6 +12618,104 @@ function SetupWizard({
       color: 'var(--text-muted)'
     }
   }, "הגדרת הפרופיל")), ...body));
+}
+function CustomCategoryRow({
+  name,
+  data,
+  onDelete,
+  onSubsChange
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const C = data.Icon || ITag;
+  const subs = data.subs || [];
+  const addSub = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (!subs.includes(v)) onSubsChange([...subs, v]);
+    setDraft('');
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "p-3 rounded-xl space-y-3",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2",
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--bronze)'
+    }
+  }, /*#__PURE__*/React.createElement(C, {
+    size: 18
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "font-semibold text-sm"
+  }, name), !editing && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, subs.join(', ')))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    "aria-expanded": editing,
+    onClick: () => setEditing(!editing)
+  }, editing ? 'סיום' : 'עריכת תתי-נושאים'), /*#__PURE__*/React.createElement("button", {
+    className: "ent-icon-btn",
+    "aria-label": `מחיקת קטגוריית ${name}`,
+    onClick: onDelete
+  }, /*#__PURE__*/React.createElement(ITrash, {
+    size: 16
+  })))), editing && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, subs.map(s => /*#__PURE__*/React.createElement("span", {
+    key: s,
+    className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs",
+    style: {
+      border: '1px solid var(--line)',
+      color: 'var(--text-2)'
+    }
+  }, s, /*#__PURE__*/React.createElement("button", {
+    className: "ent-icon-btn",
+    "aria-label": `הסרת ${s}`,
+    title: subs.length === 1 ? 'צריך להשאיר לפחות תת-נושא אחד' : `הסרת ${s}`,
+    disabled: subs.length === 1,
+    style: {
+      opacity: subs.length === 1 ? 0.35 : 1
+    },
+    onClick: () => onSubsChange(subs.filter(x => x !== s))
+  }, /*#__PURE__*/React.createElement(IX, {
+    size: 12
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "ent-input flex-1 px-4 py-2 rounded-xl text-sm outline-none",
+    style: {
+      minWidth: 0
+    },
+    placeholder: "תת-נושא חדש",
+    "aria-label": `תת-נושא חדש ל${name}`,
+    value: draft,
+    onChange: e => setDraft(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') addSub();
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "ent-pill-btn solid-bronze px-4 py-2 text-sm",
+    onClick: addSub
+  }, "הוספה"))));
 }
 function NewCategoryForm({
   onAdd
