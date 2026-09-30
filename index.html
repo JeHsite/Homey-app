@@ -3130,6 +3130,101 @@ function OnboardingTour({
     className: "ent-pill-btn solid-bronze px-5 py-2 text-sm flex-1"
   }, last ? 'יאללה, מתחילים' : 'הבא'))));
 }
+function PasswordRecoveryScreen({
+  onDone
+}) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const submit = async () => {
+    setError('');
+    if (!password) {
+      setError('נא להזין סיסמה חדשה');
+      return;
+    }
+    if (password !== confirm) {
+      setError('הסיסמאות לא תואמות');
+      return;
+    }
+    if (password.length < 8) {
+      setError('הסיסמה חייבת להכיל לפחות 8 תווים');
+      return;
+    }
+    if (!/[0-9]/.test(password) || !/[a-zA-Zא-ת]/.test(password)) {
+      setError('הסיסמה חייבת לכלול אותיות וגם ספרות');
+      return;
+    }
+    setLoading(true);
+    try {
+      const {
+        error: updErr
+      } = await sb.auth.updateUser({
+        password
+      });
+      if (updErr) throw updErr;
+      await sb.auth.signOut();
+      setDone(true);
+    } catch (e) {
+      setError(friendlyAuthError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-root min-h-screen flex items-center justify-center px-4",
+    dir: "rtl"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-8 w-full max-w-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center mb-6"
+  }, /*#__PURE__*/React.createElement(HomeyMark, {
+    size: 48
+  }), /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-lg font-bold mt-3"
+  }, "הגדרת סיסמה חדשה")), done ? /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-center",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הסיסמה עודכנה בהצלחה. אפשר להתחבר עם הסיסמה החדשה."), /*#__PURE__*/React.createElement("button", {
+    onClick: onDone,
+    className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
+  }, "מעבר להתחברות")) : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    type: "password",
+    placeholder: "סיסמה חדשה",
+    autoFocus: true,
+    value: password,
+    onChange: e => setPassword(e.target.value)
+  }), /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    type: "password",
+    placeholder: "אימות סיסמה חדשה",
+    value: confirm,
+    onChange: e => setConfirm(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') submit();
+    }
+  }), error && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--neg-soft)'
+    }
+  }, error), /*#__PURE__*/React.createElement("button", {
+    onClick: submit,
+    disabled: loading,
+    className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm",
+    style: {
+      opacity: loading ? 0.6 : 1
+    }
+  }, loading ? 'רגע...' : 'עדכון סיסמה'))));
+}
 function LoginScreen({
   onEnter
 }) {
@@ -3150,6 +3245,31 @@ function LoginScreen({
   const [revealCode, setRevealCode] = useState(null);
   const [pendingFamilyId, setPendingFamilyId] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const sendResetEmail = async () => {
+    setResetError('');
+    if (!email || !email.includes('@')) {
+      setResetError('נא להזין אימייל תקין');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const {
+        error: resetErr
+      } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      if (resetErr) throw resetErr;
+      setResetSent(true);
+    } catch (e) {
+      setResetError(friendlyAuthError(e));
+    } finally {
+      setResetLoading(false);
+    }
+  };
   const submit = async () => {
     setError('');
     if (mode === 'signup') {
@@ -3320,6 +3440,72 @@ function LoginScreen({
       className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
     }, "המשך לאפליקציה")));
   }
+  if (resetMode) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "ent-root min-h-screen flex items-center justify-center px-4",
+      dir: "rtl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "ent-card p-8 w-full max-w-sm"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col items-center mb-6"
+    }, /*#__PURE__*/React.createElement(HomeyMark, {
+      size: 48
+    }), /*#__PURE__*/React.createElement("h2", {
+      className: "ent-heading text-lg font-bold mt-3"
+    }, "איפוס סיסמה")), resetSent ? /*#__PURE__*/React.createElement("div", {
+      className: "space-y-4"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-center leading-relaxed",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, "אם קיים חשבון עם הכתובת ", /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: 'var(--text)'
+      }
+    }, email), ", נשלח אליה קישור לאיפוס סיסמה. תוך כמה דקות בדקו גם בתיקיית הספאם."), /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setResetMode(false);
+        setResetSent(false);
+      },
+      className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
+    }, "חזרה להתחברות")) : /*#__PURE__*/React.createElement("div", {
+      className: "space-y-3"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-center",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, "נשלח לכם קישור לאימייל להגדרת סיסמה חדשה."), /*#__PURE__*/React.createElement("input", {
+      className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+      type: "email",
+      placeholder: "אימייל",
+      autoFocus: true,
+      value: email,
+      onChange: e => setEmail(e.target.value),
+      onKeyDown: e => {
+        if (e.key === 'Enter') sendResetEmail();
+      }
+    }), resetError && /*#__PURE__*/React.createElement("p", {
+      className: "text-xs",
+      style: {
+        color: 'var(--neg-soft)'
+      }
+    }, resetError), /*#__PURE__*/React.createElement("button", {
+      onClick: sendResetEmail,
+      disabled: resetLoading,
+      className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm",
+      style: {
+        opacity: resetLoading ? 0.6 : 1
+      }
+    }, resetLoading ? 'רגע...' : 'שליחת קישור לאיפוס'), /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setResetMode(false);
+        setResetError('');
+      },
+      className: "ent-pill-btn ghost w-full py-2 text-sm"
+    }, "חזרה להתחברות"))));
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "ent-root min-h-screen flex items-center justify-center px-4",
     dir: "rtl"
@@ -3415,7 +3601,17 @@ function LoginScreen({
     placeholder: "סיסמה",
     value: password,
     onChange: e => setPassword(e.target.value)
-  }), mode === 'signup' && /*#__PURE__*/React.createElement("input", {
+  }), mode === 'login' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setResetError('');
+      setResetMode(true);
+    },
+    className: "text-xs underline",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "שכחתי סיסמה"), mode === 'signup' && /*#__PURE__*/React.createElement("input", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
     type: "password",
     placeholder: "אימות סיסמה",
@@ -4324,6 +4520,17 @@ function App() {
   const [authStage, setAuthStage] = useState('login');
   const [restoring, setRestoring] = useState(true);
   const [currentProfile, setCurrentProfile] = useState(null);
+  // קישור "שכחתי סיסמה" מהמייל מחזיר לכאן עם סשן זמני וטוען את האירוע הזה — מציגים מסך
+  // "הגדרת סיסמה חדשה" ולא נותנים להמשיך לאפליקציה עם הסשן הזמני לפני שנקבעה סיסמה חדשה.
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  useEffect(() => {
+    const {
+      data: sub
+    } = sb.auth.onAuthStateChange((event, _session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     document.documentElement.classList.toggle('ent-menu-open', mobileMenuOpen);
@@ -6307,6 +6514,12 @@ function App() {
     showToast('הנכס נמחק');
   };
   const inputClass = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
+  if (recoveryMode) return /*#__PURE__*/React.createElement(PasswordRecoveryScreen, {
+    onDone: () => {
+      setRecoveryMode(false);
+      setAuthStage('login');
+    }
+  });
   if (restoring) return /*#__PURE__*/React.createElement("div", {
     className: "ent-root min-h-screen flex flex-col items-center justify-center",
     dir: "rtl"
