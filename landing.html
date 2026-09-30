@@ -407,12 +407,14 @@
   .steps { position: relative; }
   .steps::before {
     content: ''; position: absolute; top: 20px; right: 16.6%; left: 16.6%; height: 2px; z-index: 0;
-    background: linear-gradient(90deg, var(--bronze), var(--cyan-text)); opacity: .3;
+    background: linear-gradient(90deg, var(--bronze), var(--cyan-text)); opacity: 0;
     transform-origin: right center; transform: scaleX(0);
-    transition: transform 1s cubic-bezier(.4,0,.2,1) .15s;
+    transition: transform 1.4s cubic-bezier(.4,0,.2,1) .2s, opacity .5s ease .2s;
   }
-  .steps.in-view::before { transform: scaleX(1); }
-  @media (prefers-reduced-motion: reduce) { .steps::before { transition: none; transform: scaleX(1); } }
+  /* דועכת פנימה תוך כדי שהיא נמתחת (לא רק scale) — כדי שהופעתה תהיה ברורה גם אם מפספסים
+     את הרגע המדויק שהיא נכנסת למסך, ולא רק "קו דק שתמיד היה שם" */
+  .steps.in-view::before { transform: scaleX(1); opacity: .3; }
+  @media (prefers-reduced-motion: reduce) { .steps::before { transition: none; transform: scaleX(1); opacity: .3; } }
   /* במובייל השלבים בעמודה אחת — קו אנכי בין מרכזי העיגולים במקום קו אופקי. הגובה המדויק
      (--line-top/--line-bottom) מחושב ב-JS כי אורך הטקסט בכל שלב שונה ומזיז את מרכז העיגול. */
   @media (max-width: 820px) {
@@ -1111,7 +1113,7 @@
             entry.target.classList.remove('in-view');
           }
         });
-      }, { threshold: [0, 0.5] });
+      }, { threshold: [0, 0.5], rootMargin: '0px 0px -20% 0px' });
       ioSteps.observe(stepsEl);
     } else {
       stepsEl.classList.add('in-view');
