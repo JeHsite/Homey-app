@@ -12667,10 +12667,14 @@ function CustomCategoryRow({
   }, subs.join(', ')))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("button", {
-    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    className: "ent-icon-btn",
     "aria-expanded": editing,
+    "aria-label": `עריכת תתי-נושאים של ${name}`,
+    title: "עריכת תתי-נושאים",
     onClick: () => setEditing(!editing)
-  }, editing ? 'סיום' : 'עריכת תתי-נושאים'), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement(IEdit, {
+    size: 15
+  })), /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
     "aria-label": `מחיקת קטגוריית ${name}`,
     onClick: onDelete
