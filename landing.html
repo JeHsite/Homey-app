@@ -180,7 +180,10 @@
   }
   .hero::after {
     content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0;
-    background: radial-gradient(380px 380px at var(--mx, 50%) var(--my, 30%), color-mix(in srgb, var(--cyan) 13%, transparent), transparent 70%);
+    background: radial-gradient(560px 560px at var(--mx, 50%) var(--my, 30%),
+      color-mix(in srgb, var(--cyan) 40%, transparent) 0%,
+      color-mix(in srgb, var(--bronze) 22%, transparent) 40%,
+      transparent 72%);
     transition: opacity .35s ease;
   }
   @media (hover: hover) and (pointer: fine) { .hero:hover::after { opacity: 1; } }
