@@ -15,7 +15,23 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 type Kind = "summary" | "start";
-type Tx = { type: string; category: string | null; amount: number; date: string };
+type Tx = { type: string; category: string | null; amount: number; date: string; bill_id: string | null };
+type Loan = { principal: number; annual_rate: number; term_months: number; first_payment_date: string; method: string; monthly_override: number | null };
+
+// ההחזר של הלוואה בחודש מסוים לפי לוח סילוקין (שפיצר או קרן שווה), כמו loanPaymentForMonth באפליקציה
+function loanPaymentForMonth(l: Loan, y: number, m: number) {
+  const [fy, fm] = String(l.first_payment_date).split("-").map(Number);
+  const k = (y - fy) * 12 + (m - fm);
+  const n = Number(l.term_months);
+  if (!fy || k < 0 || k >= n) return 0;
+  if (l.monthly_override) return Number(l.monthly_override);
+  const P = Number(l.principal), r = Number(l.annual_rate) / 1200;
+  if (l.method === "equal_principal") return P / n + (P - (P / n) * k) * r;
+  const pay = r === 0 ? P / n : P * r / (1 - Math.pow(1 + r, -n));
+  let bal = P;
+  for (let i = 0; i < k; i++) bal -= pay - bal * r;
+  return Math.min(pay, bal * (1 + r));
+}
 
 // היום והשעה לפי שעון ישראל (השרת רץ ב-UTC)
 function israelNow() {
@@ -57,7 +73,9 @@ const SYSTEM = (kind: Kind) => `את/ה כותב/ת סקירה שבועית קצ
 כללים:
 - עברית פשוטה וחמה, פנייה ברבים ("אתם"), משפטים קצרים.
 - בלי אימוג'י, בלי סימני קריאה ובלי קו מפריד ארוך.
-- השתמשו רק במספרים שבנתונים. אל תמציאו סכומים, קטגוריות או אירועים. סכומים בפורמט ₪1,234.
+- השתמשו רק במספרים שבנתונים. אל תמציאו סכומים, קטגוריות או אירועים. סכומים עם סימן המטבע שב-currency, בפורמט 1,234.
+- ההוצאות בנתוני השבוע הן הוצאות שוטפות בלבד. הוראות קבע והלוואות מופיעות ב-month_to_date.fixed_commitments_month. אל תציגו אותן כחריגה של השבוע.
+- left_after_fixed_and_variable מחושב לפי ההכנסה שנכנסה עד היום. אם ההכנסה עוד לא נכנסה החודש (income קטן), אל תסיקו מזה שהמשפחה במינוס.
 - זה לא ייעוץ השקעות: אל תמליצו על מניות, קרנות או מוצרים פיננסיים מסוימים.
 - אם יש מעט נתונים, אמרו את זה בעדינות ותנו טיפים מעשיים כלליים.
 - tips: בדיוק 3 טיפים, כל אחד משפט או שניים, מעשי לשבוע הקרוב וקשור לנתונים.
@@ -153,36 +171,50 @@ Deno.serve(async (req) => {
         if (exists) { results.push({ familyId, skipped: "exists" }); continue; }
       }
 
-      const [{ data: tx }, { data: bills }, { data: pots }, { data: famGoals }, { data: prev }] = await Promise.all([
-        supabase.from("transactions").select("type, category, amount, date").eq("family_id", familyId).gte("date", since),
-        supabase.from("bills").select("title, category, amount, due_day").eq("family_id", familyId).eq("is_paid", false),
+      const [{ data: tx }, { data: bills }, { data: pots }, { data: famGoals }, { data: prev }, { data: fam }, { data: loans }] = await Promise.all([
+        supabase.from("transactions").select("type, category, amount, date, bill_id").eq("family_id", familyId).gte("date", since),
+        supabase.from("bills").select("title, category, amount, due_day, is_paid").eq("family_id", familyId),
         supabase.from("savings_pots").select("name, target, current").eq("family_id", familyId),
         supabase.from("family_goals").select("type, title, category, target").eq("family_id", familyId),
         // בסיכום: היעדים שנקבעו בפתיחת השבוע הזה. בפתיחה: הסיכום של השבוע שעבר
         supabase.from("weekly_reviews").select("content").eq("family_id", familyId)
           .eq("kind", kind === "summary" ? "start" : "summary")
           .eq("week_start", iso(kind === "summary" ? weekStart : plusDays(weekStart, -7))).maybeSingle(),
+        supabase.from("families").select("currency").eq("id", familyId).maybeSingle(),
+        supabase.from("loans").select("principal, annual_rate, term_months, first_payment_date, method, monthly_override").eq("family_id", familyId),
       ]);
 
       const rows = (tx ?? []) as Tx[];
       const inRange = (r: Tx, s: Date, e: Date) => { const d = String(r.date).slice(0, 10); return d >= iso(s) && d < iso(e); };
-      const expenses = rows.filter((r) => r.type === "expense");
+      // השוואות שבועיות על הוצאות שוטפות בלבד: הוראת קבע שירדה השבוע היא לא "הוצאתם יותר"
+      const expenses = rows.filter((r) => r.type === "expense" && !r.bill_id);
       const period = expenses.filter((r) => inRange(r, periodStart, periodEnd));
       const before = expenses.filter((r) => inRange(r, plusDays(periodStart, -28), periodStart));
       if (!period.length && !before.length) { results.push({ familyId, skipped: "no_recent_data" }); continue; }
 
       const avgByCat = Object.fromEntries(Object.entries(sumByCategory(before)).map(([k, v]) => [k, round(v / 4)] as const));
       const monthRows = rows.filter((r) => inRange(r, monthStart, plusDays(today, 1)));
-      const upcoming = (bills ?? []).filter((b) => {
-        const ahead = (b.due_day - now.d + 31) % 31;
-        return ahead <= 7;
-      }).map((b) => ({ title: String(b.title).slice(0, 40), category: b.category, amount: round(Number(b.amount)), due_day: b.due_day }));
+      const daysInMonth = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
+      // ימים עד מועד החיוב, כולל מעבר לחודש הבא (due_day שלא קיים בחודש, למשל 31, נופל ביום האחרון)
+      const daysUntilDue = (dueDay: number) => {
+        const thisMonth = Math.min(dueDay, daysInMonth);
+        if (thisMonth >= now.d) return thisMonth - now.d;
+        const nextLen = new Date(Date.UTC(now.y, now.m + 1, 0)).getUTCDate();
+        return daysInMonth - now.d + Math.min(dueDay, nextLen);
+      };
+      const unpaidBills = (bills ?? []).filter((b) => !b.is_paid);
+      const upcoming = unpaidBills.filter((b) => daysUntilDue(b.due_day) <= 7)
+        .map((b) => ({ title: String(b.title).slice(0, 40), category: b.category, amount: round(Number(b.amount)), due_day: b.due_day }));
+      const billsTotal = (bills ?? []).reduce((s, b) => s + Number(b.amount || 0), 0);
+      const loansTotal = ((loans ?? []) as Loan[]).reduce((s, l) => s + loanPaymentForMonth(l, now.y, now.m), 0);
+      const monthIncome = total(monthRows.filter((r) => r.type === "income"));
+      const monthVariable = total(monthRows.filter((r) => r.type === "expense" && !r.bill_id));
 
       const data = {
         review: kind,
         today: iso(today),
         period: { from: iso(periodStart), to: iso(plusDays(periodEnd, -1)) },
-        currency: "₪",
+        currency: fam?.currency || "₪",
         period_expense_total: total(period),
         period_expense_by_category: sumByCategory(period),
         period_income_total: total(rows.filter((r) => r.type === "income" && inRange(r, periodStart, periodEnd))),
@@ -190,9 +222,12 @@ Deno.serve(async (req) => {
         average_week_by_category: avgByCat,
         month_to_date: {
           day_of_month: now.d,
-          days_in_month: new Date(Date.UTC(now.y, now.m, 0)).getUTCDate(),
-          income: total(monthRows.filter((r) => r.type === "income")),
-          expense: total(monthRows.filter((r) => r.type === "expense")),
+          days_in_month: daysInMonth,
+          income: monthIncome,
+          variable_expense: monthVariable,
+          // הוראות קבע והחזרי הלוואות של כל החודש, ששולמו וגם שעוד לא
+          fixed_commitments_month: round(billsTotal + loansTotal),
+          left_after_fixed_and_variable: round(monthIncome - monthVariable - billsTotal - loansTotal),
         },
         unpaid_bills_next_7_days: upcoming,
         savings_goals: (pots ?? []).map((p) => ({ name: String(p.name).slice(0, 40), current: round(Number(p.current)), target: round(Number(p.target)) })),
