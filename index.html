@@ -534,6 +534,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-pill-btn.ghost:hover { background: var(--navy-panel-2); }
   .ent-row { border-bottom: 1px solid var(--line); }
   .ent-row:last-child { border-bottom: none; }
+  /* רשומה שנוספה עכשיו: נכנסת מלמעלה ומודגשת לרגע */
+  .ent-row-new { animation: ent-row-in .45s cubic-bezier(.2,.7,.2,1), ent-row-glow 2.4s ease-out; border-radius: 10px; }
+  @keyframes ent-row-in { from { opacity: 0; transform: translateY(-8px); } }
+  @keyframes ent-row-glow { 0%, 35% { background: color-mix(in srgb, var(--bronze) 18%, transparent); } 100% { background: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .ent-row-new { animation: ent-row-glow 2.4s ease-out; } }
   .ent-chip-paid { background: rgba(79, 216, 255, 0.12); color: var(--cyan); cursor: pointer; }
   .ent-chip-due { background: rgba(203, 160, 90, 0.16); color: var(--bronze); cursor: pointer; }
   .ent-note-card { background: rgba(203, 160, 90, 0.08); border: 1px solid rgba(203, 160, 90, 0.25); }
@@ -4639,6 +4644,9 @@ function App() {
   const isDemo = familyId === 'DEMO';
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [txSearch, setTxSearch] = useState('');
+  // כמה רשומות מוצגות ברשימה ("הצגת עוד" מוסיף), והרשומה האחרונה שנוספה מודגשת לרגע
+  const [txShown, setTxShown] = useState(12);
+  const [justAddedTxId, setJustAddedTxId] = useState(null);
   const [monthlyReportOpen, setMonthlyReportOpen] = useState(false);
   const [txFilterCategory, setTxFilterCategory] = useState('all');
   const [tripsMonth, setTripsMonth] = useState('all');
@@ -5518,7 +5526,8 @@ function App() {
         description: r.description,
         date: r.date,
         accountId: r.account_id || null,
-        billId: r.bill_id || null
+        billId: r.bill_id || null,
+        createdAt: r.created_at || null
       })));
       setLoans((ln?.data || []).map(mapLoanRow));
       setBankAccounts((ba?.data || []).map(r => ({
@@ -5720,7 +5729,8 @@ function App() {
     if (txFilterCategory !== 'all') list = list.filter(t => t.category === txFilterCategory);
     const q = txSearch.trim().toLowerCase();
     if (q) list = list.filter(t => (t.description || '').toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q) || (t.sub || '').toLowerCase().includes(q));
-    return list;
+    // מה שהוזן אחרון מופיע ראשון (לפי זמן ההזנה, לא לפי תאריך ההוצאה). רשומות ישנות בלי זמן הזנה: לפי תאריך
+    return [...list].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || String(b.date || '').localeCompare(String(a.date || '')));
   }, [visibleTransactions, txSearch, txFilterCategory]);
   const categoryBreakdown = useMemo(() => {
     const map = {};
@@ -6035,7 +6045,8 @@ function App() {
       sub: f.type === 'expense' ? f.sub : '',
       amount: Number(f.amount),
       description: f.description,
-      date: f.date || null,
+      // בלי תאריך הרשומה לא שייכת לאף חודש: לא נספרת בתחזית ולא מופיעה כשבוחרים חודש. ברירת מחדל: היום
+      date: f.date || kidToday(),
       accountId
     };
     if (editingId) {
@@ -6060,10 +6071,13 @@ function App() {
       return;
     }
     const budgetMsg = row.type === 'expense' ? budgetAlertFor(row.category, row.date, row.amount) : '';
+    let newId;
     if (isDemo) {
+      newId = nextId();
       setTransactions(prev => [{
-        id: nextId(),
-        ...row
+        id: newId,
+        ...row,
+        createdAt: new Date().toISOString()
       }, ...prev]);
     } else {
       const {
@@ -6080,12 +6094,20 @@ function App() {
         family_id: familyId
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
+      newId = data.id;
       setTransactions(prev => [{
         id: data.id,
-        ...row
+        ...row,
+        createdAt: data.created_at || new Date().toISOString()
       }, ...prev]);
     }
     applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
+    // שהרשומה החדשה תופיע מיד בראש הרשימה: מנקים חיפוש/סינון, ועוברים לחודש שלה אם נבחר חודש אחר
+    setTxSearch('');
+    setTxFilterCategory('all');
+    if (selectedMonth !== 'all' && monthKey(row.date) !== selectedMonth) setSelectedMonth(monthKey(row.date));
+    setJustAddedTxId(newId);
+    setTimeout(() => setJustAddedTxId(cur => cur === newId ? null : cur), 2500);
     closeForm('expenses');
     showToast(budgetMsg ? `הרשומה נוספה · ${budgetMsg}` : 'הרשומה נוספה');
   };
@@ -6182,7 +6204,8 @@ function App() {
       description: bill.title,
       date: kidToday(),
       accountId: defaultAccountId || null,
-      billId: id
+      billId: id,
+      createdAt: new Date().toISOString()
     };
     if (isDemo) {
       setTransactions(prev => [{
@@ -7558,9 +7581,9 @@ function App() {
     text: "עדיין אין רשומות"
   }) : searchedTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "אין תוצאות התואמות לחיפוש"
-  }) : /*#__PURE__*/React.createElement("div", null, searchedTransactions.slice(0, 12).map(t => /*#__PURE__*/React.createElement("div", {
+  }) : /*#__PURE__*/React.createElement("div", null, searchedTransactions.slice(0, txShown).map(t => /*#__PURE__*/React.createElement("div", {
     key: t.id,
-    className: "ent-row py-3 flex justify-between items-center group"
+    className: "ent-row py-3 flex justify-between items-center group" + (t.id === justAddedTxId ? ' ent-row-new' : '')
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
@@ -7612,7 +7635,10 @@ function App() {
     onClick: () => deleteTransaction(t.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
-  }))))))), /*#__PURE__*/React.createElement("div", {
+  })))))), searchedTransactions.length > txShown && /*#__PURE__*/React.createElement("button", {
+    className: "ent-pill-btn ghost w-full py-2 text-sm",
+    onClick: () => setTxShown(n => n + 20)
+  }, "הצגת עוד (", searchedTransactions.length - txShown, ")")), /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between gap-3 mb-4"
