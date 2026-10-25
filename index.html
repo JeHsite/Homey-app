@@ -4632,6 +4632,9 @@ function App() {
   const [gifts, setGifts] = useState([]);
   const [savingsPots, setSavingsPots] = useState([]);
   const [assets, setAssets] = useState([]);
+  // היסטוריית שווי לכל נכס (asset_values): [{id, assetId, value, valuedAt}]
+  const [assetValues, setAssetValues] = useState([]);
+  const [openAssetId, setOpenAssetId] = useState(null);
   const [familyId, setFamilyId] = useState(null);
   const isDemo = familyId === 'DEMO';
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -4989,6 +4992,7 @@ function App() {
     setGifts([]);
     setSavingsPots([]);
     setAssets([]);
+    setAssetValues([]);
     setCustomCategories({});
     setConfirmReset(false);
     showToast('כל הנתונים אופסו');
@@ -5008,10 +5012,11 @@ function App() {
           gifts,
           savingsPots,
           assets,
+          assetValues,
           customCategories: Object.keys(customCategories)
         };
       } else {
-        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg, ln, ba] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals', 'loans', 'bank_accounts'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
+        const [tx, bl, nt, tr, gf, sp, as, cc, ch, fg, pg, ke, kg, ln, ba, av] = await Promise.all(['transactions', 'bills', 'notes', 'trips', 'gifts', 'savings_pots', 'assets', 'custom_categories', 'children', 'family_goals', 'personal_goals', 'kid_entries', 'kid_goals', 'loans', 'bank_accounts', 'asset_values'].map(t => sb.from(t).select('*').eq('family_id', familyId)));
         data = {
           transactions: tx.data ?? [],
           bills: bl.data ?? [],
@@ -5022,6 +5027,7 @@ function App() {
           gifts: gf.data ?? [],
           savingsPots: sp.data ?? [],
           assets: as.data ?? [],
+          assetValues: av.data ?? [],
           customCategories: cc.data ?? [],
           children: (ch.data ?? []).map(c => ({
             id: c.id,
@@ -5482,12 +5488,26 @@ function App() {
         type: 'נדל"ן',
         value: 250000
       }]);
+      // היסטוריה לדמו: עדכון שווי בתחילת כל אחד מ-6 החודשים האחרונים, שמסתיים בשווי הנוכחי
+      {
+        const now = new Date();
+        const hist = [[1, [52000, 55500, 54000, 58800, 61200, 65000]], [2, [36000, 37200, 38500, 39600, 40800, 42000]], [3, [101000, 102800, 104500, 106200, 108100, 110000]], [4, [240000, 240000, 245000, 245000, 250000, 250000]]];
+        setAssetValues(hist.flatMap(([assetId, vals]) => vals.map((value, i) => {
+          const d = new Date(now.getFullYear(), now.getMonth() - (vals.length - 1 - i), 1);
+          return {
+            id: `demo-av-${assetId}-${i}`,
+            assetId,
+            value,
+            valuedAt: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+          };
+        })));
+      }
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba, cb] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba, cb, av] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId)]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId), sb.from('asset_values').select('*').eq('family_id', familyId).order('valued_at')]);
       setCategoryBudgets(Object.fromEntries((cb?.data || []).map(r => [r.category, Number(r.monthly_amount)])));
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
@@ -5553,6 +5573,13 @@ function App() {
         type: r.type,
         value: Number(r.value),
         currency: r.currency || null
+      })));
+      // לפני הרצת asset-values.sql הטבלה לא קיימת (av.error), ואז הגרף מציג רק את השווי הנוכחי
+      setAssetValues((av?.data || []).map(r => ({
+        id: r.id,
+        assetId: r.asset_id,
+        value: Number(r.value),
+        valuedAt: String(r.valued_at).slice(0, 10)
       })));
       const ccObj = {};
       (cc.data || []).forEach(r => {
@@ -5945,6 +5972,7 @@ function App() {
       name: '',
       type: Object.keys(ASSET_TYPES)[0],
       value: '',
+      valuedAt: '',
       currency: null
     }
   };
@@ -6623,52 +6651,148 @@ function App() {
     setDepositAmount('');
     showToast('ההפקדה נוספה');
   };
+  // השווי האחרון של נכס = הנקודה בתאריך המאוחר ביותר (כמו הטריגר asset_values_sync_latest בשרת)
+  const latestAssetValue = (list, assetId) => {
+    const pts = list.filter(v => v.assetId === assetId);
+    if (!pts.length) return null;
+    return pts.reduce((a, b) => b.valuedAt >= a.valuedAt ? b : a).value;
+  };
+  // רושם נקודת שווי חדשה בהיסטוריה ומעדכן את השווי האחרון של הנכס.
+  // לפני הרצת asset-values.sql ההוספה נכשלת, ואז רק מעדכנים את assets.value כמו קודם.
+  const addAssetValue = async (assetId, value, valuedAt) => {
+    let point = {
+      id: nextId(),
+      assetId,
+      value,
+      valuedAt
+    };
+    if (!isDemo) {
+      const {
+        data,
+        error
+      } = await sb.from('asset_values').insert({
+        asset_id: assetId,
+        family_id: familyId,
+        value,
+        valued_at: valuedAt
+      }).select().single();
+      if (error) {
+        await sb.from('assets').update({
+          value
+        }).eq('id', assetId);
+        setAssets(prev => prev.map(x => x.id === assetId ? {
+          ...x,
+          value
+        } : x));
+        return;
+      }
+      point = {
+        ...point,
+        id: data.id
+      };
+    }
+    setAssetValues(prev => {
+      const next = [...prev, point];
+      const latest = latestAssetValue(next, assetId);
+      setAssets(list => list.map(x => x.id === assetId ? {
+        ...x,
+        value: latest
+      } : x));
+      return next;
+    });
+  };
+  const deleteAssetValue = async point => {
+    if (assetValues.filter(v => v.assetId === point.assetId).length <= 1) return showToast('זו נקודת השווי היחידה של הנכס. אפשר למחוק את הנכס עצמו');
+    const next = assetValues.filter(v => v.id !== point.id);
+    setAssetValues(next);
+    const latest = latestAssetValue(next, point.assetId);
+    setAssets(list => list.map(x => x.id === point.assetId ? {
+      ...x,
+      value: latest
+    } : x));
+    if (!isDemo) await sb.from('asset_values').delete().eq('id', point.id);
+    showToast('נקודת השווי נמחקה');
+  };
   const submitInvestment = async () => {
     const f = formData.investments;
-    if (!f.name || !f.value) return showToast('נא למלא שם וסכום');
-    const row = {
+    if (!f.name || f.value === '' || f.value == null) return showToast('נא למלא שם וסכום');
+    const value = Number(f.value);
+    const valuedAt = f.valuedAt || kidToday();
+    if (valuedAt > kidToday()) return showToast('תאריך השווי לא יכול להיות בעתיד');
+    const meta = {
       name: f.name,
       type: f.type,
-      value: Number(f.value),
       currency: f.currency || null
     };
     if (editingId) {
+      const old = assets.find(x => x.id === editingId);
       setAssets(prev => prev.map(x => x.id === editingId ? {
         ...x,
-        ...row
+        ...meta
       } : x));
-      if (!isDemo) await sb.from('assets').update(row).eq('id', editingId);
+      if (!isDemo) await sb.from('assets').update(meta).eq('id', editingId);
+      // שינוי שווי (או שווי עם תאריך שנבחר במפורש) = נקודה חדשה בגרף, לא דריסה של הקודמת
+      const changed = !old || old.value !== value || !!f.valuedAt;
+      if (changed) await addAssetValue(editingId, value, valuedAt);
       closeForm('investments');
-      showToast('הנכס עודכן');
+      showToast(changed ? 'השווי עודכן ונוסף לגרף' : 'הנכס עודכן');
       return;
     }
+    let newId;
     if (isDemo) {
-      setAssets(prev => [...prev, {
-        id: nextId(),
-        ...row
-      }]);
+      newId = nextId();
     } else {
       const {
         data,
         error
       } = await sb.from('assets').insert({
         family_id: familyId,
-        ...row
+        ...meta,
+        value
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
-      setAssets(prev => [...prev, {
-        id: data.id,
-        ...row
-      }]);
+      newId = data.id;
     }
+    setAssets(prev => [...prev, {
+      id: newId,
+      ...meta,
+      value
+    }]);
+    await addAssetValue(newId, value, valuedAt);
     closeForm('investments');
     showToast('הנכס נוסף');
   };
   const deleteAsset = async id => {
     setAssets(prev => prev.filter(x => x.id !== id));
+    setAssetValues(prev => prev.filter(v => v.assetId !== id));
     if (!isDemo) await sb.from('assets').delete().eq('id', id);
     showToast('הנכס נמחק');
   };
+  // נקודות לגרף של כל התיק: בכל תאריך שבו עודכן נכס כלשהו, סכום השווי האחרון הידוע של כל נכס עד אותו תאריך (במטבע הראשי).
+  // נכס בלי היסטוריה בכלל נספר לפי השווי הנוכחי שלו בכל התאריכים.
+  const portfolioSeries = useMemo(() => {
+    const dates = [...new Set(assetValues.map(v => v.valuedAt))].sort();
+    if (!dates.length) return [];
+    const byAsset = {};
+    assetValues.forEach(v => {
+      (byAsset[v.assetId] = byAsset[v.assetId] || []).push(v);
+    });
+    Object.values(byAsset).forEach(list => list.sort((a, b) => a.valuedAt.localeCompare(b.valuedAt)));
+    return dates.map(date => ({
+      date,
+      value: assets.reduce((sum, a) => {
+        const list = byAsset[a.id];
+        let raw;
+        if (!list) raw = a.value;else {
+          const known = list.filter(v => v.valuedAt <= date);
+          if (!known.length) return sum; // הנכס עוד לא היה קיים בתאריך הזה
+          raw = known[known.length - 1].value;
+        }
+        const v = toPrimary(raw, a.currency, currency, rates);
+        return v === null ? sum : sum + v;
+      }, 0)
+    }));
+  }, [assetValues, assets, currency, rates]);
   const inputClass = "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none";
   if (recoveryMode) return /*#__PURE__*/React.createElement(PasswordRecoveryScreen, {
     onDone: () => {
@@ -7928,10 +8052,21 @@ function App() {
   }, t))), /*#__PURE__*/React.createElement("input", {
     className: inputClass,
     type: "number",
-    placeholder: `שווי נוכחי ${currency}`,
+    placeholder: editingId ? `שווי עדכני ${currency}` : `שווי ${currency}`,
     value: formData.investments.value,
     onChange: e => updateField('investments', 'value', e.target.value)
-  }), /*#__PURE__*/React.createElement(CurrencyField, {
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "sm:col-span-3"
+  }, /*#__PURE__*/React.createElement(DateField, {
+    label: "תאריך השווי",
+    value: formData.investments.valuedAt || kidToday(),
+    onChange: v => updateField('investments', 'valuedAt', v)
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, editingId ? 'שווי חדש נשמר כנקודה חדשה בגרף. השווי הקודם נשאר בהיסטוריה.' : 'אפשר לבחור תאריך עבר, למשל לפי הדוח האחרון מהקופה.')), /*#__PURE__*/React.createElement(CurrencyField, {
     amount: Number(formData.investments.value) || 0,
     currency: formData.investments.currency,
     onChange: c => updateField('investments', 'currency', c),
@@ -7958,11 +8093,16 @@ function App() {
     className: "ent-pill-btn ghost px-5 py-2 text-sm"
   }, "ביטול"))), assets.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "אין נכסים רשומים עדיין"
-  }) : /*#__PURE__*/React.createElement("div", null, assets.map(a => /*#__PURE__*/React.createElement("div", {
-    key: a.id,
-    className: "ent-row py-3 flex justify-between items-center group"
+  }) : /*#__PURE__*/React.createElement("div", null, assets.map(a => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: a.id
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
+    className: "ent-row py-3 flex justify-between items-center group"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "flex items-center gap-2 text-right",
+    "aria-expanded": openAssetId === a.id,
+    "aria-label": `גרף והיסטוריית שווי של ${a.name}`,
+    onClick: () => setOpenAssetId(openAssetId === a.id ? null : a.id)
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       color: 'var(--pos-soft)'
@@ -7974,11 +8114,20 @@ function App() {
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "font-semibold text-sm"
   }, a.name), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
+    className: "text-xs flex items-center gap-1",
     style: {
       color: 'var(--text-muted)'
     }
-  }, a.type))), /*#__PURE__*/React.createElement("div", {
+  }, a.type, (() => {
+    const n = assetValues.filter(v => v.assetId === a.id).length;
+    return n > 1 ? ` · ${n} עדכוני שווי` : '';
+  })(), /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 12,
+    style: {
+      transform: openAssetId === a.id ? 'rotate(180deg)' : 'none',
+      transition: 'transform .2s'
+    }
+  })))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-left"
@@ -7987,7 +8136,7 @@ function App() {
     style: {
       color: 'var(--pos-soft)'
     }
-  }, a.currency ? currencyDisplay(a.currency) : currency, a.value.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(ConvertedNote, {
+  }, a.currency ? currencyDisplay(a.currency) : currency, a.value.toLocaleString('he-IL')),/*#__PURE__*/React.createElement(ConvertedNote, {
     amount: a.value,
     itemCurrency: a.currency,
     familyCurrency: currency,
@@ -8002,6 +8151,7 @@ function App() {
       name: r.name,
       type: r.type,
       value: String(r.value),
+      valuedAt: '',
       currency: r.currency || null
     }))
   }, /*#__PURE__*/React.createElement(IEdit, {
@@ -8012,7 +8162,73 @@ function App() {
     onClick: () => deleteAsset(a.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
-  }))))))), assets.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })))), openAssetId === a.id && (() => {
+    const sym = a.currency ? currencyDisplay(a.currency) : currency;
+    const pts = assetValues.filter(v => v.assetId === a.id).sort((x, y) => y.valuedAt.localeCompare(x.valuedAt));
+    const shown = pts.length ? pts : [{
+      id: 'now',
+      assetId: a.id,
+      value: a.value,
+      valuedAt: kidToday()
+    }];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "p-4 mb-2 rounded-xl space-y-3",
+      style: {
+        background: 'var(--navy-panel-2)'
+      }
+    }, /*#__PURE__*/React.createElement(ValueLine, {
+      points: shown.map(p => ({
+        date: p.valuedAt,
+        value: p.value
+      })),
+      currency: sym,
+      label: a.name
+    }), /*#__PURE__*/React.createElement("div", null, shown.map((p, i) => {
+      const prevP = shown[i + 1];
+      const d = prevP ? p.value - prevP.value : null;
+      return /*#__PURE__*/React.createElement("div", {
+        key: p.id,
+        className: "flex items-center justify-between py-1.5 text-sm",
+        style: {
+          borderTop: i ? '1px solid var(--line)' : 'none'
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          color: 'var(--text-muted)'
+        }
+      }, new Date(p.valuedAt + 'T00:00:00').toLocaleDateString('he-IL')), /*#__PURE__*/React.createElement("span", {
+        className: "flex items-center gap-2"
+      }, d != null && d !== 0 && /*#__PURE__*/React.createElement("span", {
+        className: "text-xs",
+        style: {
+          color: d > 0 ? 'var(--pos)' : 'var(--neg)'
+        }
+      }, d > 0 ? '+' : '−', sym, Math.abs(Math.round(d)).toLocaleString('he-IL')), /*#__PURE__*/React.createElement("b", null, sym, Math.round(p.value).toLocaleString('he-IL')), pts.length > 1 && /*#__PURE__*/React.createElement("button", {
+        className: "ent-icon-btn",
+        "aria-label": `מחיקת השווי מתאריך ${p.valuedAt}`,
+        onClick: () => deleteAssetValue(p)
+      }, /*#__PURE__*/React.createElement(IX, {
+        size: 13
+      }))));
+    })), /*#__PURE__*/React.createElement("button", {
+      className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
+      onClick: () => startEdit('investments', a, r => ({
+        name: r.name,
+        type: r.type,
+        value: String(r.value),
+        valuedAt: '',
+        currency: r.currency || null
+      }))
+    }, "עדכון שווי"));
+  })())))), assets.length > 0 && portfolioSeries.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold mb-3"
+  }, "שווי התיק לאורך זמן"), /*#__PURE__*/React.createElement(ValueLine, {
+    points: portfolioSeries,
+    currency: currency,
+    label: "שווי התיק"
+  })), assets.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-3"
@@ -9732,6 +9948,140 @@ function TrendLines({
       background: c
     }
   }), mode === 'year' ? `${labels[k]} שנתיות` : labels[k]))));
+}
+
+/* ---- גרף שווי לאורך זמן (נכס אחד או כל התיק): ציר X לפי תאריך אמיתי, לא לפי מספר הנקודות ---- */
+let valueLineUid = 0;
+function ValueLine({
+  points,
+  currency,
+  label = 'שווי'
+}) {
+  const [hover, setHover] = useState(null);
+  const uid = React.useRef('vl' + ++valueLineUid).current;
+  const data = [...points].sort((a, b) => a.date.localeCompare(b.date));
+  const money = v => `${currency}${Math.round(v).toLocaleString('he-IL')}`;
+  const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('he-IL', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit'
+  });
+  if (!data.length) return null;
+  const W = 320,
+    H = 140,
+    P = {
+      l: 10,
+      r: 10,
+      t: 14,
+      b: 10
+    };
+  const ts = data.map(d => new Date(d.date + 'T00:00:00').getTime());
+  const t0 = ts[0],
+    t1 = ts[ts.length - 1];
+  const vals = data.map(d => d.value);
+  const lo = Math.min(...vals),
+    hi = Math.max(...vals);
+  // טווח עם מרווח 10% כדי שהקו לא יידבק לקצוות; כשכל הערכים זהים, קו באמצע
+  const pad = (hi - lo) * 0.1 || Math.max(1, hi * 0.05);
+  const min = Math.max(0, lo - pad),
+    max = hi + pad;
+  const x = i => data.length === 1 ? W / 2 : P.l + (ts[i] - t0) / (t1 - t0 || 1) * (W - P.l - P.r);
+  const y = v => P.t + (H - P.t - P.b) * (1 - (v - min) / (max - min));
+  const path = data.length === 1 ? `M${P.l},${y(vals[0]).toFixed(1)} L${W - P.r},${y(vals[0]).toFixed(1)}` : data.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(' ');
+  const area = `${path} L${(data.length === 1 ? W - P.r : x(data.length - 1)).toFixed(1)},${H - P.b} L${(data.length === 1 ? P.l : x(0)).toFixed(1)},${H - P.b} Z`;
+  const first = vals[0],
+    last = vals[vals.length - 1];
+  const diff = last - first;
+  const pct = first > 0 ? Math.round(diff / first * 1000) / 10 : null;
+  const color = diff >= 0 ? 'var(--pos)' : 'var(--neg)';
+  const h = hover != null ? data[hover] : null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, data.length > 1 && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color
+    }
+  }, diff >= 0 ? '▲' : '▼', " ", money(Math.abs(diff)), pct != null ? ` (${Math.abs(pct)}%)` : '', " מאז ", fmtDate(data[0].date)), /*#__PURE__*/React.createElement("div", {
+    dir: "ltr"
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "ent-trend-svg",
+    viewBox: `0 0 ${W} ${H}`,
+    role: "img",
+    "aria-label": `${label} לאורך זמן: מ-${money(first)} ל-${money(last)}`
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+    id: uid,
+    x1: "0",
+    y1: "0",
+    x2: "0",
+    y2: "1"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0",
+    style: {
+      stopColor: color,
+      stopOpacity: 0.28
+    }
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "1",
+    style: {
+      stopColor: color,
+      stopOpacity: 0
+    }
+  }))), [0, 1, 2].map(i => /*#__PURE__*/React.createElement("line", {
+    key: i,
+    x1: P.l,
+    x2: W - P.r,
+    y1: P.t + i * (H - P.t - P.b) / 2,
+    y2: P.t + i * (H - P.t - P.b) / 2,
+    strokeDasharray: "3 4",
+    style: {
+      stroke: 'var(--line)'
+    }
+  })), /*#__PURE__*/React.createElement("path", {
+    className: "ent-trend-area",
+    d: area,
+    fill: `url(#${uid})`
+  }), /*#__PURE__*/React.createElement("path", {
+    className: "ent-trend-line",
+    d: path,
+    fill: "none",
+    strokeWidth: "2.5",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    style: {
+      stroke: color
+    }
+  }), data.map((d, i) => /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    cx: x(i),
+    cy: y(d.value),
+    r: hover === i ? 5 : 3,
+    style: {
+      fill: 'var(--navy-panel)',
+      stroke: color
+    },
+    strokeWidth: "2"
+  })), data.map((d, i) => {
+    // אזור נגיעה סביב כל נקודה: חצי הדרך לנקודה הקודמת ולבאה
+    const left = i === 0 ? 0 : (x(i - 1) + x(i)) / 2;
+    const right = i === data.length - 1 ? W : (x(i) + x(i + 1)) / 2;
+    return /*#__PURE__*/React.createElement("rect", {
+      key: 'h' + i,
+      className: "ent-trend-hit",
+      x: left,
+      y: 0,
+      width: Math.max(1, right - left),
+      height: H,
+      onPointerEnter: () => setHover(i),
+      onClick: () => setHover(i)
+    });
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-center",
+    style: {
+      color: h ? 'var(--text-2)' : 'var(--text-dim)',
+      minHeight: 16
+    }
+  }, h ? `${fmtDate(h.date)}: ${money(h.value)}` : data.length === 1 ? 'עדכנו את השווי מדי פעם כדי לראות מגמה' : 'נגיעה או מעבר עכבר על נקודה מציגים את השווי'));
 }
 
 /* ---- חזרזיר תלת-ממדי חי (Three.js נטען רק במסך הילד); בלי WebGL — חוזרים לאימוג'י ---- */
