@@ -558,6 +558,14 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* מערך קניות (modules/shopping.js) */
+  .shop-item { border-bottom: 1px solid var(--line); }
+  .shop-item:last-child { border-bottom: none; }
+  .shop-item.is-done { opacity: .6; }
+  .shop-qty { font-weight: 500; color: var(--bronze); }
+  .shop-staple { font-size: 15px; line-height: 1; padding: 4px; color: var(--line); transition: color .2s, transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .shop-staple:hover { color: var(--text-dim); }
+  .shop-staple.on { color: #fbbf24; transform: scale(1.12); }
   /* מערך משימות ולו"ז (modules/tasks.js) */
   .pl-check { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--line); color: transparent; transition: background .2s, border-color .2s, transform .25s cubic-bezier(.34,1.56,.64,1); }
   .pl-check:hover { border-color: var(--pos); }
@@ -933,6 +941,7 @@ document.addEventListener('click', function (e) {
 }, { passive: true });
 </script>
 <script src="modules/tasks.js?v=1"></script>
+<script src="modules/shopping.js?v=1"></script>
 <script>
 const {
   useState,
@@ -1761,6 +1770,23 @@ const NAV_ITEMS_ALL = [{
   label: 'מתנות ואירועים',
   icon: IGift,
   module: 'economy'
+}, {
+  id: 'shopping',
+  label: 'רשימת קניות',
+  icon: IBag,
+  module: 'shopping'
+}, {
+  id: 'homeshop',
+  label: 'קניות לבית',
+  icon: IBuilding,
+  parentOnly: true,
+  module: 'shopping'
+}, {
+  id: 'splurges',
+  label: 'בזבוזים',
+  icon: ITag,
+  parentOnly: true,
+  module: 'shopping'
 }, {
   id: 'tasks',
   label: 'משימות השבוע',
@@ -3464,7 +3490,7 @@ const HOMEY_MODULES = [{
   desc: 'רשימות קניות משותפות, קניות לבית ובזבוזים',
   kidDesc: 'להוסיף דברים לרשימת הקניות של הבית',
   icon: IBag,
-  soon: true,
+  tab: 'shopping',
   kids: true
 }, {
   id: 'events',
@@ -6158,6 +6184,7 @@ function App() {
         accountId: r.account_id || null,
         billId: r.bill_id || null,
         tripId: r.trip_id || null,
+        tag: r.tag || null,
         createdAt: r.created_at || null
       })));
       setLoans((ln?.data || []).map(mapLoanRow));
@@ -6246,7 +6273,8 @@ function App() {
       if (fam.data) {
         setFamilyInfo({
           name: fam.data.name,
-          groupCode: fam.data.group_code
+          groupCode: fam.data.group_code,
+          splurgeLimit: fam.data.splurge_limit == null ? null : Number(fam.data.splurge_limit)
         });
         if (fam.data.currency) setCurrency(fam.data.currency);
       }
@@ -6428,6 +6456,14 @@ function App() {
     kind: currentProfile.role === 'child' ? 'child' : 'parent',
     id: currentProfile.id
   } : null;
+  // מערך קניות (modules/shopping.js)
+  const shop = useShopping({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium,
+    meName: currentProfile?.name,
+    showToast
+  });
   const planner = useFamilyPlanner({
     familyId,
     isDemo,
@@ -6893,6 +6929,67 @@ function App() {
     setTimeout(() => setJustAddedTxId(cur => cur === newId ? null : cur), 2500);
     closeForm('expenses');
     showToast(budgetMsg ? `הרשומה נוספה · ${budgetMsg}` : 'הרשומה נוספה');
+  };
+  // רישום הוצאה מהמערכים האחרים (סיום קנייה, קנייה לבית, בזבוז): היום, מהחשבון הראשי
+  const recordExpense = async ({
+    category,
+    sub,
+    amount,
+    description,
+    tag
+  }) => {
+    const row = {
+      type: 'expense',
+      category,
+      sub: sub || '',
+      amount: Number(amount),
+      description: description || '',
+      date: kidToday(),
+      accountId: defaultAccountId || null,
+      tag: tag || null
+    };
+    if (!(row.amount > 0)) return false;
+    let id;
+    if (isDemo) id = nextId();else {
+      const {
+        data,
+        error
+      } = await sb.from('transactions').insert({
+        type: row.type,
+        category: row.category,
+        sub: row.sub,
+        amount: row.amount,
+        description: row.description,
+        date: row.date,
+        account_id: row.accountId,
+        tag: row.tag,
+        family_id: familyId
+      }).select().single();
+      if (error) {
+        showToast('שגיאה ברישום ההוצאה');
+        return false;
+      }
+      id = data.id;
+    }
+    setTransactions(prev => [{
+      id,
+      ...row,
+      billId: null,
+      tripId: null,
+      createdAt: new Date().toISOString()
+    }, ...prev]);
+    applyAccountDelta(row.accountId, -row.amount);
+    showToast(`נרשמה הוצאה של ${currency}${Math.round(row.amount).toLocaleString('he-IL')} ב${row.category}`);
+    return true;
+  };
+  const setSplurgeLimit = async v => {
+    setFamilyInfo(prev => ({
+      ...(prev || {}),
+      splurgeLimit: v
+    }));
+    if (!isDemo) await sb.from('families').update({
+      splurge_limit: v
+    }).eq('id', familyId);
   };
   const deleteTransaction = async id => {
     const old = transactions.find(x => x.id === id);
@@ -7881,6 +7978,8 @@ function App() {
       tone: forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)',
       line: forecast.available >= 0 ? `נשאר להוציא החודש · ${fmt(Math.max(0, forecast.dailyPace))} ליום` : 'צפי לחריגה החודש'
     };
+    const shopSum = isPremium ? shopHubSummary(shop, isChild, transactions.filter(t => t.tag === 'impulse' && monthKey(t.date) === monthKey(kidToday())).reduce((s, t) => s + t.amount, 0), currency) : null;
+    if (shopSum) c.shopping = shopSum;
     const plSum = isPremium ? plHubSummary(planner, plannerMe, isChild) : null;
     if (plSum) c.tasks = plSum;else if (notes.length) {
       const pinned = notes.filter(n => n.isPinned).length;
@@ -9313,7 +9412,30 @@ function App() {
   }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
     data: assetBreakdown,
     currency: currency
-  }))), activeTab === 'tasks' && /*#__PURE__*/React.createElement(TasksPage, {
+  }))), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
+    shop: shop,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    onRecordExpense: recordExpense,
+    showToast: showToast
+  }), activeTab === 'homeshop' && !isChild && /*#__PURE__*/React.createElement(HomeShopPage, {
+    shop: shop,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    onRecordExpense: recordExpense
+  }), activeTab === 'splurges' && !isChild && /*#__PURE__*/React.createElement(SplurgesPage, {
+    transactions: transactions,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    limit: familyInfo?.splurgeLimit || null,
+    onSetLimit: setSplurgeLimit,
+    onRecordExpense: recordExpense,
+    onDelete: deleteTransaction
+  }), activeTab === 'tasks' && /*#__PURE__*/React.createElement(TasksPage, {
     planner: planner,
     me: plannerMe,
     isChild: isChild,
