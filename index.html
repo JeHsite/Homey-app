@@ -539,6 +539,16 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-row-in { from { opacity: 0; transform: translateY(-8px); } }
   @keyframes ent-row-glow { 0%, 35% { background: color-mix(in srgb, var(--bronze) 18%, transparent); } 100% { background: transparent; } }
   @media (prefers-reduced-motion: reduce) { .ent-row-new { animation: ent-row-glow 2.4s ease-out; } }
+  /* העמוד הראשי: כרטיס לכל מערך */
+  .ent-hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .ent-hub-card { display: block; width: 100%; min-height: 168px; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; animation: ent-hub-in .5s cubic-bezier(.2,.7,.2,1) backwards; }
+  .ent-hub-card:not(.soon):hover, .ent-hub-card:not(.soon):focus-visible { transform: translateY(-3px); border-color: var(--bronze); box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--bronze) 60%, transparent); }
+  .ent-hub-card:not(.soon):active { transform: scale(.98); }
+  .ent-hub-card.soon { opacity: .55; cursor: default; }
+  .ent-hub-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 14px; color: var(--cyan); background: color-mix(in srgb, var(--cyan) 14%, transparent); }
+  @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
+  @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } }
+  @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
   .ent-chip-paid { background: rgba(79, 216, 255, 0.12); color: var(--cyan); cursor: pointer; }
   .ent-chip-due { background: rgba(203, 160, 90, 0.16); color: var(--bronze); cursor: pointer; }
   .ent-note-card { background: rgba(203, 160, 90, 0.08); border: 1px solid rgba(203, 160, 90, 0.25); }
@@ -1675,60 +1685,73 @@ function InitialAvatar({
     }
   }, letter);
 }
+// module = לאיזה מערך הלשונית שייכת (ראו HOMEY_MODULES). global = מוצגת בכל מערך (הגדרות, מדריך)
 const NAV_ITEMS_ALL = [{
   id: 'dashboard',
   label: 'סקירה כללית',
-  icon: IHome
+  icon: IHome,
+  module: 'economy'
 }, {
   id: 'reviews',
   label: 'סקירה שבועית',
   icon: ISparkles,
-  parentOnly: true
+  parentOnly: true,
+  module: 'economy'
 }, {
   id: 'kidmoney',
   label: 'הכסף שלי',
-  icon: IPiggyBank
+  icon: IPiggyBank,
+  module: 'economy'
 }, {
   id: 'expenses',
   label: 'הוצאות והכנסות',
   icon: IDollar,
-  parentOnly: true
+  parentOnly: true,
+  module: 'economy'
 }, {
   id: 'bills',
   label: 'הוראות קבע והלוואות',
   icon: ICalendar,
-  parentOnly: true
+  parentOnly: true,
+  module: 'economy'
 }, {
   id: 'savings',
   label: 'חסכונות ויעדים',
   icon: IPiggyBank,
-  parentOnly: true
+  parentOnly: true,
+  module: 'economy'
 }, {
   id: 'investments',
   label: 'השקעות ונכסים',
   icon: ITrendingUp,
-  parentOnly: true
-}, {
-  id: 'notes',
-  label: 'פתקים ותזכורות',
-  icon: ICheckSquare
-}, {
-  id: 'trips',
-  label: 'טיולים וחופשות',
-  icon: ICompass
+  parentOnly: true,
+  module: 'economy'
 }, {
   id: 'gifts',
   label: 'מתנות ואירועים',
-  icon: IGift
+  icon: IGift,
+  module: 'economy'
+}, {
+  id: 'notes',
+  label: 'פתקים ותזכורות',
+  icon: ICheckSquare,
+  module: 'tasks'
+}, {
+  id: 'trips',
+  label: 'טיולים וחופשות',
+  icon: ICompass,
+  module: 'trips'
 }, {
   id: 'settings',
   label: 'הגדרות',
   icon: ISettings,
-  parentOnly: true
+  parentOnly: true,
+  module: 'global'
 }, {
   id: 'help',
   label: 'מדריך ומידע',
-  icon: IHelp
+  icon: IHelp,
+  module: 'global'
 }];
 const FAMILY_PROFILES = [{
   id: 'p1',
@@ -3179,6 +3202,149 @@ function MonthCloseModal({
     onClick: onClose,
     className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
   }, "סגירה")));
+}
+
+/* ---- העמוד הראשי (Hub): כרטיס חי לכל מערך, ומכל כרטיס נכנסים למערך עצמו ---- */
+// tab = הלשונית שנפתחת בכניסה למערך. soon = עוד לא נבנה (שלב 3 בתוכנית). kids = מוצג גם לילדים.
+const HOMEY_MODULES = [{
+  id: 'economy',
+  label: 'כלכלה',
+  kidLabel: 'הכסף שלי',
+  desc: 'הוצאות, תקציב, חיסכון והשקעות',
+  icon: IDollar,
+  tab: 'dashboard',
+  kidTab: 'kidmoney',
+  kids: true
+}, {
+  id: 'tasks',
+  label: 'משימות ולו"ז',
+  desc: 'פתקים, משימות לשבוע ולו"ז אישי וזוגי',
+  icon: ICheckSquare,
+  tab: 'notes',
+  kids: true
+}, {
+  id: 'shopping',
+  label: 'קניות',
+  desc: 'רשימות קניות משותפות, קניות לבית ובזבוזים',
+  kidDesc: 'להוסיף דברים לרשימת הקניות של הבית',
+  icon: IBag,
+  soon: true,
+  kids: true
+}, {
+  id: 'events',
+  label: 'פגישות, דייטים וחוגים',
+  kidLabel: 'החוגים שלי',
+  desc: 'פגישות, דייטים בין ההורים וחוגי הילדים',
+  kidDesc: 'החוגים והפעילויות שלי בשבוע',
+  icon: ICalendar,
+  soon: true,
+  kids: true
+}, {
+  id: 'trips',
+  label: 'חופשות וטיולים',
+  desc: 'תכנון חופשות, טיולים משפחתיים והוצאות בטיול',
+  icon: ICompass,
+  tab: 'trips',
+  kids: true
+}, {
+  id: 'goals',
+  label: 'יעדים אישיים',
+  desc: 'יעדים, אבני דרך ומעקב שבועי',
+  icon: ITarget,
+  soon: true
+}];
+const moduleOfTab = tab => {
+  const item = NAV_ITEMS_ALL.find(i => i.id === tab);
+  return item ? item.module : null;
+};
+function HubHome({
+  profileName,
+  isChild,
+  cards,
+  attention,
+  onOpen
+}) {
+  const h = new Date().getHours();
+  const hello = h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
+  const today = new Date().toLocaleDateString('he-IL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  });
+  const mods = HOMEY_MODULES.filter(m => !isChild || m.kids);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, today), /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-2xl sm:text-3xl font-bold mt-1"
+  }, hello, profileName ? `, ${profileName}` : '')), attention.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-4 space-y-2"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "דורש תשומת לב"), attention.slice(0, 3).map(a => /*#__PURE__*/React.createElement("button", {
+    key: a.id,
+    type: "button",
+    onClick: () => a.tab && onOpen(a.tab),
+    className: "w-full text-right text-sm flex items-start gap-2 py-1"
+  }, /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true",
+    className: "mt-1.5 w-2 h-2 rounded-full flex-shrink-0",
+    style: {
+      background: a.level === 'danger' ? 'var(--neg)' : a.level === 'good' ? 'var(--pos)' : 'var(--bronze)'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, a.text)))), /*#__PURE__*/React.createElement("div", {
+    className: "ent-hub-grid"
+  }, mods.map((m, i) => {
+    const Icon = m.icon;
+    const c = cards[m.id] || {};
+    const tab = isChild && m.kidTab ? m.kidTab : m.tab;
+    const locked = !m.soon && c.locked;
+    return /*#__PURE__*/React.createElement("button", {
+      key: m.id,
+      type: "button",
+      disabled: m.soon,
+      onClick: () => onOpen(tab),
+      className: `ent-card ent-hub-card p-5 text-right${m.soon ? ' soon' : ''}`,
+      style: {
+        animationDelay: `${i * 60}ms`
+      },
+      "aria-label": `${isChild && m.kidLabel ? m.kidLabel : m.label}${m.soon ? ' (בקרוב)' : ''}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between gap-2"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ent-hub-icon"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 22
+    })), m.soon ? /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] px-2 py-0.5 rounded-full",
+      style: {
+        background: 'var(--navy-panel-2)',
+        color: 'var(--text-dim)'
+      }
+    }, "בקרוב") : locked ? /*#__PURE__*/React.createElement(ILock, {
+      size: 15
+    }) : null), /*#__PURE__*/React.createElement("h3", {
+      className: "ent-heading font-bold text-lg mt-3"
+    }, isChild && m.kidLabel ? m.kidLabel : m.label), c.big ? /*#__PURE__*/React.createElement("p", {
+      className: "font-bold text-xl mt-1",
+      style: {
+        color: c.tone || 'var(--text)'
+      }
+    }, c.big) : null, /*#__PURE__*/React.createElement("p", {
+      className: "text-sm mt-1",
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, c.line || (isChild && m.kidDesc ? m.kidDesc : m.desc)));
+  })));
 }
 
 /* ---- הדרכה למשתמש חדש (פעם אחת לכל פרופיל הורה; אפשר לפתוח שוב מ"מדריך ומידע") ---- */
@@ -4760,7 +4926,7 @@ function App() {
     document.documentElement.classList.toggle('ent-menu-open', mobileMenuOpen);
     return () => document.documentElement.classList.remove('ent-menu-open');
   }, [mobileMenuOpen]);
-  const [activeTab, setActiveTabRaw] = useState('dashboard');
+  const [activeTab, setActiveTabRaw] = useState('home');
   const navLock = React.useRef(false);
 
   // ניווט אחורה: כפתור המערכת / החלקה שמאלה
@@ -4777,7 +4943,7 @@ function App() {
     const onPop = e => {
       navLock.current = true;
       const st = e.state;
-      if (st && st.homey && st.tab) setActiveTabRaw(st.tab);else setActiveTabRaw('dashboard');
+      if (st && st.homey && st.tab) setActiveTabRaw(st.tab);else setActiveTabRaw('home');
       setOpenForm(null);
       setEditingId(null);
       navLock.current = false;
@@ -4790,7 +4956,7 @@ function App() {
     if (!window.history.state || !window.history.state.homey) {
       window.history.replaceState({
         homey: true,
-        tab: 'dashboard'
+        tab: 'home'
       }, '');
     }
   }, []);
@@ -7369,7 +7535,7 @@ function App() {
     familyId: familyId,
     onSelect: p => {
       setCurrentProfile(p);
-      setActiveTab('dashboard');
+      setActiveTab('home');
       setAuthStage('app');
     },
     onLogout: async () => {
@@ -7428,16 +7594,84 @@ function App() {
     onClose: () => setMonthlyReportOpen(false)
   });
   const isChild = currentProfile?.role === 'child';
-  const navItems = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
+  // התפריט מציג רק את המערך הנוכחי: "בית" למעלה, הלשוניות של המערך, ובסוף הגדרות ומדריך.
+  // בעמוד הראשי עצמו: קיצורי דרך לכל המערכים הפעילים.
+  const currentModule = activeTab === 'home' ? null : activeTab === 'admin' ? 'global' : moduleOfTab(activeTab);
+  const allowedNav = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
     label: 'הכסף של הילדים'
   } : item).concat(isAdmin && !isChild && familyId === ROYAL_FAMILY_ID ? [{
     id: 'admin',
     label: 'ניהול',
     icon: IShield,
-    parentOnly: true
+    parentOnly: true,
+    module: 'global'
   }] : []);
+  const moduleShortcuts = HOMEY_MODULES.filter(m => !m.soon && (!isChild || m.kids)).map(m => ({
+    id: isChild && m.kidTab ? m.kidTab : m.tab,
+    label: isChild && m.kidLabel ? m.kidLabel : m.label,
+    icon: m.icon
+  }));
+  const navItems = [{
+    id: 'home',
+    label: 'בית',
+    icon: IHome
+  }].concat(currentModule && currentModule !== 'global' ? allowedNav.filter(item => item.module === currentModule) : moduleShortcuts, allowedNav.filter(item => item.module === 'global'));
   const parentOnlyIds = NAV_ITEMS_ALL.filter(i => i.parentOnly).map(i => i.id);
+  // נתונים חיים לכרטיסים בעמוד הראשי
+  const hubCards = (() => {
+    const c = {};
+    const fmt = v => `${v < 0 ? '-' : ''}${currency}${Math.round(Math.abs(v)).toLocaleString('he-IL')}`;
+    if (isChild) c.economy = {
+      line: 'הארנק, ההוצאות והיעדים שלי'
+    };else if (forecast.hasData) c.economy = {
+      big: fmt(forecast.available),
+      tone: forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)',
+      line: forecast.available >= 0 ? `נשאר להוציא החודש · ${fmt(Math.max(0, forecast.dailyPace))} ליום` : 'צפי לחריגה החודש'
+    };
+    if (notes.length) {
+      const pinned = notes.filter(n => n.isPinned).length;
+      c.tasks = {
+        big: notes.length === 1 ? 'פתק אחד' : `${notes.length} פתקים`,
+        line: pinned ? (pinned === 1 ? 'אחד נעוץ למעלה' : `${pinned} נעוצים למעלה`) : 'פתקים ותזכורות של המשפחה'
+      };
+    }
+    if (nextTrip) {
+      const st = tripStatus(nextTrip);
+      const d = daysUntil(nextTrip.startDate);
+      const spent = tripExpenses.filter(e => e.tripId === nextTrip.id).reduce((s, e) => s + e.amountPrimary, 0);
+      c.trips = {
+        big: nextTrip.title,
+        tone: 'var(--cyan)',
+        line: st === 'active' ? `מתרחש עכשיו${spent && !isChild ? ` · הוצאו ${fmt(spent)}` : ''}` : d === 0 ? 'מתחיל היום' : d === 1 ? 'מתחיל מחר' : d != null ? `בעוד ${d} ימים` : 'בלי תאריך'
+      };
+    }
+    return c;
+  })();
+  // "דורש תשומת לב": ההתראות הקיימות (חריגה, חשבונות קרובים/באיחור, יעד שהושג) + סגירת חודש שמחכה
+  const hubAttention = (() => {
+    const tabFor = id => id.startsWith('bill') || id.startsWith('loan') ? 'bills' : id.startsWith('goal') ? 'savings' : 'dashboard';
+    const list = alerts.map(a => ({
+      id: a.id,
+      level: a.level,
+      text: a.text,
+      tab: tabFor(a.id)
+    }));
+    const mcClosed = monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey];
+    if (monthCloseSummary.hasData && monthCloses && monthCloses !== 'unavailable' && !mcClosed) list.unshift({
+      id: 'month-close',
+      level: 'warn',
+      text: `סגירת ${monthCloseSummary.label} מחכה לכם`,
+      tab: 'dashboard'
+    });
+    const order = {
+      danger: 0,
+      warn: 1,
+      good: 2
+    };
+    return list.sort((a, b) => (order[a.level] ?? 1) - (order[b.level] ?? 1));
+  })();
+
   return /*#__PURE__*/React.createElement("div", {
     dir: "rtl",
     className: "ent-root min-h-screen"
@@ -7457,8 +7691,14 @@ function App() {
     size: 22
   }) : /*#__PURE__*/React.createElement(IMenu, {
     size: 22
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "absolute left-1/2 top-1/2 flex items-center gap-2.5 pointer-events-none",
+  }))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setActiveTab('home');
+      setMobileMenuOpen(false);
+    },
+    "aria-label": "לעמוד הראשי",
+    className: "absolute left-1/2 top-1/2 flex items-center gap-2.5",
     style: {
       transform: 'translate(-50%, -50%)'
     }
@@ -7536,7 +7776,13 @@ function App() {
     className: "flex-1 space-y-6"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "ent-sr-only"
-  }, "Homey — ", navItems.find(i => i.id === activeTab)?.label || 'סקירה כללית'),monthCloseOpen && !isChild && /*#__PURE__*/React.createElement(MonthCloseModal, {
+  }, "Homey — ", navItems.find(i => i.id === activeTab)?.label || 'בית'), activeTab === 'home' && /*#__PURE__*/React.createElement(HubHome, {
+    profileName: currentProfile?.name,
+    isChild: isChild,
+    cards: hubCards,
+    attention: isChild ? [] : hubAttention,
+    onOpen: tab => setActiveTab(tab)
+  }),monthCloseOpen && !isChild && /*#__PURE__*/React.createElement(MonthCloseModal, {
     summary: monthCloseSummary,
     currency: currency,
     pots: savingsPots.filter(p => !p.currency),
