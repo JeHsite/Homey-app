@@ -3568,8 +3568,15 @@ function LoginScreen({
         const {
           data: profile,
           error: profErr
-        } = await sb.from('profiles').select('*, families(*)').eq('id', userId).single();
+        } = await sb.from('profiles').select('*, families(*)').eq('id', userId).maybeSingle();
         if (profErr) throw profErr;
+        // חשבון בלי פרופיל: הוסר מהמשפחה ע"י הורה (remove_family_member), או שההרשמה לא הושלמה
+        if (!profile) {
+          await sb.auth.signOut();
+          setError('החשבון הזה לא משויך כרגע לאף משפחה. אם הוסרת מהמשפחה, אפשר לפנות להורה במשפחה.');
+          setLoading(false);
+          return;
+        }
         if (!profile.families || profile.families.group_code !== groupCode.toUpperCase()) {
           await sb.auth.signOut();
           setError('קוד קבוצה שגוי עבור חשבון זה');
@@ -9437,7 +9444,11 @@ function App() {
       borderColor: 'var(--neg)',
       color: 'var(--neg)'
     }
-  }, "איפוס כל הנתונים"), !isDemo && /*#__PURE__*/React.createElement(DeleteAccountCard, {
+  }, "איפוס כל הנתונים"), /*#__PURE__*/React.createElement(FamilyMembersCard, {
+    familyId: familyId,
+    isDemo: isDemo,
+    showToast: showToast
+  }), !isDemo && /*#__PURE__*/React.createElement(DeleteAccountCard, {
     onDeleted: () => {
       setCurrentProfile(null);
       setFamilyId(null);
@@ -12021,6 +12032,143 @@ function WeeklyReviewsPage({
     content: r.content,
     isSum: r.kind === 'summary'
   }))));
+}
+/* ---- בני המשפחה: הורה יכול להסיר ילד או הורה אחר (האכיפה בשרת, remove_family_member) ---- */
+function FamilyMembersCard({
+  familyId,
+  isDemo,
+  showToast
+}) {
+  const [members, setMembers] = useState(null);
+  const [myId, setMyId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (isDemo) {
+      setMyId('demo-parent-1');
+      setMembers([{
+        id: 'demo-parent-1',
+        name: 'אבא',
+        role: 'parent'
+      }, {
+        id: 'demo-parent-2',
+        name: 'אמא',
+        role: 'parent'
+      }, {
+        id: 'demo-kid-1',
+        name: 'נועם',
+        role: 'child'
+      }, {
+        id: 'demo-kid-2',
+        name: 'מיה',
+        role: 'child'
+      }]);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const [{
+        data: {
+          session
+        }
+      }, pr, ch] = await Promise.all([sb.auth.getSession(), sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('children').select('id, name').eq('family_id', familyId)]);
+      if (!alive) return;
+      setMyId(session?.user?.id || null);
+      setMembers([...(pr.data || []).map(p => ({
+        id: p.id,
+        name: p.full_name || 'הורה',
+        role: 'parent'
+      })), ...(ch.data || []).map(k => ({
+        id: k.id,
+        name: k.name,
+        role: 'child'
+      }))]);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [familyId, isDemo]);
+  const remove = async m => {
+    setBusy(true);
+    let result = 'ok';
+    if (!isDemo) {
+      const {
+        data,
+        error
+      } = await sb.rpc('remove_family_member', {
+        p_kind: m.role,
+        p_id: m.id
+      });
+      result = error ? 'error' : data;
+    }
+    setBusy(false);
+    setConfirmId(null);
+    if (result === 'ok') {
+      setMembers(prev => prev.filter(x => x.id !== m.id));
+      showToast(m.role === 'child' ? `הפרופיל של ${m.name} נמחק` : `${m.name} הוסר/ה מהמשפחה`);
+    } else if (result === 'self') {
+      showToast('אי אפשר להסיר את עצמך. למחיקת החשבון שלך: "מחיקת חשבון" למטה');
+    } else {
+      showToast('ההסרה לא הצליחה. נסו שוב');
+    }
+  };
+  if (!members) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(IUsers, {
+    size: 18
+  }), " בני המשפחה"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "הסרת ילד מוחקת את הפרופיל, כולל הארנק והיעדים. הורה שמוסר מאבד גישה למשפחה ולא יכול להצטרף שוב עם קוד הקבוצה. ההוצאות שרשם נשארות."), /*#__PURE__*/React.createElement("div", null, members.map(m => /*#__PURE__*/React.createElement("div", {
+    key: m.id,
+    className: "ent-row py-2.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(InitialAvatar, {
+    name: m.name,
+    size: 30
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold"
+  }, m.name), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, m.role === 'parent' ? 'הורה' : 'ילד/ה', m.id === myId ? ' · את/ה' : '')), m.id !== myId && confirmId !== m.id && /*#__PURE__*/React.createElement("button", {
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    style: {
+      color: 'var(--neg)'
+    },
+    onClick: () => setConfirmId(m.id)
+  }, "הסרה")), confirmId === m.id && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 p-3 rounded-xl space-y-2",
+    style: {
+      background: 'color-mix(in srgb, var(--neg) 10%, var(--navy-panel-2))',
+      border: '1px solid var(--neg)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm"
+  }, m.role === 'child' ? `למחוק את הפרופיל של ${m.name}? הארנק, ההוצאות והיעדים בפרופיל יימחקו לצמיתות.` : `להסיר את ${m.name} מהמשפחה? הגישה לכל הנתונים של המשפחה תיחסם.`), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    disabled: busy,
+    className: "ent-pill-btn px-4 py-1.5 text-xs",
+    style: {
+      background: 'var(--neg)',
+      color: '#fff'
+    },
+    onClick: () => remove(m)
+  }, busy ? 'רגע...' : m.role === 'child' ? 'כן, למחוק' : 'כן, להסיר'), /*#__PURE__*/React.createElement("button", {
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
+    onClick: () => setConfirmId(null)
+  }, "ביטול")))))));
 }
 function DeleteAccountCard({
   onDeleted
