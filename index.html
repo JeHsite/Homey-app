@@ -4813,6 +4813,8 @@ function App() {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [notes, setNotes] = useState([]);
   const [trips, setTrips] = useState([]);
+  // הוצאות בתוך טיולים (trip_expenses): [{id, tripId, amount, currency, amountPrimary, category, note, date}]
+  const [tripExpenses, setTripExpenses] = useState([]);
   const [gifts, setGifts] = useState([]);
   const [savingsPots, setSavingsPots] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -5618,14 +5620,57 @@ function App() {
         content: 'חלב, לחם, ביצים, קפה',
         isPinned: true
       }]);
-      setTrips([{
-        id: 1,
-        title: 'חופשה בבטומי',
-        type: 'חופשה משפחתית',
-        startDate: '2026-07-10',
-        endDate: '2026-07-15',
-        budget: 8000
-      }]);
+      {
+        // טיול שמתרחש עכשיו (עם הוצאות פתוחות ביורו) וטיול שהסתיים וכבר צורף לחודש
+        const now = new Date();
+        const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const rel = n => iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n));
+        setTrips([{
+          id: 2,
+          title: 'סוף שבוע באתונה',
+          type: 'טיול קצר',
+          startDate: rel(-2),
+          endDate: rel(2),
+          budget: 6000,
+          mergedAt: null
+        }, {
+          id: 1,
+          title: 'חופשה בבטומי',
+          type: 'חופשה משפחתית',
+          startDate: '2026-07-10',
+          endDate: '2026-07-15',
+          budget: 8000,
+          mergedAt: '2026-07-16T08:00:00Z'
+        }]);
+        setTripExpenses([{
+          id: 'demo-te-1',
+          tripId: 2,
+          amount: 420,
+          currency: 'EUR',
+          amountPrimary: 1680,
+          category: 'לינה',
+          note: 'מלון 2 לילות',
+          date: rel(-2)
+        }, {
+          id: 'demo-te-2',
+          tripId: 2,
+          amount: 95,
+          currency: 'EUR',
+          amountPrimary: 380,
+          category: 'אוכל',
+          note: 'ארוחת ערב בפלאקה',
+          date: rel(-1)
+        }, {
+          id: 'demo-te-3',
+          tripId: 2,
+          amount: 1450,
+          currency: 'ILS',
+          amountPrimary: 1450,
+          category: 'טיסות',
+          note: '',
+          date: rel(-2)
+        }]);
+      }
       setGifts([{
         id: 1,
         event: 'יום הולדת לדודה',
@@ -5692,9 +5737,9 @@ function App() {
       return;
     }
     (async () => {
-      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba, cb, av] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
+      const [tx, bl, nt, tr, gf, sp, as, cc, fam, rs, fp, fs, ln, ba, cb, av, te] = await Promise.all([sb.from('transactions').select('*').eq('family_id', familyId).order('date', {
         ascending: false
-      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId), sb.from('asset_values').select('*').eq('family_id', familyId).order('valued_at')]);
+      }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId), sb.from('asset_values').select('*').eq('family_id', familyId).order('valued_at'), sb.from('trip_expenses').select('*').eq('family_id', familyId).order('date')]);
       setCategoryBudgets(Object.fromEntries((cb?.data || []).map(r => [r.category, Number(r.monthly_amount)])));
       setTransactions((tx.data || []).map(r => ({
         id: r.id,
@@ -5706,6 +5751,7 @@ function App() {
         date: r.date,
         accountId: r.account_id || null,
         billId: r.bill_id || null,
+        tripId: r.trip_id || null,
         createdAt: r.created_at || null
       })));
       setLoans((ln?.data || []).map(mapLoanRow));
@@ -5736,7 +5782,19 @@ function App() {
         type: r.type,
         startDate: r.start_date,
         endDate: r.end_date,
-        budget: Number(r.budget || 0)
+        budget: Number(r.budget || 0),
+        mergedAt: r.merged_at || null
+      })));
+      // לפני הרצת trip-expenses.sql הטבלה לא קיימת (te.error), ואז פשוט אין הוצאות טיול
+      setTripExpenses((te?.data || []).map(r => ({
+        id: r.id,
+        tripId: r.trip_id,
+        amount: Number(r.amount),
+        currency: r.currency || 'ILS',
+        amountPrimary: Number(r.amount_primary),
+        category: r.category,
+        note: r.note || '',
+        date: String(r.date).slice(0, 10)
       })));
       setGifts((gf.data || []).map(r => ({
         id: r.id,
@@ -6157,7 +6215,10 @@ function App() {
     const loansUnpaid = loanItems.filter(st => st.dueThisMonth).reduce((s, st) => s + st.thisMonthPayment, 0);
     const fixedTotal = billsTotal + loansTotal;
     const fixedUnpaid = billsUnpaidOnly + loansUnpaid;
-    const available = expectedIncome - spentSoFar - fixedTotal;
+    // הוצאות בטיול שעוד לא צורף לחודש (הטיול עדיין מתרחש): כבר יצאו, אז יורדות ממה שנשאר
+    const mergedTripIds = new Set(trips.filter(t => t.mergedAt).map(t => t.id));
+    const openTripSpend = tripExpenses.filter(e => !mergedTripIds.has(e.tripId) && monthKey(e.date) === thisKey).reduce((s, e) => s + e.amountPrimary, 0);
+    const available = expectedIncome - spentSoFar - fixedTotal - openTripSpend;
     // כולל היום: ביום האחרון בחודש עוד נשאר יום אחד להוציא בו
     const daysForPace = daysLeft + 1;
     const dailyPace = available / daysForPace;
@@ -6167,7 +6228,7 @@ function App() {
     const weekStartDay = Math.max(1, today - now.getDay());
     const weekStartIso = `${thisKey}-${String(weekStartDay).padStart(2, '0')}`;
     const weekSpent = monthTx.filter(t => t.type === 'expense' && !t.billId && String(t.date).slice(0, 10) >= weekStartIso).reduce((s, t) => s + t.amount, 0);
-    const availableAtWeekStart = expectedIncome - (spentSoFar - weekSpent) - fixedTotal;
+    const availableAtWeekStart = expectedIncome - (spentSoFar - weekSpent) - fixedTotal - openTripSpend;
     const daysFromWeekStart = daysInMonth - weekStartDay + 1;
     const weekDaysInMonth = Math.min(7 - (weekStartDay - (today - now.getDay())), daysFromWeekStart);
     const weeklyBudget = availableAtWeekStart > 0 ? availableAtWeekStart / daysFromWeekStart * weekDaysInMonth : 0;
@@ -6181,13 +6242,14 @@ function App() {
       spentSoFar,
       fixedTotal,
       fixedUnpaid,
+      openTripSpend,
       available,
       dailyPace,
       weekSpent,
       weeklyBudget,
       hasData: transactions.length > 0
     };
-  }, [transactions, bills, loans]);
+  }, [transactions, bills, loans, trips, tripExpenses]);
   const TIPS = ['כלל 50/30/20: 50% לצרכים, 30% לרצונות, 20% לחיסכון והחזר חובות.', 'קרן חירום מומלצת: 3-6 חודשי הוצאות. זה מה שמונע כניסה למינוס בהפתעה.', 'בדקו מנויים חוזרים אחת לרבעון. רובנו משלמים על משהו שהפסקנו להשתמש בו.', 'לפני קנייה גדולה, המתינו 48 שעות. חלק ניכר מהרצון פשוט חולף.', 'שלמו קודם לעצמכם: העבירו לחיסכון ביום המשכורת, לא בסוף החודש.', 'חוב בריבית גבוהה (אשראי, מינוס) עדיף לסגור לפני שמגדילים השקעות.', 'עקבו אחרי ההוצאות הקטנות: קפה יומי הוא כ-4,000 ₪ בשנה.', 'השוו ביטוחים אחת לשנה. אותה פוליסה יכולה לעלות פחות אצל מתחרה.', 'הגדירו יעד חיסכון עם שם ותאריך. יעדים מוגדרים מושגים יותר.', 'תקציב הוא לא הגבלה, הוא החלטה מראש איפה אתם רוצים שהכסף יהיה.'];
   const todayTipIdx = new Date().getDate() % TIPS.length;
   const alerts = useMemo(() => {
@@ -6830,8 +6892,163 @@ function App() {
   };
   const deleteTrip = async id => {
     setTrips(prev => prev.filter(x => x.id !== id));
+    // כמו בשרת: הוצאות הטיול נמחקות (cascade), ושורות שכבר צורפו לחודש נשארות כהוצאות רגילות (set null)
+    setTripExpenses(prev => prev.filter(e => e.tripId !== id));
+    setTransactions(prev => prev.map(t => t.tripId === id ? {
+      ...t,
+      tripId: null
+    } : t));
     if (!isDemo) await sb.from('trips').delete().eq('id', id);
     showToast('הטיול נמחק');
+  };
+
+  // ===== הוצאות בטיול =====
+  // כשהטיול נגמר, ההוצאות מצטרפות לחודש כשורה אחת לכל קטגוריה (קטגוריה "חופשות", בתאריך סיום הטיול).
+  // שינוי בהוצאות אחרי הצירוף: מוחקים את שורות הטיול ויוצרים אותן מחדש, כך שאין כפילויות.
+  const syncTripTransactions = async (trip, list) => {
+    const old = transactions.filter(t => t.tripId === trip.id);
+    if (!isDemo) await sb.from('transactions').delete().eq('trip_id', trip.id);
+    old.forEach(t => applyAccountDelta(t.accountId, t.amount));
+    const byCat = {};
+    list.forEach(e => {
+      byCat[e.category] = (byCat[e.category] || 0) + e.amountPrimary;
+    });
+    const date = trip.endDate || trip.startDate || kidToday();
+    const rows = Object.entries(byCat).filter(([, v]) => v > 0).map(([cat, v]) => ({
+      type: 'expense',
+      category: 'חופשות',
+      sub: cat,
+      amount: Math.round(v * 100) / 100,
+      description: `${trip.title}: ${cat}`,
+      date,
+      accountId: defaultAccountId || null,
+      billId: null,
+      tripId: trip.id
+    }));
+    let created = rows.map(r => ({
+      ...r,
+      id: nextId(),
+      createdAt: new Date().toISOString()
+    }));
+    if (!isDemo && rows.length) {
+      const {
+        data,
+        error
+      } = await sb.from('transactions').insert(rows.map(r => ({
+        type: r.type,
+        category: r.category,
+        sub: r.sub,
+        amount: r.amount,
+        description: r.description,
+        date: r.date,
+        account_id: r.accountId,
+        trip_id: trip.id,
+        family_id: familyId
+      }))).select();
+      if (error) {
+        showToast('צירוף הוצאות הטיול לחודש נכשל. ננסה שוב בכניסה הבאה');
+        created = [];
+      } else created = (data || []).map(d => ({
+        id: d.id,
+        type: d.type,
+        category: d.category,
+        sub: d.sub,
+        amount: Number(d.amount),
+        description: d.description,
+        date: d.date,
+        accountId: d.account_id || null,
+        billId: null,
+        tripId: d.trip_id,
+        createdAt: d.created_at || new Date().toISOString()
+      }));
+    }
+    setTransactions(prev => [...created, ...prev.filter(t => t.tripId !== trip.id)]);
+    created.forEach(t => applyAccountDelta(t.accountId, -t.amount));
+    return created.reduce((s, t) => s + t.amount, 0);
+  };
+  const mergeTrip = async (trip, list) => {
+    const at = new Date().toISOString();
+    if (!isDemo) {
+      // "תפיסה" אטומית: רק מכשיר אחד מצרף, גם אם שני הורים פותחים את האפליקציה באותו רגע
+      const {
+        data,
+        error
+      } = await sb.from('trips').update({
+        merged_at: at
+      }).eq('id', trip.id).is('merged_at', null).select('id');
+      if (error || !data || !data.length) return;
+    }
+    setTrips(prev => prev.map(t => t.id === trip.id ? {
+      ...t,
+      mergedAt: at
+    } : t));
+    const total = await syncTripTransactions(trip, list);
+    if (total > 0) showToast(`הטיול "${trip.title}" הסתיים: ${currency}${Math.round(total).toLocaleString('he-IL')} צורפו להוצאות החודש`);
+  };
+  const mergingTripsRef = useRef(new Set());
+  useEffect(() => {
+    if (authStage !== 'app' || currentProfile?.role === 'child') return;
+    trips.forEach(trip => {
+      if (trip.mergedAt || tripStatus(trip) !== 'past' || mergingTripsRef.current.has(trip.id)) return;
+      const list = tripExpenses.filter(e => e.tripId === trip.id);
+      if (!list.length) return;
+      mergingTripsRef.current.add(trip.id);
+      mergeTrip(trip, list);
+    });
+  }, [trips, tripExpenses, authStage, isDemo, currentProfile]);
+  const addTripExpense = async (trip, f) => {
+    const amount = Number(f.amount);
+    if (!amount || amount <= 0) return showToast('נא להזין סכום');
+    const familyCode = CURRENCY_SYMBOL_TO_CODE[currency] || 'ILS';
+    const code = f.currency || familyCode;
+    const amountPrimary = code === familyCode ? amount : toPrimary(amount, code, currency, rates);
+    if (amountPrimary == null || code !== familyCode && !rates) return showToast('אין כרגע שער המרה למטבע הזה. נסו שוב בעוד רגע');
+    const row = {
+      tripId: trip.id,
+      amount,
+      currency: code,
+      amountPrimary: Math.round(amountPrimary * 100) / 100,
+      category: f.category || 'אחר',
+      note: f.note || '',
+      date: f.date || kidToday()
+    };
+    let saved = {
+      id: nextId(),
+      ...row
+    };
+    if (!isDemo) {
+      const {
+        data,
+        error
+      } = await sb.from('trip_expenses').insert({
+        trip_id: trip.id,
+        family_id: familyId,
+        amount: row.amount,
+        currency: row.currency,
+        amount_primary: row.amountPrimary,
+        category: row.category,
+        note: row.note || null,
+        date: row.date
+      }).select().single();
+      if (error) return showToast('שגיאה בשמירה');
+      saved = {
+        ...row,
+        id: data.id
+      };
+    }
+    const next = [...tripExpenses, saved];
+    setTripExpenses(next);
+    if (trip.mergedAt) await syncTripTransactions(trip, next.filter(e => e.tripId === trip.id));
+    showToast(code === familyCode ? 'ההוצאה נוספה לטיול' : `ההוצאה נוספה (${currency}${Math.round(row.amountPrimary).toLocaleString('he-IL')})`);
+    return true;
+  };
+  const deleteTripExpense = async exp => {
+    const next = tripExpenses.filter(e => e.id !== exp.id);
+    setTripExpenses(next);
+    if (!isDemo) await sb.from('trip_expenses').delete().eq('id', exp.id);
+    const trip = trips.find(t => t.id === exp.tripId);
+    if (trip && trip.mergedAt) await syncTripTransactions(trip, next.filter(e => e.tripId === trip.id));
+    showToast('ההוצאה נמחקה מהטיול');
   };
   const submitGift = async () => {
     const f = formData.gifts;
@@ -7494,7 +7711,12 @@ function App() {
   }, /*#__PURE__*/React.createElement(Money, {
     v: forecast.spentSoFar,
     currency: currency
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), forecast.openTripSpend > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-0.5",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, `ועוד ${currency}${Math.round(forecast.openTripSpend).toLocaleString('he-IL')} בטיול שמתרחש עכשיו`)), /*#__PURE__*/React.createElement("div", {
     className: "ent-mini-card p-3.5"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
@@ -8810,7 +9032,16 @@ function App() {
       onClick: () => deleteTrip(tr.id)
     }, /*#__PURE__*/React.createElement(ITrash, {
       size: 16
-    })))));
+    })))), /*#__PURE__*/React.createElement(TripExpensesPanel, {
+      trip: tr,
+      expenses: tripExpenses.filter(e => e.tripId === tr.id),
+      currency: currency,
+      rates: rates,
+      canEdit: !isChild,
+      ended: st === 'past',
+      onAdd: f => addTripExpense(tr, f),
+      onDelete: deleteTripExpense
+    }));
   })), activeTab === 'gifts' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
@@ -12169,6 +12400,212 @@ function FamilyMembersCard({
     className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
     onClick: () => setConfirmId(null)
   }, "ביטול")))))));
+}
+/* ---- הוצאות בטיול: רישום בכל מטבע, סיכום מול התקציב, וצירוף לחודש כשהטיול נגמר ---- */
+const TRIP_EXPENSE_CATEGORIES = ['טיסות', 'לינה', 'אוכל', 'אטרקציות', 'תחבורה', 'קניות', 'אחר'];
+function TripExpensesPanel({
+  trip,
+  expenses,
+  currency,
+  rates,
+  canEdit,
+  ended,
+  onAdd,
+  onDelete
+}) {
+  const familyCode = CURRENCY_SYMBOL_TO_CODE[currency] || 'ILS';
+  const lastCurrency = expenses.length ? [...expenses].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0].currency : familyCode;
+  const empty = () => ({
+    amount: '',
+    currency: lastCurrency,
+    category: 'אוכל',
+    note: '',
+    date: ''
+  });
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [f, setF] = useState(empty);
+  const [busy, setBusy] = useState(false);
+  const money = v => `${currency}${Math.round(v).toLocaleString('he-IL')}`;
+  const total = expenses.reduce((s, e) => s + e.amountPrimary, 0);
+  const pct = trip.budget > 0 ? Math.min(100, total / trip.budget * 100) : 0;
+  const over = trip.budget > 0 && total > trip.budget;
+  const byCat = {};
+  expenses.forEach(e => {
+    byCat[e.category] = (byCat[e.category] || 0) + e.amountPrimary;
+  });
+  // מטבע המשפחה, אחריו הנפוצים, ואחריהם כל מה שיש לו שער היום
+  const codes = [...new Set([familyCode, 'USD', 'EUR', 'GBP', ...Object.keys(rates || {}).sort()])].filter(c => c === familyCode || rates && rates[c]);
+  const inputCls = "ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none";
+  const set = (k, v) => setF(prev => ({
+    ...prev,
+    [k]: v
+  }));
+  const submit = async () => {
+    setBusy(true);
+    const ok = await onAdd(f);
+    setBusy(false);
+    if (ok) {
+      setF({
+        ...empty(),
+        currency: f.currency
+      });
+      setAdding(false);
+    }
+  };
+  const status = trip.mergedAt ? `צורף להוצאות של ${new Date((trip.endDate || trip.startDate) + 'T00:00:00').toLocaleDateString('he-IL', {
+    month: 'long',
+    year: 'numeric'
+  })} (קטגוריה "חופשות")` : ended ? 'הטיול הסתיים. ההוצאות יצטרפו לחודש בכניסה הבאה של הורה' : 'כשהטיול יסתיים, ההוצאות יצטרפו להוצאות החודש לפי קטגוריות';
+  return /*#__PURE__*/React.createElement("div", {
+    className: "w-full",
+    style: {
+      flexBasis: '100%'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "w-full text-right",
+    "aria-expanded": open,
+    onClick: () => setOpen(!open)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between text-xs mb-1.5",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-1"
+  }, "הוצאות בטיול", expenses.length ? ` (${expenses.length})` : '', /*#__PURE__*/React.createElement(IChevronDown, {
+    size: 12,
+    style: {
+      transform: open ? 'rotate(180deg)' : 'none',
+      transition: 'transform .2s'
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: over ? 'var(--neg)' : 'var(--text-2)'
+    }
+  }, money(total), trip.budget > 0 ? ` מתוך ${money(trip.budget)}` : '')), trip.budget > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "h-1.5 rounded-full overflow-hidden",
+    style: {
+      background: 'var(--line)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "h-full rounded-full",
+    style: {
+      width: `${pct}%`,
+      background: over ? 'var(--neg)' : 'var(--cyan)',
+      transition: 'width .4s'
+    }
+  }))), open && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 space-y-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, status, over ? ` · חריגה של ${money(total - trip.budget)} מהתקציב` : trip.budget > 0 ? ` · נשארו ${money(trip.budget - total)}` : ''), Object.keys(byCat).length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => /*#__PURE__*/React.createElement("span", {
+    key: c,
+    className: "text-xs px-2.5 py-1 rounded-full",
+    style: {
+      background: 'var(--navy-panel-2)',
+      color: 'var(--text-2)'
+    }
+  }, c, " ", money(v)))), canEdit && (adding ? /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 p-3 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    type: "number",
+    inputMode: "decimal",
+    placeholder: "סכום",
+    "aria-label": "סכום",
+    value: f.amount,
+    onChange: e => set('amount', e.target.value)
+  }), /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    "aria-label": "מטבע",
+    value: f.currency,
+    onChange: e => set('currency', e.target.value)
+  }, codes.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, currencyDisplay(c) === c ? c : `${currencyDisplay(c)} ${c}`))), /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    "aria-label": "קטגוריה",
+    value: f.category,
+    onChange: e => set('category', e.target.value)
+  }, TRIP_EXPENSE_CATEGORIES.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, c))), /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    placeholder: "על מה (אופציונלי)",
+    "aria-label": "על מה",
+    value: f.note,
+    onChange: e => set('note', e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement(DateField, {
+    label: "תאריך",
+    value: f.date || kidToday(),
+    onChange: v => set('date', v)
+  })), f.currency !== familyCode && Number(f.amount) > 0 && rates && toPrimary(Number(f.amount), f.currency, currency, rates) != null && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      gridColumn: '1 / -1',
+      color: 'var(--text-muted)'
+    }
+  }, "≈ ", money(toPrimary(Number(f.amount), f.currency, currency, rates)), " לפי השער של היום"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2",
+    style: {
+      gridColumn: '1 / -1'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    disabled: busy,
+    onClick: submit,
+    className: "ent-pill-btn solid-bronze px-5 py-2 text-sm"
+  }, busy ? 'רגע...' : 'שמירה'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAdding(false),
+    className: "ent-pill-btn ghost px-5 py-2 text-sm"
+  }, "ביטול"))) : /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAdding(true),
+    className: "ent-pill-btn ghost flex items-center gap-1.5 px-4 py-1.5 text-xs"
+  }, /*#__PURE__*/React.createElement(IPlus, {
+    size: 14
+  }), " הוצאה בטיול")), expenses.length > 0 && /*#__PURE__*/React.createElement("div", null, [...expenses].sort((a, b) => String(b.date).localeCompare(String(a.date))).map(e => /*#__PURE__*/React.createElement("div", {
+    key: e.id,
+    className: "ent-row py-2 flex items-center justify-between gap-2 text-sm"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "font-semibold"
+  }, e.category, e.note ? ` · ${e.note}` : ''), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, fmtDateHe(e.date))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-left"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "font-bold"
+  }, currencyDisplay(e.currency), Math.round(e.amount * 100) / 100), e.currency !== familyCode && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, money(e.amountPrimary))), canEdit && /*#__PURE__*/React.createElement("button", {
+    className: "ent-icon-btn",
+    "aria-label": `מחיקת ההוצאה ${e.category}`,
+    onClick: () => onDelete(e)
+  }, /*#__PURE__*/React.createElement(ITrash, {
+    size: 15
+  }))))))));
 }
 function DeleteAccountCard({
   onDeleted
