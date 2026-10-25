@@ -3009,6 +3009,178 @@ function LegalModal({
   }, "סגירה")));
 }
 
+/* ---- סגירת חודש: סיכום החודש שהסתיים + העברת מה שנשאר לקופת חיסכון. נפתח פעם אחת לכל משפחה לכל חודש ---- */
+function MonthCloseModal({
+  summary,
+  currency,
+  pots,
+  closed,
+  onClose,
+  onLater,
+  onConfirm
+}) {
+  useEscapeClose(onLater || onClose);
+  const trapRef = useFocusTrap();
+  const money = v => `${currency}${Math.round(Math.abs(v)).toLocaleString('he-IL')}`;
+  const surplus = Math.max(0, Math.round(summary.left));
+  const [potId, setPotId] = useState(pots[0]?.id || '');
+  const [amount, setAmount] = useState(String(surplus));
+  const [busy, setBusy] = useState(false);
+  const diffPrev = summary.prevOut != null && summary.prevOut > 0 ? summary.totalOut - summary.prevOut : null;
+  const canMove = !closed && surplus > 0 && pots.length > 0;
+  const stat = (label, value, color, sub) => /*#__PURE__*/React.createElement("div", {
+    className: "ent-mini-card p-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, label), /*#__PURE__*/React.createElement("p", {
+    className: "font-bold mt-0.5",
+    style: {
+      color
+    }
+  }, money(value)), sub && /*#__PURE__*/React.createElement("p", {
+    className: "mt-0.5",
+    style: {
+      color: 'var(--text-dim)',
+      fontSize: 11,
+      lineHeight: 1.3
+    }
+  }, sub));
+  const confirm = async withMove => {
+    setBusy(true);
+    await onConfirm(withMove && potId && Number(amount) > 0 ? {
+      potId,
+      amount: Number(amount)
+    } : null);
+    setBusy(false);
+  };
+  const tone = summary.left >= 0 ? 'var(--pos)' : 'var(--neg)';
+  return /*#__PURE__*/React.createElement("div", {
+    ref: trapRef,
+    tabIndex: -1,
+    className: "fixed inset-0 flex items-center justify-center px-4 z-50",
+    style: {
+      background: 'rgba(0,0,0,0.6)',
+      outline: 'none'
+    },
+    dir: "rtl",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": `סגירת חודש ${summary.label}`,
+    onClick: onLater || onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 w-full max-w-lg overflow-y-auto space-y-4",
+    style: {
+      maxHeight: '88vh'
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--bronze)'
+    }
+  }, "סגירת חודש"), /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-2xl font-bold"
+  }, summary.label)), /*#__PURE__*/React.createElement("div", {
+    className: "p-4 rounded-2xl text-center",
+    style: {
+      background: `color-mix(in srgb, ${tone} 12%, var(--navy-panel-2))`,
+      border: `1px solid ${tone}`
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, summary.left >= 0 ? 'נשאר לכם בסוף החודש' : 'החודש נסגר בגירעון של'), /*#__PURE__*/React.createElement("p", {
+    className: "text-4xl font-bold mt-1",
+    style: {
+      color: tone
+    }
+  }, money(summary.left)), diffPrev != null && Math.abs(diffPrev) >= 1 && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mt-1",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, "הוצאתם ", money(diffPrev), " ", diffPrev > 0 ? 'יותר' : 'פחות', " מהחודש שלפניו")), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-2",
+    style: {
+      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
+    }
+  }, stat('הכנסות', summary.income, 'var(--pos)'), stat('קבועות', summary.fixed, 'var(--bronze)', 'הוראות קבע והלוואות'), stat('שוטפות', summary.variable, 'var(--neg)')), summary.top.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold mb-1.5"
+  }, "לאן הלך הכי הרבה"), summary.top.map(([cat, v]) => /*#__PURE__*/React.createElement("div", {
+    key: cat,
+    className: "flex justify-between text-sm py-1"
+  }, /*#__PURE__*/React.createElement("span", null, cat), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, money(v), summary.variable > 0 ? ` · ${Math.round(v / summary.variable * 100)}%` : '')))), summary.budgets.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold mb-1.5"
+  }, "תקציבים"), summary.budgets.map(b => /*#__PURE__*/React.createElement("div", {
+    key: b.cat,
+    className: "flex justify-between text-sm py-1"
+  }, /*#__PURE__*/React.createElement("span", null, b.ok ? '✓' : '✕', " ", b.cat), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: b.ok ? 'var(--pos)' : 'var(--neg)'
+    }
+  }, money(b.spent), " מתוך ", money(b.budget))))), closed ? /*#__PURE__*/React.createElement("div", {
+    className: "text-sm p-3 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)',
+      color: 'var(--text-2)'
+    }
+  }, "החודש נסגר", Number(closed.moved_amount) > 0 ? `, ו-${money(closed.moved_amount)} הועברו לחיסכון` : '', ".") : canMove ? /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 p-4 rounded-2xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "להעביר את מה שנשאר לחיסכון?"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-2"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none",
+    "aria-label": "לאיזו קופה",
+    value: potId,
+    onChange: e => setPotId(e.target.value)
+  }, pots.map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.id,
+    value: p.id
+  }, p.name))), /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none",
+    type: "number",
+    inputMode: "decimal",
+    "aria-label": "סכום להעברה",
+    value: amount,
+    onChange: e => setAmount(e.target.value)
+  })), /*#__PURE__*/React.createElement("button", {
+    disabled: busy,
+    onClick: () => confirm(true),
+    className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
+  }, busy ? 'רגע...' : `העברה של ${money(Number(amount) || 0)} וסגירת החודש`)) : /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, surplus > 0 ? 'כדאי לפתוח קופת חיסכון במסך "חסכונות ויעדים", ובחודש הבא אפשר יהיה להעביר אליה את מה שנשאר בלחיצה אחת.' : 'כדאי להסתכל על הקטגוריות הגדולות למעלה ולהגדיר להן תקציב לחודש הבא.'), !closed && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    disabled: busy,
+    onClick: () => confirm(false),
+    className: `ent-pill-btn ${canMove ? 'ghost' : 'solid-bronze'} flex-1 py-2.5 text-sm`
+  }, canMove ? 'סגירה בלי העברה' : 'סגירת החודש'), onLater && /*#__PURE__*/React.createElement("button", {
+    onClick: onLater,
+    className: "ent-pill-btn ghost flex-1 py-2.5 text-sm"
+  }, "אחר כך")), closed && /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "ent-pill-btn solid-bronze w-full py-2.5 text-sm"
+  }, "סגירה")));
+}
+
 /* ---- הדרכה למשתמש חדש (פעם אחת לכל פרופיל הורה; אפשר לפתוח שוב מ"מדריך ומידע") ---- */
 function OnboardingTour({
   kid,
@@ -5776,6 +5948,130 @@ function App() {
       partial: selectedMonth === kidToday().slice(0, 7)
     };
   }, [selectedMonth, transactions, visibleTransactions, loans, reportExpense]);
+  // ===== סגירת חודש =====
+  // monthCloses: null = עוד לא נטען, 'unavailable' = הטבלה לא קיימת (לפני month-closes.sql), אחרת { 'YYYY-MM': row }
+  const [monthCloses, setMonthCloses] = useState(null);
+  const [monthCloseOpen, setMonthCloseOpen] = useState(false);
+  const prevMonthKey = (() => {
+    const d = new Date();
+    const p = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+    return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  useEffect(() => {
+    if (authStage !== 'app' || !familyId) return;
+    if (isDemo) {
+      setMonthCloses({});
+      return;
+    }
+    sb.from('month_closes').select('*').eq('family_id', familyId).then(({
+      data,
+      error
+    }) => {
+      setMonthCloses(error ? 'unavailable' : Object.fromEntries((data || []).map(r => [r.month, r])));
+    });
+  }, [authStage, familyId, isDemo]);
+  const monthCloseSummary = useMemo(() => {
+    const key = prevMonthKey;
+    const shift = n => {
+      const [y, m] = key.split('-').map(Number);
+      const d = new Date(y, m - 1 + n, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
+    const inMonth = k => transactions.filter(t => monthKey(t.date) === k);
+    const tx = inMonth(key);
+    const sum = list => list.reduce((s, t) => s + t.amount, 0);
+    const income = sum(tx.filter(t => t.type === 'income'));
+    const expenses = tx.filter(t => t.type === 'expense');
+    const billOut = sum(expenses.filter(t => t.billId));
+    const variableTx = expenses.filter(t => !t.billId);
+    const variable = sum(variableTx);
+    const loansOut = loans.reduce((s, l) => s + loanPaymentForMonth(l, key), 0);
+    const fixed = billOut + loansOut;
+    const prevKey = shift(-1);
+    const prevTx = inMonth(prevKey);
+    const prevOut = prevTx.length ? sum(prevTx.filter(t => t.type === 'expense')) + loans.reduce((s, l) => s + loanPaymentForMonth(l, prevKey), 0) : null;
+    const byCat = {};
+    variableTx.forEach(t => {
+      byCat[t.category] = (byCat[t.category] || 0) + t.amount;
+    });
+    const budgets = Object.entries(categoryBudgets).filter(([, b]) => b > 0).map(([cat, budget]) => {
+      const spent = sum(expenses.filter(t => t.category === cat));
+      return {
+        cat,
+        budget,
+        spent,
+        ok: spent <= budget
+      };
+    });
+    return {
+      key,
+      label: monthLabelHe(key),
+      hasData: tx.length > 0,
+      income,
+      fixed,
+      variable,
+      totalOut: fixed + variable,
+      left: income - fixed - variable,
+      prevOut,
+      top: Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 3),
+      budgets
+    };
+  }, [prevMonthKey, transactions, loans, categoryBudgets]);
+  const monthCloseLaterKey = `homey_month_close_later_${familyId}_${prevMonthKey}`;
+  // נפתח אוטומטית פעם אחת: להורה, כשלחודש הקודם יש נתונים, הוא עוד לא נסגר, ולא לחצו "אחר כך" בסשן הזה
+  useEffect(() => {
+    if (isDemo || currentProfile?.role === 'child' || !monthCloses || monthCloses === 'unavailable') return;
+    if (monthCloses[prevMonthKey] || !monthCloseSummary.hasData) return;
+    let later = null;
+    try {
+      later = sessionStorage.getItem(monthCloseLaterKey);
+    } catch (_e) {}
+    if (!later) setMonthCloseOpen(true);
+  }, [monthCloses, prevMonthKey, monthCloseSummary.hasData, isDemo, currentProfile]);
+  const confirmMonthClose = async move => {
+    if (move) {
+      const pot = savingsPots.find(p => p.id === move.potId);
+      if (pot) {
+        const newCurrent = pot.current + move.amount;
+        setSavingsPots(prev => prev.map(p => p.id === pot.id ? {
+          ...p,
+          current: newCurrent
+        } : p));
+        if (!isDemo) await sb.from('savings_pots').update({
+          current: newCurrent
+        }).eq('id', pot.id);
+      }
+    }
+    const s = monthCloseSummary;
+    const row = {
+      family_id: familyId,
+      month: s.key,
+      summary: {
+        income: Math.round(s.income),
+        fixed: Math.round(s.fixed),
+        variable: Math.round(s.variable),
+        left: Math.round(s.left)
+      },
+      moved_amount: move ? move.amount : 0,
+      pot_id: move ? move.potId : null,
+      closed_by: currentProfile?.id || null
+    };
+    if (!isDemo && monthCloses !== 'unavailable') {
+      const {
+        error
+      } = await sb.from('month_closes').upsert(row, {
+        onConflict: 'family_id,month'
+      });
+      if (error) console.error('month close', error.message);
+    }
+    setMonthCloses(prev => ({
+      ...(prev && prev !== 'unavailable' ? prev : {}),
+      [s.key]: row
+    }));
+    setMonthCloseOpen(false);
+    showToast(move ? `${currency}${Math.round(move.amount).toLocaleString('he-IL')} הועברו לחיסכון. חודש טוב` : `${s.label} נסגר. חודש טוב`);
+  };
+
   const pieData = Object.entries(categoryBreakdown).map(([name, v]) => ({
     name,
     value: v.total
@@ -7016,7 +7312,35 @@ function App() {
     className: "flex-1 space-y-6"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "ent-sr-only"
-  }, "Homey — ", navItems.find(i => i.id === activeTab)?.label || 'סקירה כללית'), activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement("div", {
+  }, "Homey — ", navItems.find(i => i.id === activeTab)?.label || 'סקירה כללית'),monthCloseOpen && !isChild && /*#__PURE__*/React.createElement(MonthCloseModal, {
+    summary: monthCloseSummary,
+    currency: currency,
+    pots: savingsPots.filter(p => !p.currency),
+    closed: monthCloses && monthCloses !== 'unavailable' ? monthCloses[prevMonthKey] || null : null,
+    onClose: () => setMonthCloseOpen(false),
+    onLater: monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey] ? null : () => {
+      try {
+        sessionStorage.setItem(monthCloseLaterKey, '1');
+      } catch (_e) {}
+      setMonthCloseOpen(false);
+    },
+    onConfirm: confirmMonthClose
+  }), activeTab === 'dashboard' && !isChild && monthCloseSummary.hasData && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setMonthCloseOpen(true),
+    className: "ent-card w-full p-4 flex items-center justify-between gap-3 text-right"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(ICalendar, {
+    size: 18
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold"
+  }, "סגירת חודש ", monthCloseSummary.label)), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold",
+    style: {
+      color: monthCloseSummary.left >= 0 ? 'var(--pos)' : 'var(--neg)'
+    }
+  }, monthCloseSummary.left >= 0 ? 'נשארו ' : 'גירעון ', currency, Math.round(Math.abs(monthCloseSummary.left)).toLocaleString('he-IL'), monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey] ? ' ✓' : '')), activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
     familyId: familyId,
