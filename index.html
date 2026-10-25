@@ -558,6 +558,21 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* מערך פגישות, דייטים וחוגים (modules/events.js) */
+  .ev-datechip { flex-shrink: 0; width: 46px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--cyan) 12%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent); }
+  .ev-datechip-day { font-size: 18px; font-weight: 700; line-height: 1; }
+  .ev-datechip-mon { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .ev-date-hero { background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, #f472b6 18%, transparent), transparent 60%), var(--navy-panel); border-color: color-mix(in srgb, #f472b6 35%, var(--line)); }
+  .ev-star { font-size: 20px; line-height: 1; color: var(--line); transition: color .15s, transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .ev-star.on { color: #fbbf24; }
+  .ev-star:hover { transform: scale(1.2); }
+  .ev-ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+  .ev-idea { display: flex; align-items: flex-start; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--navy-panel-2); border: 1px solid transparent; transition: border-color .2s, transform .2s; }
+  .ev-idea:hover { border-color: #f472b6; transform: translateY(-2px); }
+  .ev-daypill { flex-shrink: 0; min-width: 52px; text-align: center; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 999px; color: var(--bronze); background: color-mix(in srgb, var(--bronze) 14%, transparent); }
+  .ev-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  @media (prefers-reduced-motion: reduce) { .ev-star, .ev-idea { transition: none; } }
   /* מערך קניות (modules/shopping.js) */
   .shop-item { border-bottom: 1px solid var(--line); }
   .shop-item:last-child { border-bottom: none; }
@@ -940,8 +955,9 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
-<script src="modules/tasks.js?v=1"></script>
+<script src="modules/tasks.js?v=2"></script>
 <script src="modules/shopping.js?v=1"></script>
+<script src="modules/events.js?v=1"></script>
 <script>
 const {
   useState,
@@ -1787,6 +1803,23 @@ const NAV_ITEMS_ALL = [{
   icon: ITag,
   parentOnly: true,
   module: 'shopping'
+}, {
+  id: 'meetings',
+  label: 'פגישות',
+  icon: IBriefcase,
+  parentOnly: true,
+  module: 'events'
+}, {
+  id: 'dates',
+  label: 'דייטים',
+  icon: IHeart,
+  parentOnly: true,
+  module: 'events'
+}, {
+  id: 'classes',
+  label: 'חוגים',
+  icon: IGraduationCap,
+  module: 'events'
 }, {
   id: 'tasks',
   label: 'משימות השבוע',
@@ -3499,7 +3532,8 @@ const HOMEY_MODULES = [{
   desc: 'פגישות, דייטים בין ההורים וחוגי הילדים',
   kidDesc: 'החוגים והפעילויות שלי בשבוע',
   icon: ICalendar,
-  soon: true,
+  tab: 'meetings',
+  kidTab: 'classes',
   kids: true
 }, {
   id: 'trips',
@@ -6464,6 +6498,13 @@ function App() {
     meName: currentProfile?.name,
     showToast
   });
+  // בנק רעיונות לדייטים (modules/events.js), להורים בלבד
+  const dateIdeas = useDateIdeas({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium && currentProfile?.role !== 'child',
+    showToast
+  });
   const planner = useFamilyPlanner({
     familyId,
     isDemo,
@@ -6981,6 +7022,45 @@ function App() {
     applyAccountDelta(row.accountId, -row.amount);
     showToast(`נרשמה הוצאה של ${currency}${Math.round(row.amount).toLocaleString('he-IL')} ב${row.category}`);
     return true;
+  };
+  // הוראת קבע שנוצרת ממערך אחר (עלות חודשית של חוג). מחזיר את המזהה, או null אם נכשל
+  const createBillQuick = async ({
+    title,
+    amount,
+    dueDay
+  }) => {
+    const row = {
+      title,
+      category: 'אחר',
+      amount: Number(amount),
+      dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)),
+      isPaid: false
+    };
+    let id;
+    if (isDemo) id = nextId();else {
+      const {
+        data,
+        error
+      } = await sb.from('bills').insert({
+        family_id: familyId,
+        title: row.title,
+        category: row.category,
+        amount: row.amount,
+        due_day: row.dueDay,
+        is_paid: false
+      }).select().single();
+      if (error) {
+        showToast('הוראת הקבע לא נוספה');
+        return null;
+      }
+      id = data.id;
+    }
+    setBills(prev => [{
+      id,
+      ...row
+    }, ...prev]);
+    showToast(`נוספה הוראת קבע: ${row.title}`);
+    return id;
   };
   const setSplurgeLimit = async v => {
     setFamilyInfo(prev => ({
@@ -7980,6 +8060,8 @@ function App() {
     };
     const shopSum = isPremium ? shopHubSummary(shop, isChild, transactions.filter(t => t.tag === 'impulse' && monthKey(t.date) === monthKey(kidToday())).reduce((s, t) => s + t.amount, 0), currency) : null;
     if (shopSum) c.shopping = shopSum;
+    const evSum = isPremium ? evHubSummary(planner, plannerMe, isChild) : null;
+    if (evSum) c.events = evSum;
     const plSum = isPremium ? plHubSummary(planner, plannerMe, isChild) : null;
     if (plSum) c.tasks = plSum;else if (notes.length) {
       const pinned = notes.filter(n => n.isPinned).length;
@@ -9412,7 +9494,29 @@ function App() {
   }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
     data: assetBreakdown,
     currency: currency
-  }))), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
+  }))), activeTab === 'meetings' && !isChild && /*#__PURE__*/React.createElement(MeetingsPage, {
+    planner: planner,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
+  }), activeTab === 'dates' && !isChild && /*#__PURE__*/React.createElement(DatesPage, {
+    planner: planner,
+    me: plannerMe,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    ideasApi: dateIdeas
+  }), activeTab === 'classes' && /*#__PURE__*/React.createElement(ClassesPage, {
+    planner: planner,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    onCreateBill: createBillQuick,
+    onDeleteBill: deleteBill
+  }), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
     shop: shop,
     isChild: isChild,
     isPremium: isPremium,

@@ -51,12 +51,16 @@ function plDemoData(me) {
     mk('dt7', { title: 'לחדש ביטוח רכב', scope: 'family', dueDate: null })
   ];
   const ws = plWeekStart(t);
-  const ev = (id, o) => ({ id, kind: 'general', notes: '', location: '', scope: 'family', personKind: null, personId: null, startTime: null, endTime: null, repeat: 'none', repeatUntil: null, cost: null, ...o });
+  const ev = (id, o) => ({ id, kind: 'general', notes: '', location: '', scope: 'family', personKind: null, personId: null, startTime: null, endTime: null, repeat: 'none', repeatUntil: null, cost: null, withWhom: '', plannerId: null, rating: null, billId: null, ...o });
+  const kid2 = FAMILY_PROFILES.filter(p => p.role === 'child')[1];
   const events = [
     ev('de1', { title: 'ארוחת ערב משפחתית', startDate: plAddDays(ws, 5), startTime: '19:30', repeat: 'weekly' }),
-    ev('de2', { title: 'חוג כדורגל', startDate: plAddDays(ws, 1), startTime: '16:30', endTime: '17:30', scope: 'personal', personKind: 'child', personId: kid ? kid.id : 'p3', repeat: 'weekly', kind: 'class' }),
-    ev('de3', { title: 'פגישה עם רואה החשבון', startDate: plAddDays(ws, 2), startTime: '10:00', endTime: '11:00', scope: 'personal', personKind: me.kind, personId: me.id, location: 'תל אביב', kind: 'meeting' }),
-    ev('de4', { title: 'דייט במסעדה', startDate: plAddDays(ws, 4), startTime: '20:30', scope: 'couple', kind: 'date' })
+    ev('de2', { title: 'חוג כדורגל', startDate: plAddDays(ws, 1), startTime: '16:30', endTime: '17:30', scope: 'personal', personKind: 'child', personId: kid ? kid.id : 'p3', repeat: 'weekly', kind: 'class', cost: 180, location: 'מגרש השכונה' }),
+    ev('de7', { title: 'שחייה', startDate: plAddDays(ws, 3), startTime: '17:00', endTime: '17:45', scope: 'personal', personKind: 'child', personId: kid2 ? kid2.id : 'p4', repeat: 'weekly', kind: 'class', cost: 260, location: 'הבריכה העירונית' }),
+    ev('de3', { title: 'פגישה עם רואה החשבון', startDate: plAddDays(ws, 2), startTime: '10:00', endTime: '11:00', scope: 'personal', personKind: me.kind, personId: me.id, location: 'תל אביב', kind: 'meeting', withWhom: 'רו"ח כהן' }),
+    ev('de6', { title: 'אסיפת הורים', startDate: plAddDays(ws, 9), startTime: '19:00', endTime: '20:00', scope: 'couple', kind: 'meeting', location: 'בית הספר', withWhom: 'המחנכת' }),
+    ev('de4', { title: 'דייט במסעדה', startDate: plAddDays(ws, 4), startTime: '20:30', scope: 'couple', kind: 'date', plannerId: 'p2', cost: 400, location: 'מסעדה איטלקית' }),
+    ev('de5', { title: 'סרט בקולנוע', startDate: plAddDays(t, -16), startTime: '21:00', scope: 'couple', kind: 'date', plannerId: 'p1', cost: 120 })
   ];
   return { tasks, events };
 }
@@ -69,7 +73,9 @@ const plTaskFromRow = r => ({
 const plEventFromRow = r => ({
   id: r.id, kind: r.kind, title: r.title, notes: r.notes || '', location: r.location || '', scope: r.scope,
   personKind: r.person_kind, personId: r.person_id, startDate: String(r.start_date).slice(0, 10), startTime: r.start_time,
-  endTime: r.end_time, repeat: r.repeat, repeatUntil: r.repeat_until, cost: r.cost == null ? null : Number(r.cost)
+  endTime: r.end_time, repeat: r.repeat, repeatUntil: r.repeat_until, cost: r.cost == null ? null : Number(r.cost),
+  // שדות של מערך פגישות/דייטים/חוגים (events.sql)
+  withWhom: r.with_whom || '', plannerId: r.planner_id || null, rating: r.rating || null, billId: r.bill_id || null
 });
 
 /* ---- הנתונים של המערך: נטען פעם אחת כשנכנסים לאפליקציה, משותף לעמוד הראשי ולשתי הלשוניות ---- */
@@ -147,15 +153,21 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast }) {
   const addEvent = async ev => {
     const row = { kind: ev.kind || 'general', title: ev.title.trim(), notes: ev.notes || '', location: ev.location || '', scope: ev.scope,
       personKind: ev.personKind || null, personId: ev.personId || null, startDate: ev.startDate, startTime: ev.startTime || null,
-      endTime: ev.endTime || null, repeat: ev.repeat || 'none', repeatUntil: ev.repeatUntil || null, cost: ev.cost == null || ev.cost === '' ? null : Number(ev.cost) };
+      endTime: ev.endTime || null, repeat: ev.repeat || 'none', repeatUntil: ev.repeatUntil || null, cost: ev.cost == null || ev.cost === '' ? null : Number(ev.cost),
+      withWhom: ev.withWhom || '', plannerId: ev.plannerId || null, rating: null, billId: ev.billId || null };
     if (!row.title) return fail('נא לכתוב שם לאירוע');
     if (!row.startDate) return fail('נא לבחור תאריך');
     if (row.startTime && row.endTime && row.endTime <= row.startTime) return fail('שעת הסיום צריכה להיות אחרי שעת ההתחלה');
     let id = 'local-' + Date.now() + Math.random().toString(36).slice(2, 6);
     if (!isDemo) {
-      const { data, error } = await sb.from('family_events').insert({ family_id: familyId, kind: row.kind, title: row.title, notes: row.notes || null,
+      const ins = { family_id: familyId, kind: row.kind, title: row.title, notes: row.notes || null,
         location: row.location || null, scope: row.scope, person_kind: row.personKind, person_id: row.personId, start_date: row.startDate,
-        start_time: row.startTime, end_time: row.endTime, repeat: row.repeat, repeat_until: row.repeatUntil, cost: row.cost }).select().single();
+        start_time: row.startTime, end_time: row.endTime, repeat: row.repeat, repeat_until: row.repeatUntil, cost: row.cost };
+      // העמודות האלה קיימות רק אחרי events.sql: שולחים אותן רק כשיש בהן ערך, כדי שהלו"ז ימשיך לעבוד גם לפני
+      if (row.withWhom) ins.with_whom = row.withWhom;
+      if (row.plannerId) ins.planner_id = row.plannerId;
+      if (row.billId) ins.bill_id = row.billId;
+      const { data, error } = await sb.from('family_events').insert(ins).select().single();
       if (error) return fail(/premium_required/.test(error.message) ? 'משימות ולו"ז הם תכונת פרימיום' : 'שגיאה בשמירה');
       id = data.id;
     }
@@ -164,13 +176,23 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast }) {
     return saved;
   };
 
-  const deleteEvent = async ev => {
+  const deleteEvent = async (ev, quiet) => {
     patch(s => ({ events: s.events.filter(x => x.id !== ev.id) }));
     if (!isDemo) await sb.from('family_events').delete().eq('id', ev.id);
-    showToast('האירוע נמחק מהלו"ז');
+    if (!quiet) showToast('האירוע נמחק מהלו"ז');
   };
 
-  return { ...state, addTask, toggleTask, deleteTask, addEvent, deleteEvent };
+  // עדכון שדות של אירוע קיים (דירוג דייט, קישור חוג להוראת קבע וכו')
+  const updateEvent = async (ev, changes) => {
+    patch(s => ({ events: s.events.map(x => x.id === ev.id ? { ...x, ...changes } : x) }));
+    if (isDemo) return;
+    const map = { rating: 'rating', billId: 'bill_id', plannerId: 'planner_id', withWhom: 'with_whom', title: 'title', location: 'location', cost: 'cost', notes: 'notes' };
+    const db = {};
+    Object.entries(changes).forEach(([k, v]) => { if (map[k]) db[map[k]] = v; });
+    await sb.from('family_events').update(db).eq('id', ev.id);
+  };
+
+  return { ...state, addTask, toggleTask, deleteTask, addEvent, deleteEvent, updateEvent };
 }
 
 /* ---- חישובי עמידה בזמנים לשבוע הנוכחי ---- */
