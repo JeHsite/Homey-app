@@ -558,6 +558,26 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* מערך משימות ולו"ז (modules/tasks.js) */
+  .pl-check { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--line); color: transparent; transition: background .2s, border-color .2s, transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .pl-check:hover { border-color: var(--pos); }
+  .pl-check.done { background: var(--pos); border-color: var(--pos); color: #fff; transform: scale(1.06); }
+  .pl-check.done path { stroke-dasharray: 24; animation: pl-draw .35s ease-out; }
+  @keyframes pl-draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+  .pl-task.is-done .pl-task-title, .pl-day-task.is-done .pl-task-title { text-decoration: line-through; color: var(--text-dim); }
+  .pl-task { transition: opacity .3s; }
+  .pl-task.is-done { opacity: .65; }
+  .pl-badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+  .pl-ring { --p: 0; width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+    background: conic-gradient(var(--pos) calc(var(--p) * 1%), var(--line) 0); position: relative; }
+  .pl-ring::before { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--navy-panel); }
+  .pl-ring span { position: relative; font-weight: 700; font-size: 17px; }
+  .pl-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+  .pl-day { min-height: 140px; }
+  .pl-day.today { border-color: var(--bronze); box-shadow: 0 0 0 1px var(--bronze) inset; }
+  .pl-event { border-inline-start: 3px solid var(--bronze); background: var(--navy-panel-2); border-radius: 10px; padding: 6px 8px; margin-bottom: 6px; }
+  @media (max-width: 1100px) { .pl-week { grid-template-columns: 1fr; } .pl-day { min-height: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pl-check, .pl-check.done path { transition: none; animation: none; } }
   .ent-chip-paid { background: rgba(79, 216, 255, 0.12); color: var(--cyan); cursor: pointer; }
   .ent-chip-due { background: rgba(203, 160, 90, 0.16); color: var(--bronze); cursor: pointer; }
   .ent-note-card { background: rgba(203, 160, 90, 0.08); border: 1px solid rgba(203, 160, 90, 0.25); }
@@ -912,6 +932,7 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
+<script src="modules/tasks.js?v=1"></script>
 <script>
 const {
   useState,
@@ -1741,9 +1762,19 @@ const NAV_ITEMS_ALL = [{
   icon: IGift,
   module: 'economy'
 }, {
+  id: 'tasks',
+  label: 'משימות השבוע',
+  icon: ICheckSquare,
+  module: 'tasks'
+}, {
+  id: 'schedule',
+  label: 'לו"ז שבועי',
+  icon: ICalendar,
+  module: 'tasks'
+}, {
   id: 'notes',
   label: 'פתקים ותזכורות',
-  icon: ICheckSquare,
+  icon: IClipboard,
   module: 'tasks'
 }, {
   id: 'trips',
@@ -3423,9 +3454,9 @@ const HOMEY_MODULES = [{
 }, {
   id: 'tasks',
   label: 'משימות ולו"ז',
-  desc: 'פתקים, משימות לשבוע ולו"ז אישי וזוגי',
+  desc: 'משימות לשבוע, לו"ז אישי וזוגי ופתקים',
   icon: ICheckSquare,
-  tab: 'notes',
+  tab: 'tasks',
   kids: true
 }, {
   id: 'shopping',
@@ -6392,6 +6423,18 @@ function App() {
   // monthCloses: null = עוד לא נטען, 'unavailable' = הטבלה לא קיימת (לפני month-closes.sql), אחרת { 'YYYY-MM': row }
   const [monthCloses, setMonthCloses] = useState(null);
   const [monthCloseOpen, setMonthCloseOpen] = useState(false);
+  // מערך משימות ולו"ז (modules/tasks.js): נטען פעם אחת, משותף לעמוד הראשי וללשוניות
+  const plannerMe = currentProfile ? {
+    kind: currentProfile.role === 'child' ? 'child' : 'parent',
+    id: currentProfile.id
+  } : null;
+  const planner = useFamilyPlanner({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium,
+    me: plannerMe,
+    showToast
+  });
   const prevMonthKey = (() => {
     const d = new Date();
     const p = new Date(d.getFullYear(), d.getMonth() - 1, 1);
@@ -7838,7 +7881,8 @@ function App() {
       tone: forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)',
       line: forecast.available >= 0 ? `נשאר להוציא החודש · ${fmt(Math.max(0, forecast.dailyPace))} ליום` : 'צפי לחריגה החודש'
     };
-    if (notes.length) {
+    const plSum = isPremium ? plHubSummary(planner, plannerMe, isChild) : null;
+    if (plSum) c.tasks = plSum;else if (notes.length) {
       const pinned = notes.filter(n => n.isPinned).length;
       c.tasks = {
         big: notes.length === 1 ? 'פתק אחד' : `${notes.length} פתקים`,
@@ -9269,7 +9313,19 @@ function App() {
   }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
     data: assetBreakdown,
     currency: currency
-  }))), activeTab === 'notes' && /*#__PURE__*/React.createElement("div", {
+  }))), activeTab === 'tasks' && /*#__PURE__*/React.createElement(TasksPage, {
+    planner: planner,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
+  }), activeTab === 'schedule' && /*#__PURE__*/React.createElement(SchedulePage, {
+    planner: planner,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
+  }), activeTab === 'notes' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between"
@@ -12731,24 +12787,12 @@ function FamilyMembersCard({
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (isDemo) {
-      setMyId('demo-parent-1');
-      setMembers([{
-        id: 'demo-parent-1',
-        name: 'אבא',
-        role: 'parent'
-      }, {
-        id: 'demo-parent-2',
-        name: 'אמא',
-        role: 'parent'
-      }, {
-        id: 'demo-kid-1',
-        name: 'נועם',
-        role: 'child'
-      }, {
-        id: 'demo-kid-2',
-        name: 'מיה',
-        role: 'child'
-      }]);
+      setMyId(FAMILY_PROFILES[0].id);
+      setMembers(FAMILY_PROFILES.map(p => ({
+        id: p.id,
+        name: p.name,
+        role: p.role
+      })));
       return;
     }
     let alive = true;
