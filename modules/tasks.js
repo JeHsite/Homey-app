@@ -51,13 +51,14 @@ function plDemoData(me) {
     mk('dt7', { title: 'לחדש ביטוח רכב', scope: 'family', dueDate: null })
   ];
   const ws = plWeekStart(t);
-  const ev = (id, o) => ({ id, kind: 'general', notes: '', location: '', scope: 'family', personKind: null, personId: null, startTime: null, endTime: null, repeat: 'none', repeatUntil: null, cost: null, withWhom: '', plannerId: null, rating: null, billId: null, ...o });
+  const ev = (id, o) => ({ id, kind: 'general', notes: '', location: '', scope: 'family', personKind: null, personId: null, startTime: null, endTime: null, repeat: 'none', repeatUntil: null, cost: null, withWhom: '', plannerId: null, rating: null, billId: null, driveTo: null, driveFrom: null, ...o });
   const kid2 = FAMILY_PROFILES.filter(p => p.role === 'child')[1];
   const events = [
     ev('de1', { title: 'ארוחת ערב משפחתית', startDate: plAddDays(ws, 5), startTime: '19:30', repeat: 'weekly' }),
-    ev('de2', { title: 'חוג כדורגל', startDate: plAddDays(ws, 1), startTime: '16:30', endTime: '17:30', scope: 'personal', personKind: 'child', personId: kid ? kid.id : 'p3', repeat: 'weekly', kind: 'class', cost: 180, location: 'מגרש השכונה' }),
+    ev('de2', { title: 'חוג כדורגל', startDate: plAddDays(ws, 1), startTime: '16:30', endTime: '17:30', scope: 'personal', personKind: 'child', personId: kid ? kid.id : 'p3', repeat: 'weekly', kind: 'class', cost: 180, location: 'מגרש השכונה', driveTo: 'p1', driveFrom: 'p2' }),
     ev('de7', { title: 'שחייה', startDate: plAddDays(ws, 3), startTime: '17:00', endTime: '17:45', scope: 'personal', personKind: 'child', personId: kid2 ? kid2.id : 'p4', repeat: 'weekly', kind: 'class', cost: 260, location: 'הבריכה העירונית' }),
     ev('de3', { title: 'פגישה עם רואה החשבון', startDate: plAddDays(ws, 2), startTime: '10:00', endTime: '11:00', scope: 'personal', personKind: me.kind, personId: me.id, location: 'תל אביב', kind: 'meeting', withWhom: 'רו"ח כהן' }),
+    ev('de8', { title: 'שיחה עם יועץ המשכנתאות', startDate: plAddDays(ws, 10), startTime: '17:15', endTime: '18:00', scope: 'personal', personKind: me.kind, personId: me.id, kind: 'meeting' }),
     ev('de6', { title: 'אסיפת הורים', startDate: plAddDays(ws, 9), startTime: '19:00', endTime: '20:00', scope: 'couple', kind: 'meeting', location: 'בית הספר', withWhom: 'המחנכת' }),
     ev('de4', { title: 'דייט במסעדה', startDate: plAddDays(ws, 4), startTime: '20:30', scope: 'couple', kind: 'date', plannerId: 'p2', cost: 400, location: 'מסעדה איטלקית' }),
     ev('de5', { title: 'סרט בקולנוע', startDate: plAddDays(t, -16), startTime: '21:00', scope: 'couple', kind: 'date', plannerId: 'p1', cost: 120 })
@@ -75,7 +76,9 @@ const plEventFromRow = r => ({
   personKind: r.person_kind, personId: r.person_id, startDate: String(r.start_date).slice(0, 10), startTime: r.start_time,
   endTime: r.end_time, repeat: r.repeat, repeatUntil: r.repeat_until, cost: r.cost == null ? null : Number(r.cost),
   // שדות של מערך פגישות/דייטים/חוגים (events.sql)
-  withWhom: r.with_whom || '', plannerId: r.planner_id || null, rating: r.rating || null, billId: r.bill_id || null
+  withWhom: r.with_whom || '', plannerId: r.planner_id || null, rating: r.rating || null, billId: r.bill_id || null,
+  // הסעות לחוג (plan.sql): מי מסיע ומי מחזיר
+  driveTo: r.drive_to || null, driveFrom: r.drive_from || null
 });
 
 /* ---- הנתונים של המערך: נטען פעם אחת כשנכנסים לאפליקציה, משותף לעמוד הראשי ולשתי הלשוניות ---- */
@@ -186,7 +189,7 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast }) {
   const updateEvent = async (ev, changes) => {
     patch(s => ({ events: s.events.map(x => x.id === ev.id ? { ...x, ...changes } : x) }));
     if (isDemo) return;
-    const map = { rating: 'rating', billId: 'bill_id', plannerId: 'planner_id', withWhom: 'with_whom', title: 'title', location: 'location', cost: 'cost', notes: 'notes' };
+    const map = { rating: 'rating', billId: 'bill_id', plannerId: 'planner_id', withWhom: 'with_whom', driveTo: 'drive_to', driveFrom: 'drive_from', title: 'title', location: 'location', cost: 'cost', notes: 'notes' };
     const db = {};
     Object.entries(changes).forEach(([k, v]) => { if (map[k]) db[map[k]] = v; });
     await sb.from('family_events').update(db).eq('id', ev.id);

@@ -558,6 +558,37 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* משימות ולו"ז כאפליקציה (modules/plan.js) */
+  .plan-timeline { position: relative; }
+  .plan-tl-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .plan-tl-item:last-child { border-bottom: none; }
+  .plan-tl-time { flex-shrink: 0; width: 48px; font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .plan-tl-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 0%, var(--navy-panel)); }
+  .plan-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .plan-stat { padding: 16px; text-align: right; display: block; width: 100%; transition: transform .2s, border-color .2s; }
+  button.plan-stat:hover { transform: translateY(-2px); border-color: var(--bronze); }
+  .plan-stat-num { font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .plan-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .plan-sync-cta { background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, #f472b6 14%, transparent), transparent 60%), var(--navy-panel); }
+  .ride-select { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 4px 4px 10px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); }
+  .ride-select.empty { border-color: color-mix(in srgb, var(--neg) 50%, var(--line)); }
+  .ride-select span { color: var(--text-muted); }
+  .ride-select select { background: transparent; color: var(--text); font-size: 12px; outline: none; }
+  .routine-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--navy-panel-2); border: 2px solid transparent; font-size: 16px; transition: transform .2s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s; }
+  .routine-item:active { transform: scale(.97); }
+  .routine-item.on { border-color: var(--pos); background: color-mix(in srgb, var(--pos) 10%, var(--navy-panel-2)); }
+  .routine-icon { font-size: 28px; line-height: 1; }
+  .routine-tick { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; }
+  .routine-item.on .routine-tick { background: var(--pos); border-color: var(--pos); animation: routine-pop .35s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes routine-pop { from { transform: scale(.4); } }
+  .sync-hero { background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, #f472b6 18%, transparent), transparent 60%), var(--navy-panel); }
+  .sync-step { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--on-accent); background: var(--bronze); }
+  .sync-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .sync-fact { padding: 10px 12px; border-radius: 12px; background: var(--navy-panel-2); }
+  .sync-mood { font-size: 30px; padding: 6px 8px; border-radius: 14px; border: 2px solid transparent; transition: transform .2s; }
+  .sync-mood:hover { transform: scale(1.12); }
+  .sync-mood.on { border-color: #f472b6; background: color-mix(in srgb, #f472b6 12%, transparent); }
+  @media (prefers-reduced-motion: reduce) { .routine-item, .sync-mood, .plan-stat { transition: none; } .routine-item.on .routine-tick { animation: none; } }
   /* תורנויות ונקודות (modules/chores.js) */
   .chore-hero { background: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, #fbbf24 20%, transparent), transparent 65%), var(--navy-panel); }
   .chore-balance { font-size: 48px; font-weight: 800; line-height: 1.1; color: #fbbf24; text-shadow: 0 4px 18px color-mix(in srgb, #fbbf24 45%, transparent); }
@@ -973,10 +1004,11 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
-<script src="modules/tasks.js?v=2"></script>
+<script src="modules/tasks.js?v=3"></script>
 <script src="modules/shopping.js?v=1"></script>
-<script src="modules/events.js?v=1"></script>
-<script src="modules/chores.js?v=1"></script>
+<script src="modules/events.js?v=2"></script>
+<script src="modules/chores.js?v=2"></script>
+<script src="modules/plan.js?v=1"></script>
 <script>
 const {
   useState,
@@ -1840,6 +1872,12 @@ const NAV_ITEMS_ALL = [{
   icon: IGraduationCap,
   module: 'events'
 }, {
+  id: 'plan',
+  label: 'סקירה',
+  icon: IHome,
+  parentOnly: true,
+  module: 'tasks'
+}, {
   id: 'tasks',
   label: 'משימות השבוע',
   icon: ICheckSquare,
@@ -1853,6 +1891,17 @@ const NAV_ITEMS_ALL = [{
   id: 'chores',
   label: 'תורנויות',
   icon: ITrophy,
+  module: 'tasks'
+}, {
+  id: 'routines',
+  label: 'שגרות',
+  icon: ISparkles,
+  module: 'tasks'
+}, {
+  id: 'sync',
+  label: 'ישיבת שבוע',
+  icon: IUsers,
+  parentOnly: true,
   module: 'tasks'
 }, {
   id: 'notes',
@@ -3540,7 +3589,7 @@ const HOMEY_MODULES = [{
   desc: 'משימות לשבוע, לו"ז אישי וזוגי, תורנויות ופתקים',
   kidDesc: 'המטלות שלי, הנקודות והפרסים',
   icon: ICheckSquare,
-  tab: 'tasks',
+  tab: 'plan',
   kidTab: 'chores',
   kids: true
 }, {
@@ -6545,6 +6594,14 @@ function App() {
     me: plannerMe,
     showToast
   });
+  // שגרות, ישיבת שבוע והסעות (modules/plan.js)
+  const planExtras = usePlanExtras({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium,
+    kids: planner.members.filter(m => m.kind === 'child'),
+    showToast
+  });
   const prevMonthKey = (() => {
     const d = new Date();
     const p = new Date(d.getFullYear(), d.getMonth() - 1, 1);
@@ -8155,6 +8212,13 @@ function App() {
       text: a.text,
       tab: tabFor(a.id)
     })).concat(isPremium ? choresPendingForParents(chores, planner.members) : []);
+    // בסוף השבוע: תזכורת לישיבת השבוע, אם עוד לא נעשתה
+    if (isPremium && planExtras.ready && !planExtras.unavailable && new Date().getDay() >= 5 && !(planExtras.syncs.find(s => s.weekStart === syncWeekStart()) || {}).completedAt) list.push({
+      id: 'couple-sync',
+      level: 'warn',
+      text: '💑 ישיבת השבוע שלכם מחכה: עשר דקות לתכנן את השבוע הבא',
+      tab: 'sync'
+    });
     const mcClosed = monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey];
     if (monthCloseSummary.hasData && monthCloses && monthCloses !== 'unavailable' && !mcClosed) list.unshift({
       id: 'month-close',
@@ -9603,6 +9667,42 @@ function App() {
     onSetLimit: setSplurgeLimit,
     onRecordExpense: recordExpense,
     onDelete: deleteTransaction
+  }), activeTab === 'plan' && !isChild && (isPremium ? /*#__PURE__*/React.createElement(PlanOverview, {
+    planner: planner,
+    ch: chores,
+    extras: planExtras,
+    me: plannerMe,
+    onNavigate: tab => setActiveTab(tab),
+    financeWeek: {
+      weekSpent: forecast.weekSpent,
+      weeklyBudget: forecast.weeklyBudget,
+      currency
+    }
+  }) : /*#__PURE__*/React.createElement(PremiumLock, {
+    title: 'הסקירה של משימות ולו"ז היא תכונת פרימיום',
+    desc: 'לוח הבקרה של הבית: מה יש היום, מי מסיע, התנגשויות בלו"ז והשבוע במספרים.',
+    onUpgrade: () => setActiveTab('settings')
+  })), activeTab === 'routines' && /*#__PURE__*/React.createElement(RoutinesPage, {
+    extras: planExtras,
+    ch: chores,
+    planner: planner,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
+  }), activeTab === 'sync' && !isChild && /*#__PURE__*/React.createElement(CoupleSyncPage, {
+    planner: planner,
+    ch: chores,
+    extras: planExtras,
+    me: plannerMe,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    financeWeek: {
+      weekSpent: forecast.weekSpent,
+      weeklyBudget: forecast.weeklyBudget,
+      currency
+    },
+    onNavigate: tab => setActiveTab(tab)
   }), activeTab === 'chores' && /*#__PURE__*/React.createElement(ChoresPage, {
     ch: chores,
     members: planner.members,

@@ -320,6 +320,10 @@ function ClassesPage({ planner, me, isChild, isPremium, onUpgrade, currency, onC
               React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, [c.startTime && `${plTime(c.startTime)}${c.endTime ? `-${plTime(c.endTime)}` : ''}`, c.location && `📍 ${c.location}`, !isChild && c.billId && 'בהוראות קבע'].filter(Boolean).join(' · '))),
             !isChild && c.cost ? React.createElement('span', { className: 'text-sm' }, money(c.cost)) : null,
             !isChild && React.createElement('button', { className: 'ent-icon-btn', 'aria-label': `מחיקת חוג ${c.title}`, onClick: () => setConfirmId(confirmId === c.id ? null : c.id) }, React.createElement(ITrash, { size: 15 }))),
+          // הסעות: מי מסיע ומי מחזיר (נשמר על החוג, מופיע גם בסקירה של משימות ולו"ז)
+          !isChild && React.createElement('div', { className: 'flex flex-wrap gap-2 mt-2' },
+            React.createElement(RideSelect, { planner, ev: c, field: 'driveTo', label: 'הלוך' }),
+            React.createElement(RideSelect, { planner, ev: c, field: 'driveFrom', label: 'חזור' })),
           confirmId === c.id && React.createElement('div', { className: 'flex items-center gap-2 mt-2 text-sm' },
             React.createElement('span', null, c.billId ? 'למחוק את החוג וגם את הוראת הקבע שלו?' : 'למחוק את החוג?'),
             React.createElement('button', { className: 'ent-pill-btn px-3 py-1 text-xs', style: { background: 'var(--neg)', color: '#fff' }, onClick: () => remove(c) }, 'מחיקה'),

@@ -190,7 +190,9 @@ function useChores({ familyId, isDemo, enabled, showToast }) {
     patch(() => ({ rate }));
     if (!isDemo) await sb.from('families').update({ points_rate: rate }).eq('id', familyId);
   };
-  return { ...state, balance, markDone, unmark, approve, reject, addChore, toggleChore, deleteChore, addReward, deleteReward, redeem, convert, setRate };
+  // award: נקודות ממקור אחר (למשל השלמת שגרה ב-modules/plan.js)
+  const award = (childId, delta, reason) => addPoints(childId, delta, reason);
+  return { ...state, balance, markDone, unmark, approve, reject, addChore, toggleChore, deleteChore, addReward, deleteReward, redeem, convert, setRate, award };
 }
 
 const choreGate = (ch, isPremium, onUpgrade) => !isPremium ? React.createElement(PremiumLock, { title: 'תורנויות ונקודות הן תכונת פרימיום', desc: 'מטלות בית לילדים בסבב, נקודות על כל מטלה, פרסים והמרה לדמי כיס.', onUpgrade })
