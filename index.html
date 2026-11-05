@@ -558,6 +558,7 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  .ent-brief-preview { border-inline-start: 3px solid var(--bronze); padding-inline-start: 10px; }
   /* מערך פגישות, דייטים וחוגים (modules/events.js) */
   .ev-datechip { flex-shrink: 0; width: 46px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--cyan) 12%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent); }
@@ -8047,6 +8048,34 @@ function App() {
     icon: IHome
   }].concat(currentModule && currentModule !== 'global' ? allowedNav.filter(item => item.module === currentModule) : moduleShortcuts, allowedNav.filter(item => item.module === 'global'));
   const parentOnlyIds = NAV_ITEMS_ALL.filter(i => i.parentOnly).map(i => i.id);
+  // תצוגה מקדימה של "הבוקר שלכם" (אותו היגיון כמו בפונקציה daily-brief בשרת)
+  const briefPreview = (() => {
+    if (isChild) return [];
+    const lines = [];
+    const today = kidToday();
+    if (isPremium && planner.ready && !planner.unavailable && plannerMe) {
+      const evs = planner.events.filter(e => plVisible(e, plannerMe, false) && plEventOn(e, today)).sort((a, b) => plTime(a.startTime || '99').localeCompare(plTime(b.startTime || '99')));
+      if (evs.length) {
+        const nm = id => (planner.members.find(m => m.id === id) || {}).name;
+        const shown = evs.slice(0, 3).map(e => `${e.startTime ? plTime(e.startTime) + ' ' : ''}${e.title}${e.personKind === 'child' && nm(e.personId) ? ` (${nm(e.personId)})` : ''}`);
+        lines.push(`היום: ${shown.join(', ')}${evs.length > 3 ? ` ועוד ${evs.length - 3}` : ''}`);
+      }
+      const mine = planner.tasks.filter(t => t.status !== 'done' && t.dueDate && plVisible(t, plannerMe, false));
+      const dueToday = mine.filter(t => t.dueDate === today).length;
+      const overdue = mine.filter(t => t.dueDate < today).length;
+      if (dueToday || overdue) lines.push(`משימות: ${dueToday} להיום${overdue ? `, ${overdue} באיחור` : ''}`);
+    }
+    const d = new Date().getDate();
+    const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const bt = bills.filter(b => !b.isPaid && (b.dueDay === d || d === lastDay && b.dueDay > lastDay));
+    if (bt.length) lines.push(`יורד היום: ${bt.slice(0, 2).map(b => `${b.title} ${currency}${Math.round(b.amount).toLocaleString('he-IL')}`).join(', ')}${bt.length > 2 ? ` ועוד ${bt.length - 2}` : ''}`);
+    if (isPremium && shop.ready && !shop.unavailable) {
+      const g = new Set(shop.lists.filter(l => l.kind === 'grocery').map(l => l.id));
+      const n = shop.items.filter(i => g.has(i.listId) && i.status === 'open').length;
+      if (n) lines.push(`ברשימת הקניות: ${n === 1 ? 'פריט אחד' : `${n} פריטים`}`);
+    }
+    return lines;
+  })();
   // נתונים חיים לכרטיסים בעמוד הראשי
   const hubCards = (() => {
     const c = {};
@@ -10180,7 +10209,7 @@ function App() {
     style: {
       color: 'var(--text)'
     }
-  }, "התראות תשלום"), /*#__PURE__*/React.createElement("p", {
+  }, "התראות במכשיר הזה"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs",
     style: {
       color: 'var(--text-dim)'
@@ -10189,7 +10218,7 @@ function App() {
     onClick: togglePush,
     disabled: pushState === 'busy',
     "aria-pressed": pushState === 'on',
-    "aria-label": "התראות תשלום",
+    "aria-label": "התראות במכשיר הזה",
     className: "w-12 h-6 rounded-full relative transition shrink-0",
     style: {
       background: pushState === 'on' ? 'var(--bronze)' : 'var(--navy-panel-2)',
@@ -10412,7 +10441,12 @@ function App() {
       borderColor: 'var(--neg)',
       color: 'var(--neg)'
     }
-  }, "איפוס כל הנתונים"), /*#__PURE__*/React.createElement(FamilyMembersCard, {
+  }, "איפוס כל הנתונים"), /*#__PURE__*/React.createElement(PushPrefsCard, {
+    familyId: familyId,
+    isDemo: isDemo,
+    pushOn: isDemo || pushState === 'on',
+    preview: briefPreview
+  }), /*#__PURE__*/React.createElement(FamilyMembersCard, {
     familyId: familyId,
     isDemo: isDemo,
     showToast: showToast
@@ -13331,6 +13365,159 @@ function TripExpensesPanel({
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 15
   }))))))));
+}
+/* ---- "הבוקר שלכם" ותזכורות: העדפות לכל הורה (push_prefs) ותצוגה מקדימה של ההתראה של היום ---- */
+function PushPrefsCard({
+  familyId,
+  isDemo,
+  pushOn,
+  preview
+}) {
+  const [prefs, setPrefs] = useState(null);
+  const [uid, setUid] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const defaults = {
+    brief_enabled: true,
+    brief_hour: 7,
+    event_reminders: true,
+    task_reminders: true
+  };
+  useEffect(() => {
+    if (isDemo) {
+      setPrefs(defaults);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const {
+        data: {
+          session
+        }
+      } = await sb.auth.getSession();
+      const id = session?.user?.id;
+      if (!alive || !id) return;
+      setUid(id);
+      const {
+        data,
+        error
+      } = await sb.from('push_prefs').select('*').eq('user_id', id).maybeSingle();
+      if (!alive) return;
+      if (error) setUnavailable(true);
+      setPrefs(data ? {
+        brief_enabled: data.brief_enabled,
+        brief_hour: data.brief_hour,
+        event_reminders: data.event_reminders,
+        task_reminders: data.task_reminders
+      } : defaults);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [familyId, isDemo]);
+  const save = async next => {
+    setPrefs(next);
+    if (isDemo || !uid || unavailable) return;
+    await sb.from('push_prefs').upsert({
+      user_id: uid,
+      family_id: familyId,
+      ...next,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id'
+    });
+  };
+  if (!prefs) return null;
+  const toggle = (key, label, hint) => /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between gap-3 py-2"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm"
+  }, label), hint && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, hint)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => save({
+      ...prefs,
+      [key]: !prefs[key]
+    }),
+    "aria-pressed": prefs[key],
+    "aria-label": label,
+    className: "w-12 h-6 rounded-full relative transition shrink-0",
+    style: {
+      background: prefs[key] ? 'var(--bronze)' : 'var(--navy-panel-2)',
+      border: '1px solid var(--line)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute top-0.5 w-5 h-5 rounded-full transition-all",
+    style: {
+      background: prefs[key] ? 'var(--on-accent)' : 'var(--text-dim)',
+      right: prefs[key] ? 2 : 24
+    }
+  })));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-card p-6 space-y-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "ent-heading font-bold flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(IBell, {
+    size: 18
+  }), " הבוקר שלכם ותזכורות"), !pushOn && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs p-2 rounded-lg",
+    style: {
+      background: 'var(--navy-panel-2)',
+      color: 'var(--text-2)'
+    }
+  }, "כדי לקבל את ההתראות האלה צריך להפעיל התראות במכשיר הזה (\"התראות במכשיר\" למעלה)."), unavailable && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--neg-soft)'
+    }
+  }, "ההגדרות עוד לא נשמרות בשרת: יש להריץ את daily-brief.sql ב-Supabase."), toggle('brief_enabled', 'הבוקר שלכם', 'התראה אחת בבוקר: האירועים והמשימות של היום, חיוב שיורד היום ורשימת הקניות'), prefs.brief_enabled && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 text-sm pb-1"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "בשעה"), /*#__PURE__*/React.createElement("select", {
+    className: "ent-input px-3 py-1.5 rounded-lg text-sm outline-none",
+    "aria-label": "שעת הבוקר שלכם",
+    value: prefs.brief_hour,
+    onChange: e => save({
+      ...prefs,
+      brief_hour: Number(e.target.value)
+    })
+  }, Array.from({
+    length: 24
+  }, (_, h) => /*#__PURE__*/React.createElement("option", {
+    key: h,
+    value: h
+  }, `${String(h).padStart(2, '0')}:00`)))), toggle('event_reminders', 'תזכורת שעה לפני אירוע', 'פגישות, חוגים, דייטים וכל מה שבלו"ז, כשיש להם שעה'), toggle('task_reminders', 'תזכורת שעה לפני משימה', 'למשימות שקבעתם להן שעה'), /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 p-3 rounded-xl",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs mb-1.5",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "כך תיראה ההתראה של היום:"), preview.length ? /*#__PURE__*/React.createElement("div", {
+    className: "ent-brief-preview"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-bold"
+  }, "Homey · הבוקר שלכם"), preview.map(l => /*#__PURE__*/React.createElement("p", {
+    key: l,
+    className: "text-sm",
+    style: {
+      color: 'var(--text-2)'
+    }
+  }, l))) : /*#__PURE__*/React.createElement("p", {
+    className: "text-sm",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, "היום אין מה לשלוח, אז לא תגיע התראה.")));
 }
 function DeleteAccountCard({
   onDeleted
