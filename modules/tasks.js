@@ -82,7 +82,7 @@ const plEventFromRow = r => ({
 });
 
 /* ---- הנתונים של המערך: נטען פעם אחת כשנכנסים לאפליקציה, משותף לעמוד הראשי ולשתי הלשוניות ---- */
-function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast }) {
+function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey }) {
   const [state, setState] = useState({ ready: false, unavailable: false, tasks: [], events: [], members: [] });
   const meId = me ? me.id : null;
   useEffect(() => {
@@ -111,7 +111,7 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast }) {
       });
     })();
     return () => { alive = false; };
-  }, [enabled, familyId, isDemo, meId]);
+  }, [enabled, familyId, isDemo, meId, reloadKey]);
 
   const patch = fn => setState(s => ({ ...s, ...fn(s) }));
   const fail = msg => { showToast(msg); return null; };

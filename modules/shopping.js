@@ -55,7 +55,7 @@ function shopDemo() {
 }
 
 /* ---- נתוני הקניות + עדכונים בזמן אמת מכל בני המשפחה ---- */
-function useShopping({ familyId, isDemo, enabled, meName, showToast }) {
+function useShopping({ familyId, isDemo, enabled, meName, showToast, reloadKey }) {
   const [state, setState] = useState({ ready: false, unavailable: false, lists: [], items: [] });
   useEffect(() => {
     if (!enabled || !familyId) return;
@@ -95,7 +95,7 @@ function useShopping({ familyId, isDemo, enabled, meName, showToast }) {
       alive = false;
       if (channel) sb.removeChannel(channel);
     };
-  }, [enabled, familyId, isDemo]);
+  }, [enabled, familyId, isDemo, reloadKey]);
 
   const patch = fn => setState(s => ({ ...s, ...fn(s) }));
   const tmpId = () => 'local-' + Date.now() + Math.random().toString(36).slice(2, 6);

@@ -558,6 +558,46 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* עוזר AI משפחתי (modules/assistant.js) */
+  .assist-fab { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60; width: 58px; height: 58px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--cyan), var(--bronze));
+    box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--bronze) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.4); transition: transform .25s cubic-bezier(.34,1.56,.64,1); animation: assist-glow 3.5s ease-in-out infinite; }
+  .assist-fab:hover { transform: scale(1.08) rotate(-6deg); }
+  .assist-fab:active { transform: scale(.94); }
+  @keyframes assist-glow { 0%, 100% { box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--bronze) 70%, transparent), 0 0 0 0 color-mix(in srgb, var(--cyan) 0%, transparent); } 50% { box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--bronze) 70%, transparent), 0 0 0 8px color-mix(in srgb, var(--cyan) 18%, transparent); } }
+  .assist-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); }
+  .assist-panel { position: fixed; z-index: 61; left: 20px; bottom: 20px; width: min(400px, calc(100vw - 40px)); height: min(640px, calc(100vh - 40px)); display: flex; flex-direction: column;
+    border-radius: 22px; background: var(--navy-panel); border: 1px solid var(--line); box-shadow: 0 24px 60px -20px rgba(0,0,0,.6); overflow: hidden; animation: assist-in .3s cubic-bezier(.2,.7,.2,1); }
+  @keyframes assist-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+  @media (max-width: 640px) { .assist-panel { left: 0; right: 0; bottom: 0; width: 100%; height: 88vh; border-radius: 22px 22px 0 0; } }
+  .assist-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--line);
+    background: radial-gradient(120% 160% at 100% 0%, color-mix(in srgb, var(--cyan) 14%, transparent), transparent 60%); }
+  .assist-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; overscroll-behavior: contain; }
+  .assist-empty { margin: auto 0; }
+  .assist-chip { font-size: 12px; padding: 6px 12px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); text-align: right; }
+  .assist-chip:hover { border-color: var(--cyan); }
+  .assist-msg { display: flex; flex-direction: column; gap: 6px; max-width: 88%; }
+  .assist-msg.user { align-self: flex-start; }
+  .assist-msg.assistant { align-self: flex-end; }
+  .assist-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
+  .assist-msg.user .assist-bubble { background: linear-gradient(135deg, var(--cyan), color-mix(in srgb, var(--cyan) 60%, var(--bronze))); color: #fff; border-bottom-right-radius: 6px; }
+  .assist-msg.assistant .assist-bubble { background: var(--navy-panel-2); border-bottom-left-radius: 6px; }
+  .assist-msg.error .assist-bubble { border: 1px solid color-mix(in srgb, var(--neg) 50%, transparent); }
+  .assist-action { font-size: 12px; color: var(--pos); padding: 0 6px; }
+  .assist-pending { padding: 10px 12px; border-radius: 14px; border: 1px dashed var(--bronze); background: color-mix(in srgb, var(--bronze) 8%, var(--navy-panel-2)); }
+  .assist-typing { display: inline-flex; gap: 4px; align-items: center; }
+  .assist-typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); animation: assist-dot 1.2s ease-in-out infinite; }
+  .assist-typing span:nth-child(2) { animation-delay: .15s; }
+  .assist-typing span:nth-child(3) { animation-delay: .3s; }
+  @keyframes assist-dot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  .assist-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+  .assist-mic, .assist-send { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+  .assist-mic { background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
+  .assist-mic.on { background: var(--neg); border-color: var(--neg); color: #fff; animation: assist-pulse 1.2s ease-in-out infinite; }
+  @keyframes assist-pulse { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--neg) 20%, transparent); } }
+  .assist-send { background: var(--bronze); color: var(--on-accent); }
+  .assist-send:disabled { opacity: .45; }
+  @media (prefers-reduced-motion: reduce) { .assist-fab, .assist-mic.on, .assist-typing span, .assist-panel { animation: none; } .assist-fab { transition: none; } }
   /* יעדים אישיים כאפליקציה (modules/goals.js) */
   .goals-hero { background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, #f97316 18%, transparent), transparent 60%), var(--navy-panel); }
   .goals-streak { font-size: 52px; font-weight: 800; line-height: 1.05; color: #f97316; text-shadow: 0 4px 20px color-mix(in srgb, #f97316 45%, transparent); }
@@ -1044,12 +1084,13 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
-<script src="modules/tasks.js?v=3"></script>
-<script src="modules/shopping.js?v=1"></script>
+<script src="modules/tasks.js?v=4"></script>
+<script src="modules/shopping.js?v=2"></script>
 <script src="modules/events.js?v=2"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
+<script src="modules/assistant.js?v=1"></script>
 <script>
 const {
   useState,
@@ -3218,7 +3259,7 @@ function LegalDoc({
   } else if (doc === 'a11y') {
     parts = [...head('הצהרת נגישות'), LP('אנחנו רוצים ש-Homey תהיה נוחה לכולם, כולל אנשים עם מוגבלות, ופועלים להתאים אותה לתקן הישראלי 5568 (המבוסס על WCAG 2.0 ברמה AA).'), LS('מה כבר קיים', LUL('ממשק מלא בעברית, מימין לשמאל.', 'שינוי גודל הטקסט (קטן / רגיל / גדול) בהגדרות.', 'שליטה בבהירות המסך ובחירה בין כמה ערכות צבע.', 'תצוגה צפופה או מרווחת לפי הצורך.')), LS('מגבלות ידועות', LP('עדיין לא בוצעה בדיקת נגישות מלאה על ידי מורשה נגישות. ייתכן שחלק מהרכיבים (גרפים, חלונות קופצים ובחירת אייקונים) אינם נגישים במלואם לקוראי מסך או לניווט במקלדת. אנחנו עובדים על שיפור.'), LP(LB('הגדלת תצוגה במחוות מגע (pinch-zoom) נעולה באפליקציה במכוון'), ', כדי לשמור על פריסת המסך יציבה. זו חריגה מודעת מהמלצת WCAG 1.4.4/1.4.10 — להגדלת התוכן השתמשו בהגדרת "גודל גופן" בהגדרות ← תצוגה, שמגדילה את הטקסט בכל האפליקציה בלי תלות בזום של הדפדפן.')), LS('נתקלתם בבעיה?', LP('נשמח לשמוע ולתקן. פנו לרכז הנגישות, ', LB('איתמר הורביץ'), ': ', LMAIL(), '. נשתדל לחזור אליכם תוך 14 יום.'))];
   } else {
-    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, לשליחת תזכורות תשלום אם הפעלתם אותן, ולכתיבת סקירה שבועית עם טיפים ויעדים. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.', 'Anthropic (Claude): כתיבת הסקירה השבועית. נשלחים רק נתונים מסוכמים: סכומים לפי קטגוריה, חיובים קרובים ויעדי חיסכון. לא נשלחים שמות של בני המשפחה, תיאורים של הוצאות או אימייל. העיבוד נעשה בארצות הברית.', 'Cardcom — סליקת תשלומים למנוי הפרימיום. פרטי כרטיס האשראי מוזנים ישירות בעמוד המאובטח של Cardcom ולעולם לא עוברים דרך שרתי Homey; אנו מקבלים מהם רק אישור עסקה, טוקן לחיוב חוזר, וסכום/מטבע העסקה, לצורך הפקת חשבונית ועדכון סטטוס המנוי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה, והנתונים המסוכמים לסקירה השבועית מעובדים בארצות הברית) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
+    parts = [...head('מדיניות פרטיות'), LP('בהתאם לחוק הגנת הפרטיות, התשמ"א-1981, כולל תיקון 13.'), LS('מי מפעיל את Homey', LP('Homey מופעלת על ידי ', LB(LEGAL_OWNER), ' ("המפעיל"). השירות ניתן כרגע ללא תשלום.'), LP('לכל שאלה או בקשה בנושא פרטיות: ', LMAIL())), LS('אילו נתונים נאספים', LUL('פרטי חשבון: כתובת אימייל וסיסמה. הסיסמה נשמרת בגיבוב חד-כיווני ואינה ניתנת לשחזור.', 'פרופיל: שם, ואם בחרתם — תמונה, סטטוס וקוד PIN (גם הקוד נשמר בגיבוב חד-כיווני).', 'פרופילי ילדים: שם, תמונה אם הוספתם, והכנסות, הוצאות ויעדי חיסכון שמוזנים באזור "הכסף שלי". הפרופילים נוצרים על ידי ההורה ובאחריותו, בלי אימייל או חשבון משלהם.', 'המידע שאתם מזינים: הוצאות, הכנסות, חיובים, חסכונות, השקעות ונכסים, פתקים, טיולים ומתנות.', 'התראות: אם הפעלתם אותן, נשמרת "כתובת התראה" טכנית של המכשיר.', 'שאלון הפתיחה: גיל, תעסוקה, טווח הכנסה (אופציונלי) ומטרות. גלוי רק לבעל הפרופיל — ולהורים, בפרופיל של ילד.', 'יעדים: יעדים משפחתיים (תקרות הוצאה, שווי, חיסכון חודשי) גלויים לכל המשפחה; יעדים אישיים גלויים רק לבעל הפרופיל.'), LP('אינכם חייבים על פי חוק למסור את המידע. עם זאת, בלי אימייל וסיסמה לא ניתן לפתוח חשבון, ובלי נתונים האפליקציה לא תוכל להציג סיכומים.')), LS('מידע רגיש', LP('מידע על מצב כלכלי, נכסים והתחייבויות עשוי להיחשב "מידע בעל רגישות מיוחדת" לפי החוק. לכן הגישה אליו מוגבלת לבני המשפחה בלבד, התקשורת מוצפנת, והמידע משמש רק להפעלת השירות.')), LS('למה משמש המידע', LP('להצגת המידע שלכם באפליקציה, לחישוב סיכומים ותחזיות, להצעת יעדים לפי שאלון הפתיחה, לשליחת תזכורות ו"הבוקר שלכם" אם הפעלתם אותם, לכתיבת סקירה שבועית עם טיפים ויעדים, ולתשובות של העוזר המשפחתי כשפונים אליו. אין שימוש למטרות פרסום, אין פרופיילינג שיווקי, ואין מכירה של מידע.')), LS('מי רואה את המידע', LP('רק בני המשפחה שהצטרפו עם אותו קוד קבוצה. ההפרדה בין משפחות נאכפת ברמת מסד הנתונים (Row Level Security) ולא רק במסך. המפעיל ניגש לנתונים רק כשזה נדרש לתחזוקה, לתמיכה לבקשתכם, או לפי חובה בדין.')), LS('ספקי שירות וצדדים שלישיים', LP('אנחנו לא מוכרים מידע. כדי להפעיל את השירות, המידע עובר דרך ספקים אלה:'), LUL('Supabase — אחסון הנתונים וההתחברות. השרתים ממוקמים בסיאול, דרום קוריאה.', 'Vercel — אחסון האתר עצמו. עשויה לרשום נתונים טכניים כמו כתובת IP.', 'שירותי ההתראות של אפל, גוגל או הדפדפן — העברת התראות למכשיר. תוכן ההתראה (למשל שם חיוב וסכום) מוצפן בדרך.', 'Finnhub — מקור חדשות הכלכלה. לא מועבר אליו שום מידע אישי.', 'Anthropic (Claude): כתיבת הסקירה השבועית, והעוזר המשפחתי אם בחרתם להשתמש בו. לסקירה נשלחים רק נתונים מסוכמים: סכומים לפי קטגוריה, חיובים קרובים ויעדי חיסכון, בלי שמות, בלי תיאורי הוצאות ובלי אימייל. לעוזר נשלחים ההודעה שכתבתם ורק המידע שנדרש כדי לענות עליה (למשל ההוצאות של קטגוריה אחת בחודש מסוים כולל התיאורים שלהן, האירועים של השבוע, או שמות בני המשפחה כדי לשייך משימה). לא נשלחים אימייל או סיסמה. העיבוד נעשה בארצות הברית.', 'Cardcom — סליקת תשלומים למנוי הפרימיום. פרטי כרטיס האשראי מוזנים ישירות בעמוד המאובטח של Cardcom ולעולם לא עוברים דרך שרתי Homey; אנו מקבלים מהם רק אישור עסקה, טוקן לחיוב חוזר, וסכום/מטבע העסקה, לצורך הפקת חשבונית ועדכון סטטוס המנוי.')), LS('אחסון מחוץ לישראל', LP('הנתונים נשמרים בשרתים מחוץ לישראל (דרום קוריאה, והנתונים המסוכמים לסקירה השבועית מעובדים בארצות הברית) ומועברים דרך ספקי שירות בינלאומיים, בכפוף לדין החל על העברת מידע אל מחוץ לגבולות המדינה.')), LS('מה נשמר במכשיר שלכם', LP('העדפות תצוגה (ערכת צבע, גודל טקסט, בהירות) וסימון שצפיתם בהדרכה נשמרים בדפדפן במכשיר בלבד. אם הפעלתם זיהוי פנים או טביעת אצבע — נשמר במכשיר רק מזהה טכני של המפתח; הפנים והאצבע עצמן לא נשמרות אצלנו ולא יוצאות מהטלפון. אין עוגיות פרסום, ואין כלי מעקב או אנליטיקה.')), LS('הזכויות שלכם', LUL('עיון, תיקון ומחיקה — ישירות באפליקציה: עריכה ומחיקה של כל רשומה, ו"איפוס כל הנתונים" בהגדרות.', ['מחיקת חשבון מלאה (כולל האימייל): בעצמכם, בהגדרות ← "מחיקת חשבון" — מיידי; או בבקשה מהאימייל הרשום אל ', LMAIL(), ' — נטפל תוך 30 יום.'], 'הפסקת התראות — בכל רגע בהגדרות ← "התראות תשלום".')), LS('תקופת שמירה', LP('המידע נשמר כל עוד החשבון פעיל. מחיקה שאתם מבצעים היא סופית; ייתכן שעותקים יישארו זמן קצר בגיבויים של ספק האחסון עד שיימחקו אוטומטית.')), LS('אבטחת מידע', LP('החיבור מוצפן (HTTPS), הסיסמאות וקודי ה-PIN נשמרים בגיבוב חד-כיווני, וכל משפחה מופרדת ברמת מסד הנתונים. אין מערכת חסינה לחלוטין — אם נדע על אירוע אבטחה, נעדכן את המשתמשים ואת הרשות להגנת הפרטיות בהתאם לחובות שבחוק.')), LS('קטינים', LP('ההרשמה מיועדת לבני 18 ומעלה. ילדים משתמשים באפליקציה רק דרך פרופיל ילד שיוצר ההורה.')), LS('שינויים במדיניות', LP('אם נשנה את המדיניות, נעדכן את התאריך בראש העמוד, ועל שינוי מהותי נודיע באפליקציה.'))];
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4 text-sm leading-relaxed",
@@ -6623,13 +6664,16 @@ function App() {
     kind: currentProfile.role === 'child' ? 'child' : 'parent',
     id: currentProfile.id
   } : null;
+  // אחרי שהעוזר (modules/assistant.js) הוסיף משימה/אירוע/פריט: טוענים מחדש את המערכים האלה
+  const [assistReload, setAssistReload] = useState(0);
   // מערך קניות (modules/shopping.js)
   const shop = useShopping({
     familyId,
     isDemo,
     enabled: authStage === 'app' && isPremium,
     meName: currentProfile?.name,
-    showToast
+    showToast,
+    reloadKey: assistReload
   });
   // בנק רעיונות לדייטים (modules/events.js), להורים בלבד
   const dateIdeas = useDateIdeas({
@@ -6650,7 +6694,8 @@ function App() {
     isDemo,
     enabled: authStage === 'app' && isPremium,
     me: plannerMe,
-    showToast
+    showToast,
+    reloadKey: assistReload
   });
   // שגרות, ישיבת שבוע והסעות (modules/plan.js)
   const planExtras = usePlanExtras({
@@ -7145,15 +7190,17 @@ function App() {
     sub,
     amount,
     description,
-    tag
+    tag,
+    type,
+    date
   }) => {
     const row = {
-      type: 'expense',
+      type: type === 'income' ? 'income' : 'expense',
       category,
       sub: sub || '',
       amount: Number(amount),
       description: description || '',
-      date: kidToday(),
+      date: date || kidToday(),
       accountId: defaultAccountId || null,
       tag: tag || null
     };
@@ -7187,8 +7234,8 @@ function App() {
       tripId: null,
       createdAt: new Date().toISOString()
     }, ...prev]);
-    applyAccountDelta(row.accountId, -row.amount);
-    showToast(`נרשמה הוצאה של ${currency}${Math.round(row.amount).toLocaleString('he-IL')} ב${row.category}`);
+    applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
+    showToast(`נרשמה ${row.type === 'income' ? 'הכנסה' : 'הוצאה'} של ${currency}${Math.round(row.amount).toLocaleString('he-IL')} ב${row.category}`);
     return true;
   };
   // הוראת קבע שנוצרת ממערך אחר (עלות חודשית של חוג). מחזיר את המזהה, או null אם נכשל
@@ -8320,7 +8367,28 @@ function App() {
   }, /*#__PURE__*/React.createElement("a", {
     href: "#main-content",
     className: "ent-skip-link"
-  }, "דלגו לתוכן הראשי"), /*#__PURE__*/React.createElement("header", {
+  }, "דלגו לתוכן הראשי"), /*#__PURE__*/React.createElement(AssistantPanel, {
+    isDemo: isDemo,
+    isPremium: isPremium,
+    isChild: isChild,
+    kidId: isChild ? currentProfile?.id : null,
+    kidName: currentProfile?.name,
+    currency: currency,
+    onUpgrade: () => setActiveTab('settings'),
+    onActions: actions => {
+      const notesAdded = actions.filter(a => a.type === 'note' && a.note).map(a => a.note);
+      if (notesAdded.length) setNotes(prev => [...notesAdded, ...prev]);
+      if (actions.some(a => ['task', 'event', 'shopping'].includes(a.type))) setAssistReload(n => n + 1);
+    },
+    onConfirmTransaction: p => recordExpense({
+      type: p.type,
+      category: p.category,
+      sub: p.sub,
+      amount: p.amount,
+      description: p.description,
+      date: p.date
+    })
+  }), /*#__PURE__*/React.createElement("header", {
     className: "ent-header sticky top-0 z-50"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative"
