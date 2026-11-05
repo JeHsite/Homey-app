@@ -558,6 +558,23 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* תורנויות ונקודות (modules/chores.js) */
+  .chore-hero { background: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, #fbbf24 20%, transparent), transparent 65%), var(--navy-panel); }
+  .chore-balance { font-size: 48px; font-weight: 800; line-height: 1.1; color: #fbbf24; text-shadow: 0 4px 18px color-mix(in srgb, #fbbf24 45%, transparent); }
+  .chore-bar { background: linear-gradient(90deg, #fbbf24, #f97316); transition: width .6s cubic-bezier(.2,.7,.2,1); }
+  .chore-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .chore-card { padding: 18px; text-align: center; transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s; }
+  .chore-card.status-done { border-color: #fbbf24; }
+  .chore-card.status-approved { border-color: var(--pos); background: color-mix(in srgb, var(--pos) 8%, var(--navy-panel)); }
+  .chore-card:hover { transform: translateY(-3px); }
+  .chore-icon { font-size: 42px; line-height: 1; display: inline-block; }
+  .chore-card.status-todo .chore-icon { animation: chore-bob 2.6s ease-in-out infinite; }
+  @keyframes chore-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  .chore-chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid; }
+  .chore-icon-pick { font-size: 20px; width: 36px; height: 36px; border-radius: 10px; border: 1px solid transparent; }
+  .chore-icon-pick.on { border-color: var(--bronze); background: color-mix(in srgb, var(--bronze) 15%, transparent); }
+  .chore-approve { background: color-mix(in srgb, #fbbf24 8%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, #fbbf24 30%, transparent); }
+  @media (prefers-reduced-motion: reduce) { .chore-card, .chore-bar { transition: none; } .chore-card.status-todo .chore-icon { animation: none; } }
   .ent-brief-preview { border-inline-start: 3px solid var(--bronze); padding-inline-start: 10px; }
   /* מערך פגישות, דייטים וחוגים (modules/events.js) */
   .ev-datechip { flex-shrink: 0; width: 46px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -959,6 +976,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/tasks.js?v=2"></script>
 <script src="modules/shopping.js?v=1"></script>
 <script src="modules/events.js?v=1"></script>
+<script src="modules/chores.js?v=1"></script>
 <script>
 const {
   useState,
@@ -1830,6 +1848,11 @@ const NAV_ITEMS_ALL = [{
   id: 'schedule',
   label: 'לו"ז שבועי',
   icon: ICalendar,
+  module: 'tasks'
+}, {
+  id: 'chores',
+  label: 'תורנויות',
+  icon: ITrophy,
   module: 'tasks'
 }, {
   id: 'notes',
@@ -3514,9 +3537,11 @@ const HOMEY_MODULES = [{
 }, {
   id: 'tasks',
   label: 'משימות ולו"ז',
-  desc: 'משימות לשבוע, לו"ז אישי וזוגי ופתקים',
+  desc: 'משימות לשבוע, לו"ז אישי וזוגי, תורנויות ופתקים',
+  kidDesc: 'המטלות שלי, הנקודות והפרסים',
   icon: ICheckSquare,
   tab: 'tasks',
+  kidTab: 'chores',
   kids: true
 }, {
   id: 'shopping',
@@ -6506,6 +6531,13 @@ function App() {
     enabled: authStage === 'app' && isPremium && currentProfile?.role !== 'child',
     showToast
   });
+  // תורנויות ונקודות לילדים (modules/chores.js)
+  const chores = useChores({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium,
+    showToast
+  });
   const planner = useFamilyPlanner({
     familyId,
     isDemo,
@@ -8030,6 +8062,9 @@ function App() {
   const allowedNav = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
     label: 'הכסף של הילדים'
+  } : item.id === 'chores' && isChild ? {
+    ...item,
+    label: 'המטלות שלי'
   } : item).concat(isAdmin && !isChild && familyId === ROYAL_FAMILY_ID ? [{
     id: 'admin',
     label: 'ניהול',
@@ -8091,7 +8126,7 @@ function App() {
     if (shopSum) c.shopping = shopSum;
     const evSum = isPremium ? evHubSummary(planner, plannerMe, isChild) : null;
     if (evSum) c.events = evSum;
-    const plSum = isPremium ? plHubSummary(planner, plannerMe, isChild) : null;
+    const plSum = isPremium ? isChild && plannerMe ? choresHubForKid(chores, plannerMe.id) || plHubSummary(planner, plannerMe, isChild) : plHubSummary(planner, plannerMe, isChild) : null;
     if (plSum) c.tasks = plSum;else if (notes.length) {
       const pinned = notes.filter(n => n.isPinned).length;
       c.tasks = {
@@ -8119,7 +8154,7 @@ function App() {
       level: a.level,
       text: a.text,
       tab: tabFor(a.id)
-    }));
+    })).concat(isPremium ? choresPendingForParents(chores, planner.members) : []);
     const mcClosed = monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey];
     if (monthCloseSummary.hasData && monthCloses && monthCloses !== 'unavailable' && !mcClosed) list.unshift({
       id: 'month-close',
@@ -9568,6 +9603,14 @@ function App() {
     onSetLimit: setSplurgeLimit,
     onRecordExpense: recordExpense,
     onDelete: deleteTransaction
+  }), activeTab === 'chores' && /*#__PURE__*/React.createElement(ChoresPage, {
+    ch: chores,
+    members: planner.members,
+    me: plannerMe,
+    isChild: isChild,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency
   }), activeTab === 'tasks' && /*#__PURE__*/React.createElement(TasksPage, {
     planner: planner,
     me: plannerMe,
