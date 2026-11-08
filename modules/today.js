@@ -245,6 +245,14 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
         onClick: () => { tdSetPref(me.id, k); if (inputRef.current) inputRef.current.focus(); } }, l)))));
 }
 
+/* ---- שורת ההוספה בעמוד הראשי: "+" אחד מכל מקום, עם ביטול משלה ---- */
+function HubQuickAdd({ planner, shop, me, isChild, notesApi }) {
+  const [undoNode, pushUndo] = useTdUndo();
+  return React.createElement(React.Fragment, null,
+    React.createElement(QuickAdd, { planner, shop, me, isChild, notesApi, defaultDate: plToday(), pushUndo }),
+    undoNode);
+}
+
 /* ---- שורה של פריט (אירוע / משימה) ---- */
 function TdItem({ it, planner, me, isChild, open, onToggle, pushUndo, conflict, compact, draggable }) {
   const members = planner.members;

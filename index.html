@@ -1186,7 +1186,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
 <script src="modules/heparse.js?v=2"></script>
-<script src="modules/today.js?v=3"></script>
+<script src="modules/today.js?v=4"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -3800,7 +3800,8 @@ function HubHome({
   isChild,
   cards,
   attention,
-  onOpen
+  onOpen,
+  quickAdd
 }) {
   const h = new Date().getHours();
   const hello = h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
@@ -3819,7 +3820,7 @@ function HubHome({
     }
   }, today), /*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-2xl sm:text-3xl font-bold mt-1"
-  }, hello, profileName ? `, ${profileName}` : '')), attention.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, hello, profileName ? `, ${profileName}` : '')), quickAdd || null, attention.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-4 space-y-2"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold"
@@ -8585,7 +8586,14 @@ function App() {
     isChild: isChild,
     cards: hubCards,
     attention: isChild ? [] : hubAttention,
-    onOpen: tab => setActiveTab(tab)
+    onOpen: tab => setActiveTab(tab),
+    quickAdd: isPremium && plannerMe && planner.ready && !planner.unavailable ? /*#__PURE__*/React.createElement(HubQuickAdd, {
+      planner: planner,
+      shop: shop,
+      me: plannerMe,
+      isChild: isChild,
+      notesApi: notesApi
+    }) : null
   }),monthCloseOpen && !isChild && /*#__PURE__*/React.createElement(MonthCloseModal, {
     summary: monthCloseSummary,
     currency: currency,
