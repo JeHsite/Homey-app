@@ -47,6 +47,9 @@ function AssistantPanel({ isDemo, isPremium, isChild, kidId, kidName, currency, 
         let code = null;
         try { code = (await error.context.json()).error; } catch (_e) {}
         setMsgs(prev => [...prev, { role: 'assistant', text: ASSIST_ERRORS[code] || 'משהו השתבש. נסו שוב בעוד רגע.', error: true }]);
+      } else if (!data || typeof data.reply !== 'string') {
+        // הפונקציה בשרת לא מחזירה תשובה של העוזר (למשל עדיין קוד ברירת המחדל של סופאבייס)
+        setMsgs(prev => [...prev, { role: 'assistant', text: ASSIST_ERRORS.not_configured, error: true }]);
       } else {
         setMsgs(prev => [...prev, { role: 'assistant', text: data.reply, actions: data.actions || [], pending: (data.pending || []).map(p => ({ ...p, state: 'open' })) }]);
         if (typeof data.remaining === 'number') setRemaining(data.remaining);
