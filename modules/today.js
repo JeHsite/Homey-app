@@ -33,13 +33,19 @@ const tdDayLabel = d => {
 };
 
 // ההיקף נגזר מהאנשים: רק אני = אישי, ילד אחד = של הילד, דייט = זוגי, הורה אחר = משפחתי והוא אחראי, כמה אנשים = משפחתי
-function tdDeriveOwner(d, me, members, isChild) {
+// pref: ההעדפה של המשתמש עצמו למשימה בלי שמות ('personal' / 'family'). אין ברירת מחדל של האפליקציה:
+// כל עוד המשתמש לא בחר, מוחזר needsPref והשורה שואלת אותו פעם אחת
+function tdDeriveOwner(d, me, members, isChild, pref) {
   const ppl = d.people.filter((x, i, a) => a.indexOf(x) === i);
   const mem = id => members.find(m => m.id === id);
   let o;
   if (isChild) o = { scope: 'personal', personId: me.id, personKind: 'child' };
   else if (d.tag === 'date') o = { scope: 'couple', personId: null, personKind: null };
-  else if (!ppl.length) o = d.kind === 'task' ? { scope: 'personal', personId: me.id, personKind: me.kind } : { scope: 'family', personId: null, personKind: null };
+  else if (!ppl.length && d.kind === 'task') {
+    o = pref === 'family' ? { scope: 'family', personId: null, personKind: null } : { scope: 'personal', personId: me.id, personKind: me.kind };
+    if (!pref && !d.scopeOv) o.needsPref = true;
+  }
+  else if (!ppl.length) o = { scope: 'family', personId: null, personKind: null };
   else if (ppl.length === 1 && ppl[0] === me.id) o = { scope: 'personal', personId: me.id, personKind: me.kind };
   else if (ppl.length === 1 && mem(ppl[0]) && mem(ppl[0]).kind === 'child') o = { scope: 'personal', personId: ppl[0], personKind: 'child' };
   else {
@@ -51,6 +57,31 @@ function tdDeriveOwner(d, me, members, isChild) {
   if (d.scopeOv === 'personal') return o.scope === 'personal' ? o : { scope: 'personal', personId: isChild || !o.personId || mem(o.personId)?.kind === 'parent' ? me.id : o.personId, personKind: isChild ? 'child' : o.personId && mem(o.personId)?.kind === 'child' ? 'child' : me.kind };
   if (d.scopeOv === 'couple') return { scope: 'couple', personId: o.personId && mem(o.personId)?.kind === 'parent' ? o.personId : null, personKind: o.personId && mem(o.personId)?.kind === 'parent' ? 'parent' : null };
   return { scope: 'family', personId: o.personId, personKind: o.personKind };
+}
+
+/* ---- העדפה אישית: למי שייכת משימה בלי שמות. נשמרת לכל פרופיל בנפרד (במכשיר) ---- */
+const tdPrefKey = id => 'homey_task_default_' + id;
+const tdGetPref = id => { try { return localStorage.getItem(tdPrefKey(id)); } catch (_e) { return null; } };
+const tdSetPref = (id, v) => { try { localStorage.setItem(tdPrefKey(id), v); } catch (_e) {} window.dispatchEvent(new CustomEvent('homey-task-pref')); };
+function useTdPref(id) {
+  const [p, setP] = useState(() => tdGetPref(id));
+  useEffect(() => {
+    setP(tdGetPref(id));
+    const f = () => setP(tdGetPref(id));
+    window.addEventListener('homey-task-pref', f);
+    return () => window.removeEventListener('homey-task-pref', f);
+  }, [id]);
+  return p;
+}
+const TD_PREF_OPTS = [['personal', '🔒 רק אני רואה'], ['family', '🏠 כל המשפחה רואה']];
+// להגדרות ("כלליות"): שינוי ההעדפה בכל רגע
+function TaskScopeSetting({ meId }) {
+  const pref = useTdPref(meId);
+  return React.createElement('div', null,
+    React.createElement('p', { className: 'text-sm', style: { color: 'var(--text)' } }, 'משימה חדשה בלי שם של אף אחד'),
+    React.createElement('p', { className: 'text-xs mb-2', style: { color: 'var(--text-dim)' } }, 'מי יראה אותה כשכותבים בשורת ההוספה המהירה. ההגדרה שלך בלבד, בכל משימה אפשר לשנות בהקשה על הצ\'יפ.'),
+    React.createElement('div', { className: 'flex gap-2' }, TD_PREF_OPTS.map(([k, l]) => React.createElement('button', { key: k, type: 'button', 'aria-pressed': pref === k, onClick: () => tdSetPref(meId, k),
+      className: 'ent-pill-btn px-4 py-2 text-sm flex-1', style: { background: pref === k ? 'var(--bronze)' : 'var(--navy-panel-2)', color: pref === k ? 'var(--on-accent)' : 'var(--text-2)', border: '1px solid var(--line)' } }, l))));
 }
 
 /* ---- "ביטול" אחרי כל פעולה: פס קטן בתחתית המסך ל-6 שניות ---- */
@@ -76,6 +107,8 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
   const [ov, setOv] = useState({});
   const [busy, setBusy] = useState(false);
   const [ex, setEx] = useState(0);
+  const [askPulse, setAskPulse] = useState(0);
+  const pref = useTdPref(me.id);
   const inputRef = useRef(null);
   useEffect(() => { const t = setInterval(() => setEx(i => (i + 1) % TD_EXAMPLES.length), 4000); return () => clearInterval(t); }, []);
   const today = plToday();
@@ -94,7 +127,7 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
     if (kind === 'event' && !date) date = today;
     const repeat = ov.repeat || p.repeat;
     const base = { kind, people, tag, time, date, repeat, title: p.title || text.trim(), items: p.items, altTime: ov.time !== undefined ? null : p.altTime, scopeOv: ov.scope };
-    return { ...base, owner: tdDeriveOwner(base, me, members, isChild) };
+    return { ...base, owner: tdDeriveOwner(base, me, members, isChild, pref) };
   })();
 
   const set = (k, v) => setOv(o => ({ ...o, [k]: v }));
@@ -103,6 +136,8 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
 
   const save = async () => {
     if (!d || busy) return;
+    // עוד לא בחר למי שייכת משימה בלי שמות: לא שומרים בשבילו, מבקשים לבחור (פעם אחת)
+    if (d.kind === 'task' && d.owner.needsPref) { setAskPulse(n => n + 1); return; }
     if (!d.title && d.kind !== 'shopping') return;
     setBusy(true);
     try {
@@ -167,9 +202,15 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
       (d.kind === 'task' || d.kind === 'event') && !isChild && addable.length > 0 && React.createElement('label', { key: 'addp', className: 'td-chip dim' }, '+ מי?',
         React.createElement('select', { className: 'td-chip-input', value: '', 'aria-label': 'להוסיף אדם', onChange: e => e.target.value && set('people', [...d.people, e.target.value]) },
           React.createElement('option', { value: '' }, 'מי?'), addable.map(m => React.createElement('option', { key: m.id, value: m.id }, m.name)))),
-      (d.kind === 'task' || d.kind === 'event') && !isChild && chip('scope', d.owner.scope === 'personal' ? (d.owner.personId === me.id ? '🔒 רק לי' : `🔒 של ${tdNameOf(members, d.owner.personId)}`) : TD_SCOPE[d.owner.scope],
+      (d.kind === 'task' || d.kind === 'event') && !isChild && !d.owner.needsPref && chip('scope',d.owner.scope === 'personal' ? (d.owner.personId === me.id ? '🔒 רק לי' : `🔒 של ${tdNameOf(members, d.owner.personId)}`) : TD_SCOPE[d.owner.scope],
         () => cycle('scope', parents.length > 1 ? ['personal', 'family', 'couple'] : ['personal', 'family'], d.owner.scope), { title: 'מי רואה את זה' }),
-      React.createElement('button', { key: 'ai', type: 'button', className: 'td-chip ai', onClick: toAssistant, title: 'לשלוח את המשפט לעוזר החכם' }, '✨ לעוזר')));
+      React.createElement('button', { key: 'ai', type: 'button', className: 'td-chip ai', onClick: toAssistant, title: 'לשלוח את המשפט לעוזר החכם' }, '✨ לעוזר')),
+    // שאלה חד-פעמית לכל משתמש: למי שייכת משימה בלי שמות. התשובה נשמרת כהעדפה שלו (אפשר לשנות בהגדרות)
+    d && d.kind === 'task' && d.owner.needsPref && React.createElement('div', { key: 'ask' + askPulse, className: 'td-ask' + (askPulse ? ' pulse' : ''), role: 'group', 'aria-label': 'למי שייכת משימה בלי שמות' },
+      React.createElement('p', { className: 'text-sm font-semibold' }, 'משימה בלי שם של אף אחד: מי יראה אותה?'),
+      React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, 'בוחרים פעם אחת וזו תהיה ההגדרה שלך. אפשר לשנות בהגדרות, ובכל משימה בהקשה על הצ\'יפ.'),
+      React.createElement('div', { className: 'flex gap-2 mt-2' }, TD_PREF_OPTS.map(([k, l]) => React.createElement('button', { key: k, type: 'button', className: 'ent-pill-btn ghost px-4 py-2 text-sm flex-1',
+        onClick: () => { tdSetPref(me.id, k); if (inputRef.current) inputRef.current.focus(); } }, l)))));
 }
 
 /* ---- שורה של פריט (אירוע / משימה) ---- */

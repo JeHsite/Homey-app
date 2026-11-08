@@ -673,6 +673,10 @@ body[data-compact="1"] main { gap: .75rem; }
   .td-chip.ai { --chip: var(--cyan); margin-inline-start: auto; }
   .td-chip-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
   .td-chip:focus-within { outline: 2px solid var(--bronze); outline-offset: 2px; }
+  .td-ask { margin-top: 10px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--bronze) 10%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--bronze) 35%, transparent); }
+  .td-ask.pulse { animation: td-ask-pulse .45s ease-out; }
+  @keyframes td-ask-pulse { 0%, 100% { transform: none; } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
+  @media (prefers-reduced-motion: reduce) { .td-ask.pulse { animation: none; } }
   .td-seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); }
   .td-seg button { padding: 7px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-2); transition: background .15s, color .15s; }
   .td-seg button.on { background: var(--bronze); color: var(--on-accent); }
@@ -1182,7 +1186,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
 <script src="modules/heparse.js?v=1"></script>
-<script src="modules/today.js?v=1"></script>
+<script src="modules/today.js?v=2"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -10607,7 +10611,9 @@ function App() {
       color: currency === c ? 'var(--on-accent)' : 'var(--text-2)',
       border: '1px solid var(--line)'
     }
-  }, c)))), /*#__PURE__*/React.createElement("div", {
+  }, c)))), currentProfile && currentProfile.role !== 'child' && /*#__PURE__*/React.createElement(TaskScopeSetting, {
+    meId: currentProfile.id
+  }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm",
