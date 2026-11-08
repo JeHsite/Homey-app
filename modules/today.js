@@ -59,6 +59,33 @@ function tdDeriveOwner(d, me, members, isChild, pref) {
   return { scope: 'family', personId: o.personId, personKind: o.personKind };
 }
 
+/* ---- התראות לעמוד הראשי (הורים): חוג היום/מחר בלי מסיע, ושני אירועים חופפים שכל אחד צריך הורה ---- */
+function tdRideAlerts(planner, me) {
+  if (!planner.ready || planner.unavailable) return [];
+  const today = plToday(), out = [];
+  [today, plAddDays(today, 1)].forEach(day => {
+    planner.events.filter(e => e.kind === 'class' && plVisible(e, me, false) && plEventOn(e, day) && (!e.driveTo || !e.driveFrom)).forEach(e => {
+      const kid = e.personId ? tdNameOf(planner.members, e.personId) : '';
+      const miss = !e.driveTo && !e.driveFrom ? 'אין מי שמסיע' : !e.driveTo ? 'אין מי שמסיע הלוך' : 'אין מי שמחזיר';
+      out.push({ id: `ride-${e.id}-${day}`, level: day === today ? 'danger' : 'warn', tab: 'today',
+        text: `🚗 ${e.title}${kid ? ` של ${kid}` : ''} ${day === today ? 'היום' : 'מחר'}${e.startTime ? ` ב-${plTime(e.startTime)}` : ''}: ${miss}` });
+    });
+  });
+  planConflicts(planner, me, 2).forEach(c => out.push({ id: `clash-${c.a.id}-${c.b.id}-${c.day}`, level: 'warn', tab: 'today',
+    text: `⚠️ ${c.day === today ? 'היום' : 'מחר'} ב-${plTime(c.a.startTime)}: ${c.a.title} וגם ${c.b.title} באותה שעה` }));
+  return out;
+}
+
+// אירוע דומה שכבר קיים באותו יום (למשל כותבים שוב "נועה כדורגל" כשהחוג כבר בלו"ז)
+function tdSimilarEvent(planner, d) {
+  if (!d || d.kind !== 'event' || !d.date) return null;
+  const norm = s => String(s || '').replace(/^(חוג|שיעור)\s+/, '').trim();
+  const t = norm(d.title);
+  if (t.length < 2) return null;
+  return planner.events.find(e => plEventOn(e, d.date) && (norm(e.title).includes(t) || t.includes(norm(e.title)))
+    && (!d.people.length || !e.personId || d.people.includes(e.personId))) || null;
+}
+
 /* ---- העדפה אישית: למי שייכת משימה בלי שמות. נשמרת לכל פרופיל בנפרד (במכשיר) ---- */
 const tdPrefKey = id => 'homey_task_default_' + id;
 const tdGetPref = id => { try { return localStorage.getItem(tdPrefKey(id)); } catch (_e) { return null; } };
@@ -205,6 +232,11 @@ function QuickAdd({ planner, shop, me, isChild, notesApi, defaultDate, pushUndo,
       (d.kind === 'task' || d.kind === 'event') && !isChild && !d.owner.needsPref && chip('scope',d.owner.scope === 'personal' ? (d.owner.personId === me.id ? '🔒 רק לי' : `🔒 של ${tdNameOf(members, d.owner.personId)}`) : TD_SCOPE[d.owner.scope],
         () => cycle('scope', parents.length > 1 ? ['personal', 'family', 'couple'] : ['personal', 'family'], d.owner.scope), { title: 'מי רואה את זה' }),
       React.createElement('button', { key: 'ai', type: 'button', className: 'td-chip ai', onClick: toAssistant, title: 'לשלוח את המשפט לעוזר החכם' }, '✨ לעוזר')),
+    d && (() => {
+      const dup = tdSimilarEvent(planner, d);
+      return dup && React.createElement('p', { key: 'dup', className: 'text-xs mt-2', style: { color: 'var(--neg-soft)' } },
+        `כבר יש בלו"ז: ${dup.title}${dup.personId ? ` (${tdNameOf(members, dup.personId)})` : ''} ${tdDayLabel(d.date)}${dup.startTime ? ' ' + plTime(dup.startTime) : ''}${dup.repeat === 'weekly' ? ', כל שבוע' : ''}. להוסיף בכל זאת?`);
+    })(),
     // שאלה חד-פעמית לכל משתמש: למי שייכת משימה בלי שמות. התשובה נשמרת כהעדפה שלו (אפשר לשנות בהגדרות)
     d && d.kind === 'task' && d.owner.needsPref && React.createElement('div', { key: 'ask' + askPulse, className: 'td-ask' + (askPulse ? ' pulse' : ''), role: 'group', 'aria-label': 'למי שייכת משימה בלי שמות' },
       React.createElement('p', { className: 'text-sm font-semibold' }, 'משימה בלי שם של אף אחד: מי יראה אותה?'),

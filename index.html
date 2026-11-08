@@ -1185,8 +1185,8 @@ document.addEventListener('click', function (e) {
 <script src="modules/events.js?v=2"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
-<script src="modules/heparse.js?v=1"></script>
-<script src="modules/today.js?v=2"></script>
+<script src="modules/heparse.js?v=2"></script>
+<script src="modules/today.js?v=3"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -8431,6 +8431,8 @@ function App() {
       text: a.text,
       tab: tabFor(a.id)
     })).concat(isPremium ? choresPendingForParents(chores, planner.members) : []);
+    // חוג היום/מחר בלי מסיע, או שני אירועים חופפים: לפני חשבונות באותה רמת דחיפות (הסידור יציב)
+    if (isPremium && !isChild && plannerMe) list.unshift(...tdRideAlerts(planner, plannerMe));
     // בסוף השבוע: תזכורת לישיבת השבוע, אם עוד לא נעשתה
     if (isPremium && planExtras.ready && !planExtras.unavailable && new Date().getDay() >= 5 && !(planExtras.syncs.find(s => s.weekStart === syncWeekStart()) || {}).completedAt) list.push({
       id: 'couple-sync',

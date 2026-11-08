@@ -34,7 +34,8 @@ const hpTime = (h, m) => `${String(h).padStart(2, '0')}:${String(m || 0).padStar
  *   repeat:'none'|'daily'|'weekly', people:string[], tag:'class'|'meeting'|'date'|null, items?:string[], spans:{start:number,end:number,type:string}[], unknownTime:boolean }}
  */
 function hpParse(text, ctx) {
-  const raw = String(text || '');
+  // גרש וגרשיים עבריים (׳ ״, מה שמקלדת הטלפון מקלידה) = ' ו-" רגילים. אותו אורך, אז הטווחים נשמרים
+  const raw = String(text || '').replace(/[׳`’]/g, "'").replace(/[״“”]/g, '"');
   const today = ctx.today;
   const spans = [];
   const out = { kind: 'task', title: '', date: null, time: null, altTime: null, repeat: 'none', people: [], tag: null, spans, unknownTime: false };

@@ -22,6 +22,8 @@ const cases = [
   ['נועה כדורגל מחר 16:00', { kind: 'event', date: '2026-11-09', repeat: 'none' }],
   ['אימון כושר מחר 7 בבוקר', { kind: 'event', date: '2026-11-09', time: '07:00', repeat: 'none' }],
   ['ארוחה אצל סבתא שישי 8 וחצי בערב', { kind: 'event', date: '2026-11-13', time: '20:30' }],
+  ['איתי ג׳ודו מחר 16:30', { kind: 'event', date: '2026-11-09', tag: 'class', people: ['k2'] }],
+  ['ישיבה עם המורה ביום ג׳ אחה״צ', { kind: 'event', date: '2026-11-10', time: '16:00' }],
 ];
 let fail = 0;
 for (const [text, exp] of cases) {
