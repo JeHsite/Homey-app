@@ -558,6 +558,27 @@ body[data-compact="1"] main { gap: .75rem; }
   @keyframes ent-hub-in { from { opacity: 0; transform: translateY(10px); } }
   @media (prefers-reduced-motion: reduce) { .ent-hub-card { animation: none; transition: none; } .ent-hub-glyph { transition: none; } .ent-hub-card:hover .ent-hub-icon::after { animation: none; opacity: 0; } }
   @media (max-width: 480px) { .ent-hub-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .ent-hub-card { min-height: 150px; padding: 14px !important; } }
+  /* קניות ומטבח (modules/kitchen.js + מצב סופר ב-shopping.js) */
+  .meals-needed { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--pos) 9%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--pos) 30%, transparent); }
+  .meals-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+  .meals-day { padding: 12px; }
+  .meals-day.today { border-color: var(--bronze); box-shadow: 0 0 0 1px var(--bronze) inset; }
+  .meal-slot + .meal-slot { margin-top: 8px; }
+  .meal-slot-label { font-size: 11px; color: var(--text-dim); margin-bottom: 3px; }
+  .meal-chip { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; background: var(--navy-panel-2); border-inline-start: 3px solid var(--pos); }
+  .meal-add { width: 100%; padding: 6px; border-radius: 10px; border: 1px dashed var(--line); color: var(--text-dim); font-size: 16px; transition: border-color .2s, color .2s; }
+  .meal-add:hover { border-color: var(--bronze); color: var(--bronze); }
+  .meal-pick { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; }
+  .meal-pick:hover { background: var(--navy-panel-2); }
+  @media (max-width: 1100px) { .meals-week { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+  .recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .recipe-icon { font-size: 30px; line-height: 1; }
+  .shop-sugg { font-size: 13px; padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--cyan) 10%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--cyan) 35%, transparent); }
+  .shop-sugg span { font-size: 11px; color: var(--text-muted); }
+  .store-mode .shop-item { padding-top: 14px; padding-bottom: 14px; }
+  .store-mode .shop-item .pl-task-title { font-size: 19px; }
+  .store-mode .shop-item .pl-check { width: 38px; height: 38px; }
+  .store-mode .shop-item .pl-check svg { width: 22px; height: 22px; }
   /* עוזר AI משפחתי (modules/assistant.js) */
   .assist-fab { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60; width: 58px; height: 58px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--cyan), var(--bronze));
@@ -1085,7 +1106,8 @@ document.addEventListener('click', function (e) {
 }, { passive: true });
 </script>
 <script src="modules/tasks.js?v=4"></script>
-<script src="modules/shopping.js?v=2"></script>
+<script src="modules/shopping.js?v=3"></script>
+<script src="modules/kitchen.js?v=1"></script>
 <script src="modules/events.js?v=2"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
@@ -1923,6 +1945,18 @@ const NAV_ITEMS_ALL = [{
   id: 'shopping',
   label: 'רשימת קניות',
   icon: IBag,
+  module: 'shopping'
+}, {
+  id: 'meals',
+  label: 'תפריט שבועי',
+  icon: IUtensils,
+  parentOnly: true,
+  module: 'shopping'
+}, {
+  id: 'recipes',
+  label: 'מתכונים',
+  icon: IReceipt,
+  parentOnly: true,
   module: 'shopping'
 }, {
   id: 'homeshop',
@@ -3691,8 +3725,8 @@ const HOMEY_MODULES = [{
   kids: true
 }, {
   id: 'shopping',
-  label: 'קניות',
-  desc: 'רשימות קניות משותפות, קניות לבית ובזבוזים',
+  label: 'קניות ומטבח',
+  desc: 'רשימת קניות משותפת, תפריט שבועי, מתכונים ובזבוזים',
   kidDesc: 'להוסיף דברים לרשימת הקניות של הבית',
   icon: IBag,
   tab: 'shopping',
@@ -6664,6 +6698,13 @@ function App() {
     kind: currentProfile.role === 'child' ? 'child' : 'parent',
     id: currentProfile.id
   } : null;
+  // מטבח: מתכונים, תפריט שבועי והיסטוריית קניות (modules/kitchen.js)
+  const kitchen = useKitchen({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium && currentProfile?.role !== 'child',
+    showToast
+  });
   // אחרי שהעוזר (modules/assistant.js) הוסיף משימה/אירוע/פריט: טוענים מחדש את המערכים האלה
   const [assistReload, setAssistReload] = useState(0);
   // מערך קניות (modules/shopping.js)
@@ -9799,7 +9840,19 @@ function App() {
     onUpgrade: () => setActiveTab('settings'),
     currency: currency,
     onRecordExpense: recordExpense,
+    showToast: showToast,
+    suggestions: !isChild && kitchen.ready && !kitchen.unavailable ? kitchenSuggestions(kitchen.purchases, shop.items.filter(i => i.status === 'open').map(i => i.name)) : [],
+    onPurchased: kitchen.ready && !kitchen.unavailable ? kitchen.logPurchases : null
+  }), activeTab === 'meals' && !isChild && /*#__PURE__*/React.createElement(MealsPage, {
+    k: kitchen,
+    shop: shop,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
     showToast: showToast
+  }), activeTab === 'recipes' && !isChild && /*#__PURE__*/React.createElement(RecipesPage, {
+    k: kitchen,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings')
   }), activeTab === 'homeshop' && !isChild && /*#__PURE__*/React.createElement(HomeShopPage, {
     shop: shop,
     isPremium: isPremium,

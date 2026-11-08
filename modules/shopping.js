@@ -182,13 +182,25 @@ const shopNotReady = shop => !shop.ready ? React.createElement('div', { classNam
 const shopInput = 'ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none';
 
 /* ======================= לשונית "רשימת קניות" ======================= */
-function GroceryPage({ shop, isChild, isPremium, onUpgrade, currency, onRecordExpense, showToast }) {
+// suggestions: "נגמר לכם?" מ-modules/kitchen.js. onPurchased: רישום מה שנקנה בהיסטוריה (כדי ללמוד כל כמה זמן קונים)
+function GroceryPage({ shop, isChild, isPremium, onUpgrade, currency, onRecordExpense, showToast, suggestions, onPurchased }) {
   const [listId, setListId] = useState(null);
   const [text, setText] = useState('');
   const [checkout, setCheckout] = useState(false);
   const [paid, setPaid] = useState('');
   const [newList, setNewList] = useState(null);
   const [busy, setBusy] = useState(false);
+  // מצב סופר: פריטים גדולים, והמסך לא נכבה בזמן הקנייה (Wake Lock, כשהדפדפן תומך)
+  const [storeMode, setStoreMode] = useState(false);
+  useEffect(() => {
+    if (!storeMode || !navigator.wakeLock) return;
+    let lock = null, alive = true;
+    const grab = () => navigator.wakeLock.request('screen').then(l => { if (alive) lock = l; else l.release(); }).catch(() => {});
+    grab();
+    const onVis = () => { if (document.visibilityState === 'visible') grab(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { alive = false; document.removeEventListener('visibilitychange', onVis); if (lock) lock.release().catch(() => {}); };
+  }, [storeMode]);
   const locked = shopLocked(isPremium, onUpgrade);
   if (locked) return locked;
   const wait = shopNotReady(shop);
@@ -215,6 +227,7 @@ function GroceryPage({ shop, isChild, isPremium, onUpgrade, currency, onRecordEx
     setBusy(true);
     const amount = Number(paid);
     if (amount > 0 && onRecordExpense) await onRecordExpense({ category: 'מזון', sub: 'סופר', amount, description: `קנייה ב${list.name} (${cart.length} פריטים)` });
+    if (onPurchased) await onPurchased(cart.map(x => ({ name: x.name, category: x.category })));
     await shop.finishShopping(list.id);
     setBusy(false);
     setCheckout(false);
@@ -230,11 +243,14 @@ function GroceryPage({ shop, isChild, isPremium, onUpgrade, currency, onRecordEx
     !isChild && React.createElement('button', { type: 'button', className: 'shop-staple' + (x.staple ? ' on' : ''), 'aria-pressed': x.staple, 'aria-label': x.staple ? `לבטל פריט קבוע: ${x.name}` : `לסמן כפריט קבוע: ${x.name}`, title: 'פריט קבוע', onClick: () => shop.updateItem(x, { staple: !x.staple }) }, '★'),
     !isChild && React.createElement('button', { className: 'ent-icon-btn', 'aria-label': `מחיקת ${x.name}`, onClick: () => shop.removeItems([x.id]) }, React.createElement(IX, { size: 14 })));
 
-  return React.createElement('div', { className: 'space-y-6' },
+  const sugg = (suggestions || []).filter(s => !open.some(o => o.name === s.name));
+  return React.createElement('div', { className: 'space-y-6' + (storeMode ? ' store-mode' : '') },
     React.createElement('div', { className: 'ent-card p-5 space-y-4' },
       React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-2' },
         React.createElement('h2', { className: 'ent-heading text-xl font-bold' }, 'רשימת קניות'),
         React.createElement('div', { className: 'flex flex-wrap gap-1.5 items-center' },
+          React.createElement('button', { type: 'button', className: 'ent-pill-btn px-3 py-1 text-xs', 'aria-pressed': storeMode, onClick: () => setStoreMode(!storeMode),
+            style: { background: storeMode ? 'var(--pos)' : 'var(--navy-panel-2)', color: storeMode ? '#fff' : 'var(--text-2)' } }, storeMode ? '🛒 מצב סופר פעיל' : '🛒 מצב סופר'),
           lists.length > 1 && lists.map(l => React.createElement('button', { key: l.id, type: 'button', onClick: () => setListId(l.id), 'aria-pressed': l.id === list.id, className: 'ent-pill-btn px-3 py-1 text-xs',
             style: { background: l.id === list.id ? 'var(--bronze)' : 'var(--navy-panel-2)', color: l.id === list.id ? 'var(--on-accent)' : 'var(--text-2)' } }, l.name)),
           !isChild && (newList != null ? React.createElement('span', { className: 'flex gap-1' },
@@ -248,7 +264,11 @@ function GroceryPage({ shop, isChild, isPremium, onUpgrade, currency, onRecordEx
         React.createElement('button', { onClick: add, className: 'ent-pill-btn solid-bronze px-4 text-sm', 'aria-label': 'הוספה' }, React.createElement(IPlus, { size: 18 }))),
       text.trim() && React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-dim)' } }, 'ייכנס ל: ', shopGuessCategory(shopParse(text).name)),
       hiddenStaples.length > 0 && !isChild && React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-1.5 text-xs', onClick: async () => { const n = await shop.restoreStaples(list.id); if (n) showToast(`${n} פריטים קבועים חזרו לרשימה`); } },
-        `★ החזרת הקבועים לרשימה (${hiddenStaples.length})`)),
+        `★ החזרת הקבועים לרשימה (${hiddenStaples.length})`),
+      sugg.length > 0 && React.createElement('div', null,
+        React.createElement('p', { className: 'text-xs mb-1.5', style: { color: 'var(--text-muted)' } }, 'נגמר לכם? לפי כל כמה זמן אתם קונים:'),
+        React.createElement('div', { className: 'flex flex-wrap gap-1.5' }, sugg.map(s => React.createElement('button', { key: s.name, type: 'button', className: 'shop-sugg',
+          title: `בדרך כלל כל ${s.every} ימים, עברו ${s.since}`, onClick: () => shop.addItem(list.id, { name: s.name, category: s.category || undefined }) }, '+ ', s.name, React.createElement('span', null, ` כל ${s.every} ימים`)))))),
     React.createElement('div', { className: 'ent-card p-5 space-y-4' },
       !open.length && !cart.length && React.createElement(EmptyState, { text: 'הרשימה ריקה', hint: 'כל מה שמוסיפים כאן מופיע מיד גם אצל שאר בני המשפחה' }),
       byCat.map(([cat, color, list2]) => React.createElement('div', { key: cat },
