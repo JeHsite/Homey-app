@@ -60,7 +60,19 @@ function AssistantPanel({ isDemo, isPremium, isChild, kidId, kidName, currency, 
     }
     setBusy(false);
   };
-  const setPending = (mi, pi, state) => setMsgs(prev => prev.map((m, i) => i !== mi ? m : { ...m, pending: m.pending.map((p, j) => j === pi ? { ...p, state } : p) }));
+  // שורת ההוספה המהירה (modules/today.js) שולחת לכאן משפט שהמפרש המקומי לא הבין עד הסוף
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  useEffect(() => {
+    const onAsk = e => {
+      const t = e.detail && e.detail.text;
+      setOpen(true);
+      if (t) setTimeout(() => sendRef.current(t), 60);
+    };
+    window.addEventListener('homey-assistant', onAsk);
+    return () => window.removeEventListener('homey-assistant', onAsk);
+  }, []);
+  const setPending =(mi, pi, state) => setMsgs(prev => prev.map((m, i) => i !== mi ? m : { ...m, pending: m.pending.map((p, j) => j === pi ? { ...p, state } : p) }));
   const confirm = async (mi, pi, p) => {
     setPending(mi, pi, 'saving');
     const ok = await onConfirmTransaction(p);

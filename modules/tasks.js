@@ -147,10 +147,10 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey 
     if (done) showToast(task.repeat !== 'none' ? 'בוצע. המשימה הבאה כבר ברשימה' : 'בוצע');
   };
 
-  const deleteTask = async task => {
+  const deleteTask = async (task, quiet) => {
     patch(s => ({ tasks: s.tasks.filter(x => x.id !== task.id) }));
     if (!isDemo) await sb.from('tasks').delete().eq('id', task.id);
-    showToast('המשימה נמחקה');
+    if (!quiet) showToast('המשימה נמחקה');
   };
 
   const addEvent = async ev => {
@@ -195,7 +195,22 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey 
     await sb.from('family_events').update(db).eq('id', ev.id);
   };
 
-  return { ...state, addTask, toggleTask, deleteTask, addEvent, deleteEvent, updateEvent };
+  // עדכון משימה קיימת (העברה למחר, שינוי מועד/כותרת). רשימה = כמה משימות בבת אחת ("העבר הכול למחר")
+  const updateTask = async (taskOrList, changes) => {
+    const list = Array.isArray(taskOrList) ? taskOrList : [taskOrList];
+    const ids = list.map(t => t.id);
+    patch(s => ({ tasks: s.tasks.map(x => ids.includes(x.id) ? { ...x, ...changes } : x) }));
+    if (isDemo) return;
+    const map = { title: 'title', dueDate: 'due_date', dueTime: 'due_time', notes: 'notes', scope: 'scope', personId: 'person_id', personKind: 'person_kind', repeat: 'repeat' };
+    const db = {};
+    Object.entries(changes).forEach(([k, v]) => { if (map[k]) db[map[k]] = v; });
+    const realIds = ids.filter(id => !String(id).startsWith('local-'));
+    if (!realIds.length) return;
+    const { error } = await sb.from('tasks').update(db).in('id', realIds);
+    if (error) showToast('שגיאה בעדכון');
+  };
+
+  return { ...state, addTask, toggleTask, deleteTask, addEvent, deleteEvent, updateEvent, updateTask };
 }
 
 /* ---- חישובי עמידה בזמנים לשבוע הנוכחי ---- */

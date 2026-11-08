@@ -659,6 +659,76 @@ body[data-compact="1"] main { gap: .75rem; }
   .habit-heat-cell { aspect-ratio: 1; border-radius: 5px; }
   .habit-heat-cell.today { box-shadow: 0 0 0 2px var(--bronze); }
   @media (prefers-reduced-motion: reduce) { .habit-row, .goals-mini-card { transition: none; } .habit-row.done .habit-tick { animation: none; } }
+  /* "היום | שבוע" ושורת ההוספה המהירה (modules/today.js) */
+  .td-quick { padding: 10px 12px; position: relative; z-index: 2; }
+  .td-quick-plus { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--bronze) 18%, transparent); color: var(--bronze); }
+  .td-quick-input { flex: 1; min-width: 0; background: transparent; outline: none; border: none; font-size: 16px; padding: 8px 2px; color: var(--text); }
+  .td-quick-input::placeholder { color: var(--text-dim); }
+  .td-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .td-chip { --chip: var(--bronze); position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; line-height: 1; padding: 7px 11px; border-radius: 999px; cursor: pointer;
+    background: color-mix(in srgb, var(--chip) 14%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--chip) 40%, transparent); color: var(--text); transition: transform .12s, background .15s; }
+  .td-chip:active { transform: scale(.96); }
+  .td-chip.dim { background: var(--navy-panel-2); border-color: var(--line); color: var(--text-muted); }
+  .td-chip.static { cursor: default; }
+  .td-chip.ai { --chip: var(--cyan); margin-inline-start: auto; }
+  .td-chip-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
+  .td-chip:focus-within { outline: 2px solid var(--bronze); outline-offset: 2px; }
+  .td-seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); }
+  .td-seg button { padding: 7px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-2); transition: background .15s, color .15s; }
+  .td-seg button.on { background: var(--bronze); color: var(--on-accent); }
+  .td-people { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .td-people::-webkit-scrollbar { display: none; }
+  .td-person { --who: var(--bronze); flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 13px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
+  .td-person.on { border-color: var(--who); background: color-mix(in srgb, var(--who) 16%, var(--navy-panel-2)); color: var(--text); font-weight: 700; }
+  .td-person-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--who); }
+  .td-h { font-size: 15px; font-weight: 800; }
+  .td-list { display: flex; flex-direction: column; }
+  .td-item { --who: var(--bronze); border-bottom: 1px solid var(--line); }
+  .td-item:last-child { border-bottom: none; }
+  .td-item-main { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .td-time { flex-shrink: 0; width: 44px; font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .td-bar { flex-shrink: 0; align-self: stretch; width: 4px; border-radius: 4px; background: var(--who); }
+  .td-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: right; }
+  .td-item-title { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+  .td-item-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--text-muted); }
+  .td-item-meta:empty { display: none; }
+  .td-item.is-done .td-item-title { text-decoration: line-through; color: var(--text-dim); }
+  .td-item-more { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 0 10px; padding-inline-start: 58px; }
+  .td-item.compact .td-item-main { padding: 6px 0; gap: 8px; }
+  .td-item.compact .td-item-title { font-size: 13px; }
+  .td-item.compact .td-item-more { padding-inline-start: 12px; }
+  .td-item[draggable="true"] { cursor: grab; }
+  .td-routine { --who: var(--bronze); display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .td-routine:last-child { border-bottom: none; }
+  .td-routine-bar { width: 90px; height: 7px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .td-routine-bar span { display: block; height: 100%; border-radius: 99px; background: var(--who); transition: width .3s; }
+  .td-peek { width: 100%; text-align: right; font-size: 13px; padding: 12px 14px; border-radius: 14px; background: var(--navy-panel-2); border: 1px dashed var(--line); color: var(--text-2); }
+  .td-week-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .td-week { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .td-day { padding: 10px 12px; transition: border-color .15s, background .15s; }
+  .td-day.today { border-color: var(--bronze); box-shadow: 0 0 0 1px var(--bronze) inset; }
+  .td-day.drop { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 8%, var(--navy-panel)); }
+  .td-day-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; margin-bottom: 2px; }
+  .td-tray { padding: 12px; align-self: start; }
+  @media (max-width: 1099px) { .td-day.empty { padding-top: 6px; padding-bottom: 6px; } .td-day.empty .td-day-head { margin: 0; } .td-day.empty > p { display: none; } }
+  /* במחשב: 7 עמודות, והמגש "לשבץ" מתחת (רוחב מלא לימים). פריט בעמודה: בלי עמודת שעה, פס צבע דק וסימון קטן */
+  @media (min-width: 1100px) {
+    .td-week { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .td-day { min-height: 200px; padding: 8px 7px; }
+    .td-day .td-item-main { gap: 6px; align-items: flex-start; }
+    .td-day .td-bar { width: 3px; }
+    .td-day .td-item-title { font-size: 12.5px; line-height: 1.35; }
+    .td-day .td-item-meta { font-size: 11px; gap: 2px 6px; }
+    .td-day .pl-check { width: 20px; height: 20px; flex-shrink: 0; }
+    .td-day .pl-check svg { width: 12px; height: 12px; }
+    .td-tray .td-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); column-gap: 18px; }
+  }
+  .td-snack { position: fixed; z-index: 80; inset-inline: 16px; bottom: calc(18px + env(safe-area-inset-bottom)); max-width: 460px; margin: 0 auto; display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 14px; background: var(--text); color: var(--navy); font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: td-snack-in .22s ease-out; }
+  .td-snack-undo { font-weight: 800; color: var(--bronze); padding: 2px 6px; }
+  @media (max-width: 639px) { .td-snack { bottom: calc(90px + env(safe-area-inset-bottom)); } }
+  @keyframes td-snack-in { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .td-snack { animation: none; } .td-chip, .td-routine-bar span { transition: none; } }
   /* משימות ולו"ז כאפליקציה (modules/plan.js) */
   .plan-timeline { position: relative; }
   .plan-tl-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
@@ -1105,14 +1175,16 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
-<script src="modules/tasks.js?v=4"></script>
+<script src="modules/tasks.js?v=5"></script>
 <script src="modules/shopping.js?v=3"></script>
 <script src="modules/kitchen.js?v=1"></script>
 <script src="modules/events.js?v=2"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
+<script src="modules/heparse.js?v=1"></script>
+<script src="modules/today.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
-<script src="modules/assistant.js?v=2"></script>
+<script src="modules/assistant.js?v=3"></script>
 <script>
 const {
   useState,
@@ -1971,58 +2043,26 @@ const NAV_ITEMS_ALL = [{
   parentOnly: true,
   module: 'shopping'
 }, {
-  id: 'meetings',
-  label: 'פגישות',
-  icon: IBriefcase,
-  parentOnly: true,
-  module: 'events'
-}, {
-  id: 'dates',
-  label: 'דייטים',
-  icon: IHeart,
-  parentOnly: true,
-  module: 'events'
-}, {
-  id: 'classes',
-  label: 'חוגים',
-  icon: IGraduationCap,
-  module: 'events'
-}, {
-  id: 'plan',
-  label: 'סקירה',
-  icon: IHome,
-  parentOnly: true,
-  module: 'tasks'
-}, {
-  id: 'tasks',
-  label: 'משימות השבוע',
-  icon: ICheckSquare,
-  module: 'tasks'
-}, {
-  id: 'schedule',
-  label: 'לו"ז שבועי',
+  id: 'today',
+  label: 'היום | שבוע',
   icon: ICalendar,
   module: 'tasks'
 }, {
-  id: 'chores',
-  label: 'תורנויות',
+  id: 'kids',
+  label: 'ילדים',
   icon: ITrophy,
   module: 'tasks'
 }, {
-  id: 'routines',
-  label: 'שגרות',
-  icon: ISparkles,
-  module: 'tasks'
-}, {
-  id: 'sync',
-  label: 'ישיבת שבוע',
-  icon: IUsers,
+  id: 'inbox',
+  label: 'בלי תאריך ופתקים',
+  icon: IInbox,
   parentOnly: true,
   module: 'tasks'
 }, {
-  id: 'notes',
-  label: 'פתקים ותזכורות',
-  icon: IClipboard,
+  id: 'sync',
+  label: 'ישיבה זוגית',
+  icon: IHeart,
+  parentOnly: true,
   module: 'tasks'
 }, {
   id: 'trips',
@@ -3717,11 +3757,11 @@ const HOMEY_MODULES = [{
 }, {
   id: 'tasks',
   label: 'משימות ולו"ז',
-  desc: 'משימות לשבוע, לו"ז אישי וזוגי, תורנויות ופתקים',
-  kidDesc: 'המטלות שלי, הנקודות והפרסים',
+  desc: 'היום והשבוע של כל הבית, מטלות ושגרות לילדים, חוגים, דייטים ופתקים',
+  kidDesc: 'מה יש לי היום, המטלות והנקודות',
   icon: ICheckSquare,
-  tab: 'plan',
-  kidTab: 'chores',
+  tab: 'today',
+  kidTab: 'today',
   kids: true
 }, {
   id: 'shopping',
@@ -3730,16 +3770,6 @@ const HOMEY_MODULES = [{
   kidDesc: 'להוסיף דברים לרשימת הקניות של הבית',
   icon: IBag,
   tab: 'shopping',
-  kids: true
-}, {
-  id: 'events',
-  label: 'פגישות, דייטים וחוגים',
-  kidLabel: 'החוגים שלי',
-  desc: 'פגישות, דייטים בין ההורים וחוגי הילדים',
-  kidDesc: 'החוגים והפעילויות שלי בשבוע',
-  icon: ICalendar,
-  tab: 'meetings',
-  kidTab: 'classes',
   kids: true
 }, {
   id: 'trips',
@@ -5434,7 +5464,9 @@ function App() {
     document.documentElement.classList.toggle('ent-menu-open', mobileMenuOpen);
     return () => document.documentElement.classList.remove('ent-menu-open');
   }, [mobileMenuOpen]);
-  const [activeTab, setActiveTabRaw] = useState('home');
+  const [activeTabState, setActiveTabRaw] = useState('home');
+  // לשוניות ישנות (tasks, schedule, chores...) מובילות למקום החדש שלהן (TAB_ALIASES ב-modules/today.js)
+  const activeTab = TAB_ALIASES[activeTabState] || activeTabState;
   const navLock = React.useRef(false);
 
   // ניווט אחורה: כפתור המערכת / החלקה שמאלה
@@ -7684,10 +7716,27 @@ function App() {
       is_pinned: !current
     }).eq('id', id);
   };
-  const deleteNote = async id => {
+  const deleteNote = async (id, quiet) => {
     setNotes(prev => prev.filter(x => x.id !== id));
     if (!isDemo) await sb.from('notes').delete().eq('id', id);
-    showToast('הפתק נמחק');
+    if (!quiet) showToast('הפתק נמחק');
+  };
+  // לשורת ההוספה המהירה (modules/today.js): "פתק: ..." נשמר כאן. מחזיר את המזהה, כדי שאפשר יהיה לבטל
+  const notesApi = {
+    add: async (title, content) => {
+      const row = { title: String(title || '').trim(), content: content || '', isPinned: false };
+      if (!row.title) return null;
+      if (isDemo) {
+        const id = nextId();
+        setNotes(prev => [{ id, ...row }, ...prev]);
+        return id;
+      }
+      const { data, error } = await sb.from('notes').insert({ family_id: familyId, title: row.title, content: row.content, is_pinned: false }).select().single();
+      if (error) { showToast('שגיאה בשמירה'); return null; }
+      setNotes(prev => [{ id: data.id, ...row }, ...prev]);
+      return data.id;
+    },
+    remove: (id, quiet) => deleteNote(id, quiet)
   };
   const submitTrip = async () => {
     const f = formData.trips;
@@ -8285,7 +8334,7 @@ function App() {
   const allowedNav = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
     label: 'הכסף של הילדים'
-  } : item.id === 'chores' && isChild ? {
+  } : item.id === 'kids' && isChild ? {
     ...item,
     label: 'המטלות שלי'
   } : item).concat(isAdmin && !isChild && familyId === ROYAL_FAMILY_ID ? [{
@@ -8349,8 +8398,6 @@ function App() {
     if (shopSum) c.shopping = shopSum;
     const goalsSum = isPremium && goalsOwner && plannerMe && goalsOwner.id === plannerMe.id ? goalsHubSummary(goalsApp) : null;
     if (goalsSum) c.goals = goalsSum;
-    const evSum = isPremium ? evHubSummary(planner, plannerMe, isChild) : null;
-    if (evSum) c.events = evSum;
     const plSum = isPremium ? isChild && plannerMe ? choresHubForKid(chores, plannerMe.id) || plHubSummary(planner, plannerMe, isChild) : plHubSummary(planner, plannerMe, isChild) : null;
     if (plSum) c.tasks = plSum;else if (notes.length) {
       const pinned = notes.filter(n => n.isPinned).length;
@@ -9811,29 +9858,7 @@ function App() {
   }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
     data: assetBreakdown,
     currency: currency
-  }))), activeTab === 'meetings' && !isChild && /*#__PURE__*/React.createElement(MeetingsPage, {
-    planner: planner,
-    me: plannerMe,
-    isChild: isChild,
-    isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings')
-  }), activeTab === 'dates' && !isChild && /*#__PURE__*/React.createElement(DatesPage, {
-    planner: planner,
-    me: plannerMe,
-    isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings'),
-    currency: currency,
-    ideasApi: dateIdeas
-  }), activeTab === 'classes' && /*#__PURE__*/React.createElement(ClassesPage, {
-    planner: planner,
-    me: plannerMe,
-    isChild: isChild,
-    isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings'),
-    currency: currency,
-    onCreateBill: createBillQuick,
-    onDeleteBill: deleteBill
-  }), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
+  }))), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
     shop: shop,
     isChild: isChild,
     isPremium: isPremium,
@@ -9868,30 +9893,20 @@ function App() {
     onSetLimit: setSplurgeLimit,
     onRecordExpense: recordExpense,
     onDelete: deleteTransaction
-  }), activeTab === 'plan' && !isChild && (isPremium ? /*#__PURE__*/React.createElement(PlanOverview, {
+  }), activeTab === 'today' && plannerMe && /*#__PURE__*/React.createElement(TodayPage, {
     planner: planner,
     ch: chores,
     extras: planExtras,
-    me: plannerMe,
-    onNavigate: tab => setActiveTab(tab),
-    financeWeek: {
-      weekSpent: forecast.weekSpent,
-      weeklyBudget: forecast.weeklyBudget,
-      currency
-    }
-  }) : /*#__PURE__*/React.createElement(PremiumLock, {
-    title: 'הסקירה של משימות ולו"ז היא תכונת פרימיום',
-    desc: 'לוח הבקרה של הבית: מה יש היום, מי מסיע, התנגשויות בלו"ז והשבוע במספרים.',
-    onUpgrade: () => setActiveTab('settings')
-  })), activeTab === 'routines' && /*#__PURE__*/React.createElement(RoutinesPage, {
-    extras: planExtras,
-    ch: chores,
-    planner: planner,
+    shop: shop,
     me: plannerMe,
     isChild: isChild,
     isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings')
-  }), activeTab === 'sync' && !isChild && /*#__PURE__*/React.createElement(CoupleSyncPage, {
+    onUpgrade: () => setActiveTab('settings'),
+    onNavigate: tab => setActiveTab(tab),
+    notesApi: notesApi
+  }), activeTab === 'sync' && !isChild && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-8"
+  }, /*#__PURE__*/React.createElement(CoupleSyncPage, {
     planner: planner,
     ch: chores,
     extras: planExtras,
@@ -9904,7 +9919,18 @@ function App() {
       currency
     },
     onNavigate: tab => setActiveTab(tab)
-  }), ['goals-home', 'mygoals', 'habits'].includes(activeTab) && (() => {
+  }), isPremium && /*#__PURE__*/React.createElement("div", {
+    id: "dates"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "ent-heading text-2xl font-bold mb-4"
+  }, "\u2764\uFE0F דייטים"), /*#__PURE__*/React.createElement(DatesPage, {
+    planner: planner,
+    me: plannerMe,
+    isPremium: isPremium,
+    onUpgrade: () => setActiveTab('settings'),
+    currency: currency,
+    ideasApi: dateIdeas
+  }))), ['goals-home', 'mygoals', 'habits'].includes(activeTab) && (() => {
     // בורר "של מי" להורים: שלי / כל ילד
     const owners = isChild || !plannerMe ? [] : [{
       id: plannerMe.id,
@@ -9936,27 +9962,55 @@ function App() {
       currency
     });
     return /*#__PURE__*/React.createElement(HabitsPage, common);
-  })(), activeTab === 'chores' && /*#__PURE__*/React.createElement(ChoresPage, {
-    ch: chores,
-    members: planner.members,
+  })(), activeTab === 'kids' && plannerMe && /*#__PURE__*/React.createElement(KidsPage, {
+    isChild: isChild,
+    segments: [{
+      id: 'chores',
+      label: isChild ? 'מטלות ונקודות' : 'מטלות ונקודות',
+      el: /*#__PURE__*/React.createElement(ChoresPage, {
+        ch: chores,
+        members: planner.members,
+        me: plannerMe,
+        isChild: isChild,
+        isPremium: isPremium,
+        onUpgrade: () => setActiveTab('settings'),
+        currency: currency
+      })
+    }, {
+      id: 'routines',
+      label: 'שגרות',
+      el: /*#__PURE__*/React.createElement(RoutinesPage, {
+        extras: planExtras,
+        ch: chores,
+        planner: planner,
+        me: plannerMe,
+        isChild: isChild,
+        isPremium: isPremium,
+        onUpgrade: () => setActiveTab('settings')
+      })
+    }, {
+      id: 'classes',
+      label: 'חוגים',
+      el: /*#__PURE__*/React.createElement(ClassesPage, {
+        planner: planner,
+        me: plannerMe,
+        isChild: isChild,
+        isPremium: isPremium,
+        onUpgrade: () => setActiveTab('settings'),
+        currency: currency,
+        onCreateBill: createBillQuick,
+        onDeleteBill: deleteBill
+      })
+    }]
+  }), activeTab === 'inbox' && !isChild && plannerMe && /*#__PURE__*/React.createElement(InboxPage, {
+    planner: planner,
+    shop: shop,
     me: plannerMe,
     isChild: isChild,
     isPremium: isPremium,
     onUpgrade: () => setActiveTab('settings'),
-    currency: currency
-  }), activeTab === 'tasks' && /*#__PURE__*/React.createElement(TasksPage, {
-    planner: planner,
-    me: plannerMe,
-    isChild: isChild,
-    isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings')
-  }), activeTab === 'schedule' && /*#__PURE__*/React.createElement(SchedulePage, {
-    planner: planner,
-    me: plannerMe,
-    isChild: isChild,
-    isPremium: isPremium,
-    onUpgrade: () => setActiveTab('settings')
-  }), activeTab === 'notes' && /*#__PURE__*/React.createElement("div", {
+    notesApi: notesApi
+  }), activeTab === 'inbox' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between"
