@@ -580,6 +580,13 @@ body[data-compact="1"] main { gap: .75rem; }
   .store-mode .shop-item .pl-check { width: 38px; height: 38px; }
   .store-mode .shop-item .pl-check svg { width: 22px; height: 22px; }
   /* עוזר AI משפחתי (modules/assistant.js) */
+  /* כפתור + להוספת הוצאה בלשוניות הכלכלה (בצד ימין; העוזר בצד שמאל) */
+  .econ-fab { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60; width: 58px; height: 58px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--bronze); color: var(--on-accent); box-shadow: 0 10px 28px rgba(0,0,0,.35); transition: transform .15s ease; }
+  .econ-fab:hover { transform: translateY(-2px); }
+  .econ-fab:active { transform: scale(.94); }
+  .econ-fab:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .econ-fab { transition: none; } }
   .assist-fab { position: fixed; left: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60; width: 58px; height: 58px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--cyan), var(--bronze));
     box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--bronze) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.4); transition: transform .25s cubic-bezier(.34,1.56,.64,1); animation: assist-glow 3.5s ease-in-out infinite; }
@@ -8483,7 +8490,36 @@ function App() {
       description: p.description,
       date: p.date
     })
-  }), /*#__PURE__*/React.createElement("header", {
+  }), !isChild && moduleOfTab(activeTab) === 'economy' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "econ-fab",
+    "aria-label": "הוספת הוצאה",
+    title: "הוספת הוצאה",
+    onClick: () => {
+      setEditingId(null);
+      setFormData(prev => ({
+        ...prev,
+        expenses: emptyForms.expenses
+      }));
+      setActiveTab('expenses');
+      setOpenForm('expenses');
+      // אחרי שהטופס נפתח: גוללים אליו ומתמקדים בשדה הראשון
+      setTimeout(() => {
+        const el = document.getElementById('add-expense-form');
+        if (!el) return;
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+        const f = el.querySelector('input[type=number]') || el.querySelector('input:not([type=hidden]):not([type=file]), select');
+        if (f) f.focus({
+          preventScroll: true
+        });
+      }, 120);
+    }
+  }, /*#__PURE__*/React.createElement(IPlus, {
+    size: 26
+  })), /*#__PURE__*/React.createElement("header", {
     className: "ent-header sticky top-0 z-50"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative"
@@ -9013,6 +9049,7 @@ function App() {
   }, /*#__PURE__*/React.createElement(IPlus, {
     size: 16
   }), " הוסף רשומה")), openForm === 'expenses' && /*#__PURE__*/React.createElement("div", {
+    id: "add-expense-form",
     className: "grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl",
     style: {
       background: 'var(--navy-panel-2)'
@@ -13826,7 +13863,9 @@ function PushPrefsCard({
     brief_enabled: true,
     brief_hour: 7,
     event_reminders: true,
-    task_reminders: true
+    task_reminders: true,
+    evening_enabled: true,
+    evening_hour: 20
   };
   useEffect(() => {
     if (isDemo) {
@@ -13853,7 +13892,10 @@ function PushPrefsCard({
         brief_enabled: data.brief_enabled,
         brief_hour: data.brief_hour,
         event_reminders: data.event_reminders,
-        task_reminders: data.task_reminders
+        task_reminders: data.task_reminders,
+        // עמודות הערב קיימות רק אחרי evening-digest.sql
+        evening_enabled: data.evening_enabled ?? true,
+        evening_hour: data.evening_hour ?? 20
       } : defaults);
     })();
     return () => {
@@ -13863,15 +13905,49 @@ function PushPrefsCard({
   const save = async next => {
     setPrefs(next);
     if (isDemo || !uid || unavailable) return;
-    await sb.from('push_prefs').upsert({
+    const row = {
       user_id: uid,
       family_id: familyId,
       ...next,
       updated_at: new Date().toISOString()
-    }, {
+    };
+    const {
+      error
+    } = await sb.from('push_prefs').upsert(row, {
       onConflict: 'user_id'
     });
+    // לפני evening-digest.sql אין עמודות ערב: שומרים את השאר בלעדיהן
+    if (error && /evening/.test(error.message || '')) {
+      const {
+        evening_enabled,
+        evening_hour,
+        ...rest
+      } = row;
+      await sb.from('push_prefs').upsert(rest, {
+        onConflict: 'user_id'
+      });
+    }
   };
+  const hourSelect = (key, label) => /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 text-sm pb-1"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "בשעה"), /*#__PURE__*/React.createElement("select", {
+    className: "ent-input px-3 py-1.5 rounded-lg text-sm outline-none",
+    "aria-label": label,
+    value: prefs[key],
+    onChange: e => save({
+      ...prefs,
+      [key]: Number(e.target.value)
+    })
+  }, Array.from({
+    length: 24
+  }, (_, h) => /*#__PURE__*/React.createElement("option", {
+    key: h,
+    value: h
+  }, `${String(h).padStart(2, '0')}:00`))));
   if (!prefs) return null;
   const toggle = (key, label, hint) => /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between gap-3 py-2"
@@ -13938,7 +14014,7 @@ function PushPrefsCard({
   }, (_, h) => /*#__PURE__*/React.createElement("option", {
     key: h,
     value: h
-  }, `${String(h).padStart(2, '0')}:00`)))), toggle('event_reminders', 'תזכורת שעה לפני אירוע', 'פגישות, חוגים, דייטים וכל מה שבלו"ז, כשיש להם שעה'), toggle('task_reminders', 'תזכורת שעה לפני משימה', 'למשימות שקבעתם להן שעה'), /*#__PURE__*/React.createElement("div", {
+  }, `${String(h).padStart(2, '0')}:00`)))), toggle('evening_enabled', 'מחר אצלכם (סיכום ערב)', 'מה יש מחר, מי מסיע לאן, חוג בלי מסיע והמשימות שלך למחר'), prefs.evening_enabled && hourSelect('evening_hour', 'שעת סיכום הערב'), toggle('event_reminders', 'תזכורת שעה לפני אירוע', 'רק למי שאחראי: אירוע שלך, חוג שאתה מסיע (הלוך לפני, איסוף לפני הסיום), ומה שמשפחתי לכולם'), toggle('task_reminders', 'תזכורת שעה לפני משימה', 'למשימות עם שעה שבאחריותך, או משפחתיות בלי אחראי'), /*#__PURE__*/React.createElement("div", {
     className: "mt-2 p-3 rounded-xl",
     style: {
       background: 'var(--navy-panel-2)'

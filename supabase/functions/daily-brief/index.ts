@@ -3,9 +3,13 @@
 //   1. הבוקר שלכם: לכל הורה בשעה שבחר (push_prefs.brief_hour, ברירת מחדל 07:00), פעם ביום.
 //      משימות להיום ובאיחור, אירועי היום בלו"ז, חיובים שיורדים היום, ופריטים ברשימת הקניות.
 //   2. תזכורות: אירוע או משימה עם שעה, שמתחילים בעוד 40-65 דקות (חלון שמכסה ריצה כל 15 דקות).
+//      רק למי שאחראי: פריט של הורה מסוים = רק לו; חוג עם מסיע מוגדר = רק למסיע (הלוך לפני ההתחלה, חזור לפני הסיום);
+//      משפחתי/זוגי/של ילד בלי אחראי = לכל ההורים.
+//   3. מחר אצלכם (evening-digest.sql): בשעה שבחר (ברירת מחדל 20:00): מה יש מחר, מי מסיע, חוג בלי מסיע, המשימות שלו למחר.
 // push_log מונע שליחה כפולה. מוגן בכותרת x-cron-secret, לכן "Verify JWT" כבוי לפונקציה הזו.
 // בדיקה ידנית: POST עם x-cron-secret וגוף {"dry": true} מחזיר מה היה נשלח עכשיו, בלי לשלוח.
 //               {"force_brief": true, "user_id": "<uuid>"} שולח הבוקר שלכם עכשיו למשתמש אחד (מתעלם מהשעה ומהיומן).
+//               {"force_evening": true, "user_id": "<uuid>"} אותו דבר לסיכום הערב.
 // פרטיות: פריט אישי של הורה נשלח רק אליו. פריטים זוגיים, משפחתיים ושל ילדים נשלחים לכל ההורים במשפחה.
 // משימות, לו"ז וקניות הם תכונת פרימיום: למשפחה חינמית הבוקר שלכם כולל רק חיובים.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -27,6 +31,7 @@ function israelNow() {
     iso: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
   };
 }
+const addDays = (iso: string, n: number) => { const t = new Date(iso + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
 const toMin = (t: string | null) => {
   if (!t) return null;
   const [h, mm] = String(t).split(":").map(Number);
@@ -36,7 +41,8 @@ const hhmm = (t: string | null) => (t ? String(t).slice(0, 5) : "");
 const dowOf = (iso: string) => new Date(iso + "T00:00:00Z").getUTCDay();
 
 type Ev = { id: string; family_id: string; kind: string; title: string; location: string | null; scope: string; person_kind: string | null;
-  person_id: string | null; start_date: string; start_time: string | null; repeat: string; repeat_until: string | null };
+  person_id: string | null; start_date: string; start_time: string | null; end_time: string | null; repeat: string; repeat_until: string | null;
+  drive_to?: string | null; drive_from?: string | null };
 type Task = { id: string; family_id: string; title: string; scope: string; person_kind: string | null; person_id: string | null;
   due_date: string | null; due_time: string | null };
 
@@ -49,6 +55,12 @@ const occursToday = (e: Ev, today: string, dow: number) => {
 // אישי של הורה: רק לו. כל השאר: לכל ההורים
 const visibleTo = (x: { scope: string; person_kind: string | null; person_id: string | null }, userId: string) =>
   x.scope !== "personal" || x.person_kind === "child" || x.person_id === userId;
+// מי מקבל תזכורת: הורה אחראי = רק הוא. חוג עם מסיע = רק המסיעים. אחרת: כל מי שרואה את הפריט
+const remindsUser = (x: { scope: string; kind?: string; person_kind: string | null; person_id: string | null; drive_to?: string | null; drive_from?: string | null }, userId: string) => {
+  if (x.person_kind === "parent" && x.person_id) return x.person_id === userId;
+  if (x.kind === "class" && (x.drive_to || x.drive_from)) return x.drive_to === userId || x.drive_from === userId;
+  return visibleTo(x, userId);
+};
 
 Deno.serve(async (req) => {
   const secret = Deno.env.get("CRON_SECRET");
@@ -71,15 +83,25 @@ Deno.serve(async (req) => {
     supabase.from("family_plan").select("family_id, plan").in("family_id", familyIds),
   ]);
   const prefs = new Map((prefsRows ?? []).map((p) => [p.user_id, p]));
-  const pref = (uid: string) => prefs.get(uid) ?? { brief_enabled: true, brief_hour: 7, event_reminders: true, task_reminders: true };
+  // עמודות הערב קיימות רק אחרי evening-digest.sql; בלי ערך = ברירת המחדל (פעיל, 20:00)
+  const pref = (uid: string) => {
+    const p = prefs.get(uid) ?? { brief_enabled: true, brief_hour: 7, event_reminders: true, task_reminders: true };
+    return { ...p, evening_enabled: p.evening_enabled ?? true, evening_hour: p.evening_hour ?? 20 };
+  };
+  const tomorrow = addDays(now.iso, 1);
+  const tomorrowDow = (now.dow + 1) % 7;
   const premium = new Set((plans ?? []).filter((p) => p.plan === "premium").map((p) => p.family_id));
 
   // נתוני היום לכל המשפחות שיש להן מכשירים. טבלאות המערכים עשויות לא להיות קיימות עדיין: שגיאה = רשימה ריקה
   const prem = familyIds.filter((f) => premium.has(f));
   const safe = async <T,>(p: PromiseLike<{ data: T[] | null; error: unknown }>) => { const r = await p; return r.error ? [] as T[] : (r.data ?? []); };
   const [events, tasks, bills, lists, items, children] = await Promise.all([
-    prem.length ? safe<Ev>(supabase.from("family_events").select("id, family_id, kind, title, location, scope, person_kind, person_id, start_date, start_time, repeat, repeat_until").in("family_id", prem).lte("start_date", now.iso)) : [],
-    prem.length ? safe<Task>(supabase.from("tasks").select("id, family_id, title, scope, person_kind, person_id, due_date, due_time").in("family_id", prem).eq("status", "todo").lte("due_date", now.iso)) : [],
+    prem.length ? (async () => {
+      const base = "id, family_id, kind, title, location, scope, person_kind, person_id, start_date, start_time, end_time, repeat, repeat_until";
+      const r = await supabase.from("family_events").select(base + ", drive_to, drive_from").in("family_id", prem).lte("start_date", tomorrow);
+      return r.error ? safe<Ev>(supabase.from("family_events").select(base).in("family_id", prem).lte("start_date", tomorrow)) : (r.data ?? []) as Ev[];
+    })() : [],
+    prem.length ? safe<Task>(supabase.from("tasks").select("id, family_id, title, scope, person_kind, person_id, due_date, due_time").in("family_id", prem).eq("status", "todo").lte("due_date", tomorrow)) : [],
     safe<{ family_id: string; title: string; amount: number; due_day: number }>(supabase.from("bills").select("family_id, title, amount, due_day").in("family_id", familyIds).eq("is_paid", false)),
     prem.length ? safe<{ id: string; family_id: string; kind: string }>(supabase.from("shopping_lists").select("id, family_id, kind").in("family_id", prem)) : [],
     prem.length ? safe<{ family_id: string; list_id: string }>(supabase.from("shopping_items").select("family_id, list_id").in("family_id", prem).eq("status", "open")) : [],
@@ -90,6 +112,8 @@ Deno.serve(async (req) => {
   const billToday = (b: { due_day: number }) => b.due_day === now.d || (now.d === lastDay && b.due_day > lastDay);
   const groceryLists = new Set(lists.filter((l) => l.kind === "grocery").map((l) => l.id));
   const todayEvents = events.filter((e) => occursToday(e, now.iso, now.dow));
+  const tomorrowEvents = events.filter((e) => occursToday(e, tomorrow, tomorrowDow));
+  const kidOf = (e: Ev) => (e.person_kind === "child" && e.person_id ? kidName.get(e.person_id) : null);
 
   type Msg = { userId: string; familyId: string; key: string; title: string; body: string; tag: string };
   const out: Msg[] = [];
@@ -100,7 +124,7 @@ Deno.serve(async (req) => {
     const isPrem = premium.has(familyId);
 
     // 1. הבוקר שלכם
-    const briefDue = input.force_brief || (p.brief_enabled && now.hour === p.brief_hour && now.minute < 15);
+    const briefDue = input.force_brief || (!input.force_evening && p.brief_enabled && now.hour === p.brief_hour && now.minute < 15);
     if (briefDue) {
       const lines: string[] = [];
       if (isPrem) {
@@ -113,7 +137,7 @@ Deno.serve(async (req) => {
           });
           lines.push(`היום: ${shown.join(", ")}${evs.length > 3 ? ` ועוד ${evs.length - 3}` : ""}`);
         }
-        const mine = tasks.filter((t) => t.family_id === familyId && visibleTo(t, userId));
+        const mine = tasks.filter((t) => t.family_id === familyId && visibleTo(t, userId) && String(t.due_date).slice(0, 10) <= now.iso);
         const dueToday = mine.filter((t) => String(t.due_date).slice(0, 10) === now.iso).length;
         const overdue = mine.filter((t) => String(t.due_date).slice(0, 10) < now.iso).length;
         if (dueToday || overdue) lines.push(`משימות: ${dueToday} להיום${overdue ? `, ${overdue} באיחור` : ""}`);
@@ -127,27 +151,61 @@ Deno.serve(async (req) => {
       if (lines.length) out.push({ userId, familyId, key: `brief:${userId}:${now.iso}`, title: "Homey · הבוקר שלכם", body: lines.join("\n"), tag: "homey-brief" });
     }
 
-    // 2. תזכורת שעה לפני
-    if (isPrem && !input.force_brief) {
+    // 2. תזכורת שעה לפני (רק למי שאחראי)
+    if (isPrem && !input.force_brief && !input.force_evening) {
       const inWindow = (t: string | null) => { const m = toMin(t); return m != null && m - nowMin > 40 && m - nowMin <= 65; };
       if (p.event_reminders) {
-        for (const e of todayEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId) && inWindow(e.start_time))) {
-          const who = e.person_kind === "child" && e.person_id ? kidName.get(e.person_id) : null;
-          out.push({ userId, familyId, key: `ev:${e.id}:${now.iso}:${userId}`, title: `בעוד שעה: ${e.title}${who ? ` (${who})` : ""}`,
+        for (const e of todayEvents.filter((e) => e.family_id === familyId && remindsUser(e, userId) && inWindow(e.start_time))) {
+          const who = kidOf(e);
+          // חוג שהוא מסיע הלוך: "להסיע את נועה לכדורגל". מי שרק מחזיר יקבל תזכורת לפני הסיום
+          if (e.kind === "class" && (e.drive_to || e.drive_from) && e.drive_to !== userId) continue;
+          const title = e.kind === "class" && e.drive_to === userId ? `בעוד שעה: להסיע${who ? ` את ${who}` : ""} ל${e.title}` : `בעוד שעה: ${e.title}${who ? ` (${who})` : ""}`;
+          out.push({ userId, familyId, key: `ev:${e.id}:${now.iso}:${userId}`, title,
             body: [hhmm(e.start_time), e.location].filter(Boolean).join(" · "), tag: `homey-ev-${e.id}` });
+        }
+        // איסוף בסוף החוג, למי שמחזיר
+        for (const e of todayEvents.filter((e) => e.family_id === familyId && e.kind === "class" && e.drive_from === userId && inWindow(e.end_time))) {
+          const who = kidOf(e);
+          out.push({ userId, familyId, key: `pick:${e.id}:${now.iso}:${userId}`, title: `בעוד שעה: לאסוף${who ? ` את ${who}` : ""} מ${e.title}`,
+            body: [hhmm(e.end_time), e.location].filter(Boolean).join(" · "), tag: `homey-pick-${e.id}` });
         }
       }
       if (p.task_reminders) {
-        for (const t of tasks.filter((t) => t.family_id === familyId && visibleTo(t, userId) && String(t.due_date).slice(0, 10) === now.iso && inWindow(t.due_time))) {
+        for (const t of tasks.filter((t) => t.family_id === familyId && remindsUser(t, userId) && String(t.due_date).slice(0, 10) === now.iso && inWindow(t.due_time))) {
           out.push({ userId, familyId, key: `task:${t.id}:${now.iso}:${userId}`, title: `תזכורת: ${t.title}`, body: `עד ${hhmm(t.due_time)}`, tag: `homey-task-${t.id}` });
         }
       }
     }
+
+    // 3. מחר אצלכם: סיכום ערב
+    const eveningDue = input.force_evening || (!input.force_brief && p.evening_enabled && now.hour === p.evening_hour && now.minute < 15);
+    if (isPrem && eveningDue) {
+      const lines: string[] = [];
+      const evs = tomorrowEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId))
+        .sort((a, b) => (toMin(a.start_time) ?? 9999) - (toMin(b.start_time) ?? 9999));
+      if (evs.length) {
+        const shown = evs.slice(0, 4).map((e) => `${e.start_time ? hhmm(e.start_time) + " " : ""}${e.title}${kidOf(e) ? ` (${kidOf(e)})` : ""}`);
+        lines.push(`מחר: ${shown.join(", ")}${evs.length > 4 ? ` ועוד ${evs.length - 4}` : ""}`);
+      }
+      const rides = evs.filter((e) => e.kind === "class").flatMap((e) => [
+        e.drive_to === userId ? `${hhmm(e.start_time)} להסיע${kidOf(e) ? ` את ${kidOf(e)}` : ""} ל${e.title}` : null,
+        e.drive_from === userId ? `${hhmm(e.end_time) || "בסוף"} לאסוף${kidOf(e) ? ` את ${kidOf(e)}` : ""} מ${e.title}` : null,
+      ]).filter(Boolean);
+      if (rides.length) lines.push(`🚗 עליך: ${rides.join(", ")}`);
+      const noDriver = evs.filter((e) => e.kind === "class" && "drive_to" in e && (!e.drive_to || !e.drive_from));
+      if (noDriver.length) lines.push(`⚠️ בלי מסיע: ${noDriver.slice(0, 2).map((e) => `${e.title}${kidOf(e) ? ` (${kidOf(e)})` : ""}`).join(", ")}`);
+      const myTasks = tasks.filter((t) => t.family_id === familyId && String(t.due_date).slice(0, 10) === tomorrow
+        && (t.person_id === userId || (!t.person_id && t.scope !== "personal")));
+      if (myTasks.length) lines.push(`משימות שלך למחר: ${myTasks.slice(0, 3).map((t) => t.title).join(", ")}${myTasks.length > 3 ? ` ועוד ${myTasks.length - 3}` : ""}`);
+      const late = tasks.filter((t) => t.family_id === familyId && t.person_id === userId && String(t.due_date).slice(0, 10) < now.iso).length;
+      if (late) lines.push(`באיחור אצלך: ${late === 1 ? "משימה אחת" : `${late} משימות`}`);
+      if (lines.length) out.push({ userId, familyId, key: `evening:${userId}:${tomorrow}`, title: "Homey · מחר אצלכם", body: lines.join("\n"), tag: "homey-evening" });
+    }
   }
 
-  // מסננים מה שכבר נשלח (חוץ מ-force_brief, שנועד לבדיקה)
+  // מסננים מה שכבר נשלח (חוץ מ-force_brief / force_evening, שנועדו לבדיקה)
   let toSend = out;
-  if (out.length && !input.force_brief) {
+  if (out.length && !input.force_brief && !input.force_evening) {
     const { data: done } = await supabase.from("push_log").select("key").in("key", out.map((m) => m.key));
     const sentKeys = new Set((done ?? []).map((d) => d.key));
     toSend = out.filter((m) => !sentKeys.has(m.key));
@@ -180,7 +238,7 @@ Deno.serve(async (req) => {
       }
     }
   }));
-  if (delivered.size && !input.force_brief) {
+  if (delivered.size && !input.force_brief && !input.force_evening) {
     const { error } = await supabase.from("push_log").upsert([...delivered].map((key) => ({ key })), { onConflict: "key", ignoreDuplicates: true });
     if (error) console.error("push_log write failed", error.message);
   }
