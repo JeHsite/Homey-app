@@ -680,6 +680,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .td-chip.ai { --chip: var(--cyan); margin-inline-start: auto; }
   .td-chip-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
   .td-chip:focus-within { outline: 2px solid var(--bronze); outline-offset: 2px; }
+  .td-imp-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) 140px 96px; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .td-imp-row:last-child { border-bottom: none; }
+  .td-imp-row.off .td-imp-title { color: var(--text-dim); }
+  .td-imp-row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--bronze); }
+  @media (max-width: 639px) { .td-imp-row { grid-template-columns: auto auto minmax(0, 1fr); } .td-imp-date, .td-imp-time { grid-column: span 1; } .td-imp-date { grid-column: 2 / 4; } .td-imp-time { grid-column: 2 / 4; } }
   .td-ask { margin-top: 10px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--bronze) 10%, var(--navy-panel-2)); border: 1px solid color-mix(in srgb, var(--bronze) 35%, transparent); }
   .td-ask.pulse { animation: td-ask-pulse .45s ease-out; }
   @keyframes td-ask-pulse { 0%, 100% { transform: none; } 30% { transform: translateX(-5px); } 60% { transform: translateX(5px); } }
@@ -1192,8 +1197,8 @@ document.addEventListener('click', function (e) {
 <script src="modules/events.js?v=2"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=1"></script>
-<script src="modules/heparse.js?v=2"></script>
-<script src="modules/today.js?v=4"></script>
+<script src="modules/heparse.js?v=3"></script>
+<script src="modules/today.js?v=5"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>

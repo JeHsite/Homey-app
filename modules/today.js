@@ -296,6 +296,139 @@ function TdItem({ it, planner, me, isChild, open, onToggle, pushUndo, conflict, 
       React.createElement('button', { className: 'ent-pill-btn ghost px-2.5 py-1 text-xs', style: { color: 'var(--neg)' }, onClick: del }, !isTask && it.src.repeat === 'weekly' ? 'מחיקה (כל השבועות)' : 'מחיקה')));
 }
 
+/* ======================= ייבוא הודעה מהגן / בית הספר ======================= */
+// טקסט מוואטסאפ (הדבקה) או צילום מסך (OCR חינמי בדפדפן, Tesseract) -> רשימת פריטים לאישור -> משימות ואירועים
+const tdLoadTesseract = () => window.Tesseract ? Promise.resolve(window.Tesseract) : new Promise((resolve, reject) => {
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
+  s.onload = () => resolve(window.Tesseract);
+  s.onerror = () => reject(new Error('load_failed'));
+  document.head.appendChild(s);
+});
+// צילום מסך: גווני אפור, היפוך אם הרקע כהה (מצב לילה בוואטסאפ), והגברת ניגודיות
+const tdPrepareShot = file => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, 1800 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    const g2 = c.getContext('2d');
+    g2.drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    const px = g2.getImageData(0, 0, c.width, c.height), d = px.data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) { const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; d[i] = g; sum += g; }
+    const dark = sum / (d.length / 4) < 110;
+    for (let i = 0; i < d.length; i += 4) {
+      let g = dark ? 255 - d[i] : d[i];
+      g = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128));
+      d[i] = d[i + 1] = d[i + 2] = g;
+    }
+    g2.putImageData(px, 0, 0);
+    resolve(c);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad_image')); };
+  img.src = url;
+});
+
+function ImportPanel({ planner, me, onClose, pushUndo }) {
+  const [text, setText] = useState('');
+  const [items, setItems] = useState(null);
+  const [owner, setOwner] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [ocr, setOcr] = useState('');
+  const today = plToday();
+  const members = planner.members;
+  const kids = members.filter(m => m.kind === 'child');
+  const ctxMembers = members.flatMap(m => tdFirst(m.name) && tdFirst(m.name) !== m.name ? [m, { ...m, name: tdFirst(m.name) }] : [m]);
+  const analyze = t => setItems(hpExtract(t, { today, meId: me.id, members: ctxMembers }).map((x, i) => ({ ...x, id: i })));
+  const setItem = (id, ch) => setItems(list => list.map(x => x.id === id ? { ...x, ...ch } : x));
+
+  const readShot = async file => {
+    if (!file) return;
+    setOcr('מכינים את התמונה...');
+    let worker = null;
+    try {
+      const canvas = await tdPrepareShot(file);
+      const T = await tdLoadTesseract();
+      worker = await T.createWorker('heb+eng', 1, { logger: m => {
+        if (m.status === 'recognizing text') setOcr(`קורא את ההודעה... ${Math.round((m.progress || 0) * 100)}%`);
+        else if (m.status && m.status.includes('loading')) setOcr('מורידים רכיבי קריאה (רק בפעם הראשונה)...');
+      } });
+      const { data } = await worker.recognize(canvas);
+      const t = (text ? text + '\n' : '') + (data.text || '').trim();
+      setText(t);
+      analyze(t);
+      setOcr('');
+    } catch (_e) {
+      setOcr('לא הצלחתי לקרוא את התמונה. אפשר להעתיק את הטקסט מוואטסאפ ולהדביק כאן.');
+    } finally { if (worker) worker.terminate().catch(() => {}); }
+  };
+
+  // של מי: ילד שמוזכר בשורה עצמה קודם, אחרת הבחירה למעלה
+  const ownerFor = it => {
+    const kidInLine = it.people.map(id => members.find(m => m.id === id)).find(m => m && m.kind === 'child');
+    const o = kidInLine ? kidInLine.id : owner;
+    if (o === 'family') return { scope: 'family', personId: null, personKind: null };
+    if (o === 'me') return { scope: 'personal', personId: me.id, personKind: me.kind };
+    const m = members.find(x => x.id === o);
+    return { scope: 'personal', personId: o, personKind: m ? m.kind : 'child' };
+  };
+  const chosen = (items || []).filter(x => x.selected && x.title.trim());
+  const add = async () => {
+    if (!owner || !chosen.length || busy) return;
+    setBusy(true);
+    const saved = [];
+    for (const it of chosen) {
+      const o = ownerFor(it);
+      const asTask = it.kind === 'task' || it.repeat === 'daily';
+      if (asTask) {
+        const s = await planner.addTask({ title: it.title, scope: o.scope, personId: o.personId, personKind: o.personKind, dueDate: it.date, dueTime: it.time, repeat: it.repeat });
+        if (s) saved.push(['t', s]);
+      } else {
+        const s = await planner.addEvent({ title: it.title, kind: it.tag || 'general', scope: o.scope, personId: o.personId, personKind: o.personKind, startDate: it.date || today, startTime: it.time, repeat: it.repeat === 'weekly' ? 'weekly' : 'none' });
+        if (s) saved.push(['e', s]);
+      }
+    }
+    setBusy(false);
+    if (saved.length) pushUndo(`📥 נוספו ${saved.length === 1 ? 'פריט אחד' : `${saved.length} פריטים`} מההודעה`, () => saved.forEach(([k, s]) => k === 't' ? planner.deleteTask(s, true) : planner.deleteEvent(s, true)));
+    onClose();
+  };
+
+  const ownerOpts = [...kids.map(k => [k.id, tdFirst(k.name)]), ['family', 'כל המשפחה'], ['me', 'רק אני']];
+  return React.createElement('section', { className: 'ent-card p-4 sm:p-5 space-y-3 td-import', 'aria-label': 'ייבוא הודעה' },
+    React.createElement('div', { className: 'flex items-center justify-between gap-2' },
+      React.createElement('h3', { className: 'td-h' }, '📥 ייבוא הודעה מהגן, מבית הספר או מהחוג'),
+      React.createElement('button', { type: 'button', className: 'ent-icon-btn', 'aria-label': 'סגירה', onClick: onClose }, React.createElement(IX, { size: 16 }))),
+    React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, 'מדביקים את ההודעה מוואטסאפ, או מעלים צילום מסך. אני מציע מה להכניס ללו"ז, ואתם מאשרים. הכול נעשה במכשיר, בלי לשלוח את ההודעה לשום מקום.'),
+    React.createElement('textarea', { className: 'ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none', rows: items ? 3 : 6, value: text, 'aria-label': 'טקסט ההודעה',
+      placeholder: 'הורים יקרים, ביום שלישי 10/11 נצא לטיול שנתי. יש להגיע ב-7:45. להביא כובע ומים.', onChange: e => setText(e.target.value) }),
+    React.createElement('div', { className: 'flex flex-wrap gap-2 items-center' },
+      React.createElement('button', { type: 'button', className: 'ent-pill-btn solid-bronze px-4 py-2 text-sm', disabled: !text.trim(), onClick: () => analyze(text) }, items ? 'לנתח שוב' : 'מה יש בהודעה?'),
+      React.createElement('label', { className: 'ent-pill-btn ghost px-4 py-2 text-sm', style: { cursor: 'pointer' } }, '📷 מצילום מסך',
+        React.createElement('input', { type: 'file', accept: 'image/*', className: 'sr-only', style: { position: 'absolute', width: 1, height: 1, opacity: 0 }, 'aria-label': 'בחירת צילום מסך', onChange: e => { readShot(e.target.files && e.target.files[0]); e.target.value = ''; } })),
+      ocr && React.createElement('span', { className: 'text-xs', role: 'status', style: { color: 'var(--text-muted)' } }, ocr)),
+    items && (items.length === 0
+      ? React.createElement('p', { className: 'text-sm', style: { color: 'var(--text-dim)' } }, 'לא מצאתי בהודעה משהו להכניס ללו"ז.')
+      : React.createElement(React.Fragment, null,
+        React.createElement('div', null,
+          React.createElement('p', { className: 'text-sm font-semibold mb-1.5' }, 'של מי ההודעה?'),
+          React.createElement('div', { className: 'flex flex-wrap gap-1.5' }, ownerOpts.map(([k, l]) => React.createElement('button', { key: k, type: 'button', 'aria-pressed': owner === k, onClick: () => setOwner(k),
+            className: 'td-person' + (owner === k ? ' on' : ''), style: { '--who': k === 'family' || k === 'me' ? 'var(--bronze)' : tdColorOf(members, k) } }, l)))),
+        React.createElement('div', { className: 'td-list' }, items.map(it => React.createElement('div', { key: it.id, className: 'td-imp-row' + (it.selected ? '' : ' off') },
+          React.createElement('input', { type: 'checkbox', checked: it.selected, 'aria-label': `להכניס: ${it.title}`, onChange: e => setItem(it.id, { selected: e.target.checked }) }),
+          React.createElement('button', { type: 'button', className: 'td-chip', title: 'משימה או אירוע', onClick: () => setItem(it.id, { kind: it.kind === 'task' ? 'event' : 'task' }) }, it.kind === 'task' ? '✅' : '📅'),
+          React.createElement('input', { className: 'ent-input td-imp-title px-2 py-1.5 rounded-lg text-sm outline-none', value: it.title, 'aria-label': 'כותרת', onChange: e => setItem(it.id, { title: e.target.value }) }),
+          React.createElement('input', { type: 'date', className: 'ent-input td-imp-date px-2 py-1.5 rounded-lg text-sm outline-none', value: it.date || '', 'aria-label': 'תאריך', onChange: e => setItem(it.id, { date: e.target.value || null }) }),
+          React.createElement('input', { type: 'time', className: 'ent-input td-imp-time px-2 py-1.5 rounded-lg text-sm outline-none', value: it.time || '', 'aria-label': 'שעה', onChange: e => setItem(it.id, { time: e.target.value || null }) })))),
+        React.createElement('div', { className: 'flex flex-wrap items-center gap-2' },
+          React.createElement('button', { type: 'button', className: 'ent-pill-btn solid-bronze px-5 py-2 text-sm', disabled: !owner || !chosen.length || busy, onClick: add },
+            busy ? 'מוסיף...' : `הוספה ללו"ז (${chosen.length})`),
+          !owner && React.createElement('span', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, 'בחרו קודם של מי ההודעה')))));
+}
+
 /* ======================= המסך "היום | שבוע" ======================= */
 function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrade, onNavigate, notesApi }) {
   const [view, setView] = useState(() => { try { return localStorage.getItem('homey_today_view') || 'today'; } catch (_e) { return 'today'; } });
@@ -303,6 +436,7 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
   const [openKey, setOpenKey] = useState(null);
   const [offset, setOffset] = useState(0);
   const [dragDay, setDragDay] = useState(null);
+  const [importing, setImporting] = useState(false);
   const [undoNode, pushUndo] = useTdUndo();
   const pickView = v => { setView(v); try { localStorage.setItem('homey_today_view', v); } catch (_e) {} };
 
@@ -343,10 +477,14 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
     React.createElement('div', null,
       React.createElement('p', { className: 'text-sm', style: { color: 'var(--text-muted)' } }, plParse(today).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })),
       React.createElement('h2', { className: 'ent-heading text-2xl font-bold' }, view === 'today' ? (isChild ? 'היום שלי' : 'היום בבית') : 'השבוע')),
-    React.createElement('div', { className: 'td-seg', role: 'tablist', 'aria-label': 'תצוגה' }, [['today', 'היום'], ['week', 'שבוע']].map(([k, l]) =>
-      React.createElement('button', { key: k, type: 'button', role: 'tab', 'aria-selected': view === k, className: view === k ? 'on' : '', onClick: () => pickView(k) }, l))));
+    React.createElement('div', { className: 'flex items-center gap-2' },
+      !isChild && React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-2 text-sm', 'aria-expanded': importing, onClick: () => setImporting(!importing), title: 'הודעה מהגן, מבית הספר או מהחוג' }, '📥 מהודעה'),
+      React.createElement('div', { className: 'td-seg', role: 'tablist', 'aria-label': 'תצוגה' }, [['today', 'היום'], ['week', 'שבוע']].map(([k, l]) =>
+        React.createElement('button', { key: k, type: 'button', role: 'tab', 'aria-selected': view === k, className: view === k ? 'on' : '', onClick: () => pickView(k) }, l)))));
 
-  const quick = React.createElement(QuickAdd, { planner, shop, me, isChild, notesApi, defaultDate: today, pushUndo });
+  const quick = React.createElement(React.Fragment, null,
+    React.createElement(QuickAdd, { planner, shop, me, isChild, notesApi, defaultDate: today, pushUndo }),
+    importing && !isChild && React.createElement(ImportPanel, { planner, me, pushUndo, onClose: () => setImporting(false) }));
   const section = (key, title, body, extra) => React.createElement('section', { key, className: 'ent-card p-4 sm:p-5 td-section', 'aria-label': typeof title === 'string' ? title : undefined },
     React.createElement('div', { className: 'flex items-center justify-between gap-2 mb-2' }, React.createElement('h3', { className: 'td-h' }, title), extra || null), body);
 

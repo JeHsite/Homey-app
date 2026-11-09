@@ -98,6 +98,11 @@ function hpParse(text, ctx) {
     out.date = v;
     take({ index: x.index + x[0].indexOf(x[1]), 0: x[1] }, 'date');
   }
+  // "ביום שלישי 10/11": היום בשבוע שתואם לתאריך הוא חלק מהתאריך, לא מהכותרת
+  if (out.date) {
+    const w = new RegExp(`(?:^|\\s)((?:ב|ל)?(?:יום\\s+)?(${HP_DAYS.join('|')}))(?=\\s|$|[,.])`).exec(work);
+    if (w && HP_DAYS.indexOf(w[2]) === hpParseIso(out.date).getDay()) take({ index: w.index + w[0].indexOf(w[1]), 0: w[1] }, 'date');
+  }
 
   // שעה
   const setTime = (h, mi, part) => {
@@ -156,4 +161,38 @@ function hpParse(text, ctx) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { hpParse, HP_DAYS };
+/* ---- ייבוא הודעה (גן / בית ספר / קבוצת וואטסאפ): מפרקים לשורות ומציעים פריטים לאישור ----
+ * כל שורה עוברת ב-hpParse. שורה בלי תאריך יורשת את התאריך של השורה האחרונה שהיה בה תאריך,
+ * אם היא נראית כמו פריט ("להביא כובע", "יש להגיע ב-8:00"). ברכות ושורות ריקות נזרקות.
+ * שורה עם תאריך ובלי פועל של "מה לעשות" = אירוע (גם בלי שעה: אירוע של כל היום, למשל "טיול שנתי").
+ * שורה בלי תאריך בכלל מוצגת, אבל לא מסומנת: המשתמש מחליט. */
+const HP_WA_PREFIX = /^\s*\[?\d{1,2}[./]\d{1,2}[./]\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AP]M)?\]?\s*(?:-\s*)?(?:[^:\n]{1,40}:\s+)?/;
+const HP_SKIP = /^(בוקר טוב|ערב טוב|לילה טוב|צהריים טובים|שבוע טוב|שבת שלום|חג שמח|תודה( רבה)?|היי|שלום( לכולם)?|הורים יקרים|הורים יקרים ושלום|להתראות|בברכה|המון תודה|יום נעים|יום טוב)[\s,!.:🙏❤️😊🌸]*$/;
+const HP_ITEM = /^(נא |יש |חובה |לא לשכוח |אל תשכחו |תזכורת:? )?(להביא|לשלוח|לשלם|לחתום|להגיע|להחזיר|לצרף|למלא|לאסוף|לארוז|ללבוש|להלביש|לבוא)/;
+
+function hpExtract(text, ctx) {
+  const segs = String(text || '').replace(/\r/g, '').split('\n')
+    .map(l => l.replace(HP_WA_PREFIX, '').trim())
+    // משפטים: אחרי ! או ?, או נקודה שאחריה רווח ולא ספרה (כדי לא לשבור "12.11")
+    .flatMap(l => l.split(/(?<=[!?])\s+|(?<=\.)\s+(?=\D)/))
+    .map(s => s.replace(/^\s*(?:[-–•*·▪️✅🔹🔸]+|\d{1,2}[.)])\s*/, '').replace(/[.!]+$/, '').trim())
+    .filter(s => s.length >= 3 && !HP_SKIP.test(s));
+  const out = [];
+  let ctxDate = null;
+  for (const seg of segs) {
+    const p = hpParse(seg, ctx);
+    const explicit = p.spans.some(s => s.type === 'date');
+    if (explicit) ctxDate = p.date;
+    const isItem = HP_ITEM.test(seg);
+    let date = explicit ? p.date : null;
+    let inherited = false;
+    if (!explicit && ctxDate && (isItem || p.time)) { date = ctxDate; inherited = true; }
+    if (!date && p.time) date = p.date; // שעה בלי תאריך בכלל: היום (כמו בשורת ההוספה)
+    const kind = isItem ? 'task' : date ? 'event' : 'task';
+    out.push({ text: seg, title: p.title || seg, kind, date: date || null, time: p.time, repeat: p.repeat, people: p.people, tag: p.tag, inherited,
+      selected: !!(date || p.repeat !== 'none') });
+  }
+  return out;
+}
+
+if (typeof module !== 'undefined') module.exports = { hpParse, hpExtract, HP_DAYS };
