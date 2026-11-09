@@ -3,12 +3,6 @@
  * בנק רעיונות לדייטים: טבלה date_ideas (supabase/events.sql). */
 
 // המופע הבא של אירוע מתאריך מסוים והלאה (לאירוע שבועי: אותו יום בשבוע), או null אם כבר לא יחזור
-const evNextOn = (ev, from) => {
-  if (ev.repeat !== 'weekly') return ev.startDate >= from ? ev.startDate : null;
-  let d = ev.startDate >= from ? ev.startDate : plAddDays(from, (plParse(ev.startDate).getDay() - plParse(from).getDay() + 7) % 7);
-  if (ev.repeatUntil && d > ev.repeatUntil) return null;
-  return d;
-};
 const evWhen = (date, ev) => `${plDueLabel(date)}${ev.startTime ? ` · ${plTime(ev.startTime)}${ev.endTime ? `-${plTime(ev.endTime)}` : ''}` : ''}`;
 const evInput = 'ent-input w-full px-3 py-2.5 rounded-xl text-sm outline-none';
 const evGate = (planner, isPremium, onUpgrade) => !isPremium ? React.createElement(PremiumLock, { title: 'פגישות, דייטים וחוגים הם תכונת פרימיום', desc: 'תכנון פגישות, דייטים בין ההורים עם בנק רעיונות, וחוגי הילדים עם העלות החודשית.', onUpgrade })
@@ -19,18 +13,6 @@ const evTimeField = (value, onChange, label) => React.createElement('label', { c
 // תאריך המופע הקרוב של יום בשבוע (0=ראשון), מהיום והלאה
 const evNextWeekday = dow => plAddDays(plToday(), (dow - plParse(plToday()).getDay() + 7) % 7);
 
-function evHubSummary(planner, me, isChild) {
-  if (!planner.ready || planner.unavailable || !me) return null;
-  const today = plToday();
-  const kinds = isChild ? ['class'] : ['meeting', 'date', 'class'];
-  const upcoming = planner.events.filter(e => kinds.includes(e.kind) && plVisible(e, me, isChild))
-    .map(e => ({ e, d: evNextOn(e, today) })).filter(x => x.d && x.d <= plAddDays(today, 30))
-    .sort((a, b) => a.d.localeCompare(b.d) || plTime(a.e.startTime || '99').localeCompare(plTime(b.e.startTime || '99')));
-  if (!upcoming.length) return null;
-  const n = upcoming[0];
-  const kindLabel = { meeting: 'פגישה', date: 'דייט', class: 'חוג' }[n.e.kind] || '';
-  return { big: n.e.title, tone: n.e.kind === 'date' ? '#f472b6' : 'var(--text)', line: `${kindLabel} · ${evWhen(n.d, n.e)}` };
-}
 
 /* ---- בנק רעיונות לדייטים ---- */
 const DATE_PLACES = { home: 'בבית', out: 'בחוץ', experience: 'חוויה' };
@@ -69,63 +51,6 @@ function useDateIdeas({ familyId, isDemo, enabled, showToast }) {
   return { ideas, add, remove, markUsed };
 }
 
-/* ======================= לשונית "פגישות" ======================= */
-function MeetingsPage({ planner, me, isChild, isPremium, onUpgrade }) {
-  const emptyForm = () => ({ title: '', withWhom: '', startDate: plToday(), startTime: '', endTime: '', location: '', scope: 'personal', notes: '' });
-  const [adding, setAdding] = useState(false);
-  const [f, setF] = useState(emptyForm);
-  const [showPast, setShowPast] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const gate = evGate(planner, isPremium, onUpgrade);
-  if (gate) return gate;
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const today = plToday();
-  const all = planner.events.filter(e => e.kind === 'meeting' && plVisible(e, me, isChild));
-  const upcoming = all.map(e => ({ e, d: evNextOn(e, today) })).filter(x => x.d).sort((a, b) => a.d.localeCompare(b.d) || plTime(a.e.startTime || '99').localeCompare(plTime(b.e.startTime || '99')));
-  const past = all.filter(e => e.repeat !== 'weekly' && e.startDate < today).sort((a, b) => b.startDate.localeCompare(a.startDate));
-  const submit = async () => {
-    setBusy(true);
-    const ok = await planner.addEvent({ ...f, kind: 'meeting', personKind: f.scope === 'personal' ? me.kind : null, personId: f.scope === 'personal' ? me.id : null });
-    setBusy(false);
-    if (ok) { setF(emptyForm()); setAdding(false); }
-  };
-  const card = (e, d) => React.createElement('div', { key: e.id + (d || ''), className: 'ent-row py-3 flex items-start gap-3' },
-    React.createElement('div', { className: 'ev-datechip' },
-      React.createElement('span', { className: 'ev-datechip-day' }, plParse(d || e.startDate).getDate()),
-      React.createElement('span', { className: 'ev-datechip-mon' }, plParse(d || e.startDate).toLocaleDateString('he-IL', { month: 'short' }))),
-    React.createElement('div', { className: 'flex-1 min-w-0' },
-      React.createElement('p', { className: 'text-sm font-semibold' }, e.title),
-      React.createElement('p', { className: 'text-xs mt-0.5', style: { color: 'var(--text-muted)' } }, [evWhen(d || e.startDate, e), e.withWhom && `עם ${e.withWhom}`, e.location && `📍 ${e.location}`].filter(Boolean).join(' · ')),
-      React.createElement('div', { className: 'mt-1' }, React.createElement(PlScopeBadge, { scope: e.scope }))),
-    React.createElement('button', { className: 'ent-pill-btn ghost px-2.5 py-1 text-xs', onClick: () => plDownloadIcs(e) }, 'ליומן'),
-    React.createElement('button', { className: 'ent-icon-btn', 'aria-label': `מחיקת ${e.title}`, onClick: () => planner.deleteEvent(e) }, React.createElement(ITrash, { size: 15 })));
-  return React.createElement('div', { className: 'space-y-6' },
-    React.createElement('div', { className: 'ent-card p-5 space-y-4' },
-      React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-2' },
-        React.createElement('div', null,
-          React.createElement('h2', { className: 'ent-heading text-xl font-bold' }, 'פגישות'),
-          React.createElement('p', { className: 'text-sm mt-1', style: { color: 'var(--text-muted)' } }, upcoming.length ? `${upcoming.length} פגישות קרובות` : 'רופאים, אסיפות הורים, בנק, בעלי מקצוע')),
-        React.createElement('button', { onClick: () => setAdding(!adding), className: 'ent-pill-btn solid-bronze flex items-center gap-1.5 px-4 py-2 text-sm' }, React.createElement(IPlus, { size: 16 }), ' פגישה')),
-      adding && React.createElement('div', { className: 'p-4 rounded-xl space-y-3', style: { background: 'var(--navy-panel-2)' } },
-        React.createElement('div', { className: 'grid gap-2', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' } },
-          React.createElement('input', { className: evInput, placeholder: 'על מה הפגישה?', autoFocus: true, value: f.title, onChange: e => set('title', e.target.value) }),
-          React.createElement('input', { className: evInput, placeholder: 'עם מי? (לא חובה)', value: f.withWhom, onChange: e => set('withWhom', e.target.value) })),
-        React.createElement('div', { className: 'grid gap-2', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' } },
-          React.createElement(DateField, { label: 'תאריך', value: f.startDate, onChange: v => set('startDate', v) }),
-          evTimeField(f.startTime, v => set('startTime', v), 'משעה'), evTimeField(f.endTime, v => set('endTime', v), 'עד שעה')),
-        React.createElement('div', { className: 'grid gap-2', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' } },
-          React.createElement('input', { className: evInput, placeholder: 'איפה? (לא חובה)', value: f.location, onChange: e => set('location', e.target.value) }),
-          React.createElement(PlScopePicker, { value: f.scope, onChange: v => set('scope', v), isChild })),
-        React.createElement('div', { className: 'flex gap-2' },
-          React.createElement('button', { disabled: busy, onClick: submit, className: 'ent-pill-btn solid-bronze px-5 py-2 text-sm' }, busy ? 'רגע...' : 'שמירה'),
-          React.createElement('button', { onClick: () => setAdding(false), className: 'ent-pill-btn ghost px-5 py-2 text-sm' }, 'ביטול')))),
-    React.createElement('div', { className: 'ent-card p-5' },
-      !upcoming.length ? React.createElement(EmptyState, { text: 'אין פגישות קרובות', hint: 'כל פגישה מופיעה גם בלו"ז השבועי' }) : upcoming.map(x => card(x.e, x.d)),
-      past.length > 0 && React.createElement('div', { className: 'mt-3' },
-        React.createElement('button', { type: 'button', className: 'text-xs font-semibold flex items-center gap-1', style: { color: 'var(--text-muted)' }, 'aria-expanded': showPast, onClick: () => setShowPast(!showPast) },
-          `פגישות שעברו (${past.length})`, React.createElement(IChevronDown, { size: 12, style: { transform: showPast ? 'rotate(180deg)' : 'none' } })),
-        showPast && React.createElement('div', { style: { opacity: 0.7 } }, past.slice(0, 15).map(e => card(e, e.startDate))))));
-}
 
 /* ======================= לשונית "דייטים" (הורים) ======================= */
 // ברירת מחדל לדייט חדש: חמישי הקרוב בערב
