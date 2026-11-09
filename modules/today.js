@@ -89,10 +89,28 @@ function tdSimilarEvent(planner, d) {
 /* ---- העדפה אישית: למי שייכת משימה בלי שמות. נשמרת לכל פרופיל בנפרד (במכשיר) ---- */
 const tdPrefKey = id => 'homey_task_default_' + id;
 const tdGetPref = id => { try { return localStorage.getItem(tdPrefKey(id)); } catch (_e) { return null; } };
-const tdSetPref = (id, v) => { try { localStorage.setItem(tdPrefKey(id), v); } catch (_e) {} window.dispatchEvent(new CustomEvent('homey-task-pref')); };
+// סנכרון בין מכשירים (supabase/profile-prefs.sql): המכשיר שומר עותק מקומי לתגובה מיידית, והשרת הוא המקור.
+// בדמו (מזהים כמו 'p1') או לפני הרצת ה-SQL: עובד מקומית בלבד, בלי שגיאה
+const tdIsUuid = id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || ''));
+const tdPrefFetched = {};
+const tdPrefRemote = (id, v) => { if (tdIsUuid(id) && typeof sb !== 'undefined') sb.from('profile_prefs').upsert({ profile_id: id, task_default: v, updated_at: new Date().toISOString() }, { onConflict: 'profile_id' }).then(() => {}, () => {}); };
+const tdSyncPref = id => {
+  if (!tdIsUuid(id) || typeof sb === 'undefined' || tdPrefFetched[id]) return;
+  tdPrefFetched[id] = true;
+  sb.from('profile_prefs').select('task_default').eq('profile_id', id).maybeSingle().then(({ data, error }) => {
+    if (error) return;
+    const local = tdGetPref(id);
+    if (data && data.task_default && data.task_default !== local) {
+      try { localStorage.setItem(tdPrefKey(id), data.task_default); } catch (_e) {}
+      window.dispatchEvent(new CustomEvent('homey-task-pref'));
+    } else if (!(data && data.task_default) && local) tdPrefRemote(id, local); // בחירה ישנה מהמכשיר הזה עולה לשרת
+  }, () => {});
+};
+const tdSetPref = (id, v) => { try { localStorage.setItem(tdPrefKey(id), v); } catch (_e) {} window.dispatchEvent(new CustomEvent('homey-task-pref')); tdPrefRemote(id, v); };
 function useTdPref(id) {
   const [p, setP] = useState(() => tdGetPref(id));
   useEffect(() => {
+    tdSyncPref(id);
     setP(tdGetPref(id));
     const f = () => setP(tdGetPref(id));
     window.addEventListener('homey-task-pref', f);
@@ -106,7 +124,7 @@ function TaskScopeSetting({ meId }) {
   const pref = useTdPref(meId);
   return React.createElement('div', null,
     React.createElement('p', { className: 'text-sm', style: { color: 'var(--text)' } }, 'משימה חדשה בלי שם של אף אחד'),
-    React.createElement('p', { className: 'text-xs mb-2', style: { color: 'var(--text-dim)' } }, 'מי יראה אותה כשכותבים בשורת ההוספה המהירה. ההגדרה שלך בלבד, בכל משימה אפשר לשנות בהקשה על הצ\'יפ.'),
+    React.createElement('p', { className: 'text-xs mb-2', style: { color: 'var(--text-dim)' } }, 'מי יראה אותה כשכותבים בשורת ההוספה המהירה. ההגדרה שלך בלבד, והיא עוברת בין הטלפון למחשב. בכל משימה אפשר לשנות בהקשה על הצ\'יפ.'),
     React.createElement('div', { className: 'flex gap-2' }, TD_PREF_OPTS.map(([k, l]) => React.createElement('button', { key: k, type: 'button', 'aria-pressed': pref === k, onClick: () => tdSetPref(meId, k),
       className: 'ent-pill-btn px-4 py-2 text-sm flex-1', style: { background: pref === k ? 'var(--bronze)' : 'var(--navy-panel-2)', color: pref === k ? 'var(--on-accent)' : 'var(--text-2)', border: '1px solid var(--line)' } }, l))));
 }
