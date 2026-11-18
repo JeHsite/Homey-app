@@ -731,7 +731,13 @@ body[data-compact="1"] main { gap: .75rem; }
   .fin-cat-fill { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 999px; transition: width 600ms cubic-bezier(0.23,1,0.32,1); }
   .fin-cat-today { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-inline-start: -1px; background: var(--text); opacity: .7; border-radius: 2px; }
   .fin-pace svg { width: 100%; height: auto; max-height: 220px; display: block; overflow: visible; }
-  .fin-pace-line { fill: none; stroke: var(--bronze); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .fin-pace-line { fill: none; stroke: var(--bronze); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  @media (prefers-reduced-motion: no-preference) {
+    .fin-pace.draw .fin-pace-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: fin-draw 800ms cubic-bezier(0.23,1,0.32,1) forwards; }
+    .fin-pace.draw .fin-pace-area { animation: fin-fade 400ms cubic-bezier(0.23,1,0.32,1) 200ms backwards; }
+  }
+  @keyframes fin-draw { to { stroke-dashoffset: 0; } }
+  @keyframes fin-fade { from { opacity: 0; } }
   .fin-pace-area { fill: color-mix(in srgb, var(--bronze) 18%, transparent); stroke: none; }
   .fin-pace-plan { stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
   .fin-pace-budget { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -1266,7 +1272,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=1"></script>
+<script src="modules/finance.js?v=2"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -2050,6 +2056,16 @@ function InitialAvatar({
       background: 'linear-gradient(135deg, var(--cyan), var(--bronze))'
     }
   }, letter);
+}
+// כפילות אפשרית: אותו סוג, אותו סכום (±0.5), תאריך ±יום אחד, ותיאור דומה אחרי ניקוי ("בע"מ", ספרות, סימנים) או ריק
+const txNorm = s => String(s || '').replace(/בע"?מ|ltd|\d+/gi, '').replace(/[^\p{L}]/gu, '').toLowerCase();
+function findDuplicateTx(row, list) {
+  const day = d => Math.round(new Date(String(d).slice(0, 10) + 'T00:00:00') / 86400000);
+  const a = txNorm(row.description);
+  return list.find(t => t.type === row.type && Math.abs(Number(t.amount) - Number(row.amount)) <= 0.5 && Math.abs(day(t.date) - day(row.date)) <= 1 && (() => {
+    const b = txNorm(t.description);
+    return !a || !b || a.includes(b) || b.includes(a) || a.slice(0, 4) === b.slice(0, 4);
+  })()) || null;
 }
 // מזיז תאריכי דמו (YYYY-MM-DD) כך ש-baseMonth יהפוך לחודש הנוכחי; יום שלא קיים בחודש היעד נצמד לסופו,
 // ותאריך שיוצא עתידי (אחרי היום) נצמד להיום כדי שהחודש הנוכחי לא יכיל הוצאות מהעתיד
@@ -6122,6 +6138,8 @@ function App() {
   const [scanBusy, setScanBusy] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
   const [receiptDraft, setReceiptDraft] = useState(null);
+  // כפילות אפשרית שנמצאה בזמן שמירה: מחכה להחלטה של המשתמש
+  const [dupWarn, setDupWarn] = useState(null);
   const loadTesseract = () => window.Tesseract ? Promise.resolve(window.Tesseract) : new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js';
@@ -7201,6 +7219,7 @@ function App() {
   const closeForm = tab => {
     setOpenForm(null);
     setEditingId(null);
+    setDupWarn(null);
     setFormData(prev => ({
       ...prev,
       [tab]: emptyForms[tab]
@@ -7229,7 +7248,8 @@ function App() {
       balance: a.balance + delta
     } : a));
   };
-  const submitExpense = async () => {
+  const submitExpense = async opts => {
+    const skipDup = !!(opts && opts.skipDup === true);
     const f = formData.expenses;
     if (!f.amount) return showToast('נא למלא סכום');
     if (!editingId && !isPremium && !isDemo) {
@@ -7274,6 +7294,14 @@ function App() {
       showToast('הרשומה עודכנה');
       return;
     }
+    if (!skipDup) {
+      const dup = findDuplicateTx(row, transactions);
+      if (dup) {
+        setDupWarn(dup);
+        return;
+      }
+    }
+    setDupWarn(null);
     const budgetMsg = row.type === 'expense' ? budgetAlertFor(row.category, row.date, row.amount) : '';
     let newId;
     if (isDemo) {
@@ -8770,7 +8798,31 @@ function App() {
     style: {
       background: 'var(--navy-panel-2)'
     }
-  }, !editingId && receiptDraft && /*#__PURE__*/React.createElement("div", {
+  }, dupWarn && !editingId && /*#__PURE__*/React.createElement("div", {
+    className: "sm:col-span-2 p-3 rounded-xl space-y-2",
+    role: "alert",
+    style: {
+      border: '1px solid color-mix(in srgb, #f59e0b 55%, transparent)',
+      background: 'color-mix(in srgb, #f59e0b 10%, transparent)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "נראה שכבר נרשם: ", dupWarn.description || dupWarn.category, " ", currency, Math.round(dupWarn.amount).toLocaleString('he-IL'), " ב-", fmtDateHe ? fmtDateHe(dupWarn.date) : dupWarn.date), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs",
+    onClick: () => {
+      closeForm('expenses');
+      showToast('לא נשמר שוב. הרשומה הקיימת נשארת');
+    }
+  }, "אותה הוצאה, לא לשמור"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
+    onClick: () => submitExpense({
+      skipDup: true
+    })
+  }, "הוצאה נפרדת, לשמור"))), !editingId && receiptDraft && /*#__PURE__*/React.createElement("div", {
     className: "sm:col-span-2 space-y-3 p-4 rounded-xl",
     style: {
       border: '1px dashed var(--bronze)'
@@ -11351,7 +11403,7 @@ function TrendLines({
   },
   exclude
 }) {
-  const [mode, setMode] = useState(() => TREND_PERIODS[lsGet('homey_trend_mode')] ? lsGet('homey_trend_mode') : 'week');
+  const [mode, setMode] = useState(() => TREND_PERIODS[lsGet('homey_trend_mode')] ? lsGet('homey_trend_mode') : 'month');
   const [hover, setHover] = useState(null);
   const uid = React.useRef('tr' + ++trendUid).current;
   const data = buildTrend(exclude ? rows.filter(r => !exclude(r)) : rows, mode);

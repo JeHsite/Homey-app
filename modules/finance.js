@@ -102,6 +102,8 @@ const FIN_TONE = { green: 'var(--pos)', amber: '#f59e0b', red: 'var(--neg)', neg
 
 /* ---- גרף הקצב: מצטבר בפועל מול קו מקווקו מתוכנן, המשך מנוקד = הערכה ---- */
 function FinPaceChart({ model: md, currency }) {
+  // הקו מצויר פעם אחת בכל סשן (לא בכל כניסה למסך): 800ms, והשטח מתחתיו נכנס אחריו
+  const [draw] = useState(() => { try { const k = 'homey_pace_drawn'; const seen = sessionStorage.getItem(k); sessionStorage.setItem(k, '1'); return !seen; } catch (_e) { return false; } });
   const W = 320, H = 130, P = 8;
   const days = md.daysInMonth;
   const top = Math.max(md.B, md.cum[md.today] || 0, md.V * days / Math.max(1, md.today)) * 1.08 || 1;
@@ -112,7 +114,7 @@ function FinPaceChart({ model: md, currency }) {
   const projV = md.today ? lastV * days / md.today : lastV;
   const showProj = md.state !== 'early' && md.today < days;
   const label = `${md.sentences[0]} היום: ${finMoney(lastV, currency)} שוטף מתוך ${finMoney(Math.max(0, md.B), currency)}.`;
-  return React.createElement('figure', { className: 'fin-pace' },
+  return React.createElement('figure', { className: 'fin-pace' + (draw ? ' draw' : '') },
     React.createElement('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label, dir: 'ltr' },
       md.B > 0 && React.createElement('line', { x1: x(0), y1: yv(md.B), x2: x(days), y2: yv(md.B), className: 'fin-pace-budget' }),
       md.B > 0 && React.createElement('line', { x1: x(0), y1: yv(0), x2: x(days), y2: yv(md.B), className: 'fin-pace-plan' }),
