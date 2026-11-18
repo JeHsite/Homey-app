@@ -748,6 +748,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .fin-pace-legend i.lg-plan { border-top: 1.5px dashed var(--text-muted); }
   .fin-pace-legend i.lg-proj { border-top: 2px dotted var(--bronze); opacity: .6; }
   .fin-pace-legend b { margin-inline-start: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+  .fin-tag { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
+  .fin-tag.warn { border-color: color-mix(in srgb, #f59e0b 55%, transparent); color: #f59e0b; }
+  .fin-review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .fin-review-row:last-child { border-bottom: none; }
+  @media (max-width: 520px) { .fin-review-row { flex-direction: column; align-items: stretch; } }
   .fin-more-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 12px; }
   .fin-more-row:hover { background: var(--navy-panel-2); }
   .fin-more-ic { font-size: 22px; width: 36px; text-align: center; }
@@ -1272,7 +1277,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=2"></script>
+<script src="modules/finance.js?v=3"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -5587,6 +5592,23 @@ function App() {
     setTimeout(() => setToast(null), 2200);
   };
   const [transactions, setTransactions] = useState([]);
+  // מוסתרות וכפילויות שמוזגו (finance-tidy.sql): לא נספרות בשום סכום, ואפשר לשחזר מהן
+  const [hiddenTx, setHiddenTx] = useState([]);
+  const hiddenRef = useRef([]);
+  hiddenRef.current = hiddenTx;
+  // "ביטול" אחרי פעולה (במקום חלון "בטוח?")
+  const [undoToast, setUndoToast] = useState(null);
+  const undoTimer = useRef(null);
+  const showUndo = (msg, fn) => {
+    clearTimeout(undoTimer.current);
+    setUndoToast({ msg, fn, k: Date.now() });
+    undoTimer.current = setTimeout(() => setUndoToast(null), 6000);
+  };
+  // העדפות כלכלה לכל פרופיל הורה (profile_prefs): tx_owner_default, savings_monthly
+  const [finPrefs, setFinPrefs] = useState({});
+  const [finParents, setFinParents] = useState([]);
+  const [txShowHidden, setTxShowHidden] = useState(false);
+  const [entrySource, setEntrySource] = useState('manual');
   const [bills, setBills] = useState([]);
   const [loans, setLoans] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -6220,12 +6242,14 @@ function App() {
       sub: receiptDraft.sub
     });
     setReceiptDraft(null);
+    setEntrySource('ocr');
     showToast('הועבר לטופס — בדקו ושמרו');
   };
   const applyPastedMessage = () => {
     const parsed = parseCardMessage(pasteText, allExpenseCategories);
     if (!parsed.amount) return showToast('לא זיהיתי סכום בהודעה — אפשר למלא ידנית');
     fillFromParsed(parsed);
+    setEntrySource('sms');
     setPasteText('');
     showToast('מולא מההודעה — בדקו ושמרו');
   };
@@ -6259,6 +6283,7 @@ function App() {
       setCategoryBudgets({
         'מזון': 1500
       });
+      setFinParents(FAMILY_PROFILES.filter(p => p.role === 'parent').map(p => ({ id: p.id, name: p.name })));
       // נתוני הדמו נכתבו בספטמבר 2026: מזיזים את כל התאריכים כך שהחודש האחרון בדמו הוא החודש הנוכחי
       setTransactions(demoShiftDates([{
         id: 1,
@@ -6523,7 +6548,7 @@ function App() {
         ascending: false
       }), sb.from('bills').select('*').eq('family_id', familyId), sb.from('notes').select('*').eq('family_id', familyId), sb.from('trips').select('*').eq('family_id', familyId), sb.from('gifts').select('*').eq('family_id', familyId), sb.from('savings_pots').select('*').eq('family_id', familyId), sb.from('assets').select('*').eq('family_id', familyId), sb.from('custom_categories').select('*').eq('family_id', familyId), sb.from('families').select('*').eq('id', familyId).single(), sb.from('family_reminder_slots').select('*').eq('family_id', familyId).order('hour'), sb.from('family_plan').select('*').eq('family_id', familyId).maybeSingle(), sb.from('family_subscriptions').select('*').eq('family_id', familyId).maybeSingle(), sb.from('loans').select('*').eq('family_id', familyId), sb.from('bank_accounts').select('*').eq('family_id', familyId), sb.from('category_budgets').select('*').eq('family_id', familyId), sb.from('asset_values').select('*').eq('family_id', familyId).order('valued_at'), sb.from('trip_expenses').select('*').eq('family_id', familyId).order('date')]);
       setCategoryBudgets(Object.fromEntries((cb?.data || []).map(r => [r.category, Number(r.monthly_amount)])));
-      setTransactions((tx.data || []).map(r => ({
+      const txRows = (tx.data || []).map(r => ({
         id: r.id,
         type: r.type,
         category: r.category,
@@ -6535,8 +6560,24 @@ function App() {
         billId: r.bill_id || null,
         tripId: r.trip_id || null,
         tag: r.tag || null,
-        createdAt: r.created_at || null
-      })));
+        createdAt: r.created_at || null,
+        // finance-tidy.sql (לפני ההרצה העמודות פשוט חסרות, והערכים ריקים)
+        hidden: !!r.hidden,
+        duplicateOf: r.duplicate_of || null,
+        kind: r.kind || 'regular',
+        reviewStatus: r.review_status || 'reviewed',
+        forProfile: r.for_profile || null,
+        createdBy: r.created_by || null,
+        source: r.source || null,
+        loanId: r.loan_id || null
+      }));
+      setTransactions(txRows.filter(r => !r.hidden && !r.duplicateOf));
+      setHiddenTx(txRows.filter(r => r.hidden || r.duplicateOf));
+      // הורים במשפחה והעדפות הכלכלה שלהם (חיסכון חודשי, "של מי" כברירת מחדל)
+      Promise.all([sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('profile_prefs').select('profile_id, tx_owner_default, savings_monthly')]).then(([pp, pf]) => {
+        setFinParents((pp.data || []).map(p => ({ id: p.id, name: p.full_name || 'הורה' })));
+        if (!pf.error) setFinPrefs(Object.fromEntries((pf.data || []).map(r => [r.profile_id, { owner: r.tx_owner_default || null, savings: r.savings_monthly == null ? null : Number(r.savings_monthly) }])));
+      });
       setLoans((ln?.data || []).map(mapLoanRow));
       setBankAccounts((ba?.data || []).map(r => ({
         id: r.id,
@@ -7036,7 +7077,7 @@ function App() {
     const monthTx = transactions.filter(t => monthKey(t.date) === thisKey);
     const incomeSoFar = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     // הוצאות שוטפות בלבד. הוצאות שנוצרו מהוראת קבע נספרות למטה בהתחייבויות הקבועות
-    const spentSoFar = monthTx.filter(t => t.type === 'expense' && !t.billId).reduce((s, t) => s + t.amount, 0);
+    const spentSoFar = monthTx.filter(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer').reduce((s, t) => s + t.amount, 0);
 
     // הכנסה צפויה: אם עוד לא נכנסה משכורת החודש, מסתמכים על ממוצע החודשים הקודמים
     // רק חודשים מלאים: בלי החודש הנוכחי ובלי החודש הראשון שבו התחילו לרשום (בדרך כלל חלקי),
@@ -7084,7 +7125,7 @@ function App() {
     // כך שההוצאה של השבוע עצמו לא מקטינה גם את התקציב וגם נספרת מולו.
     const weekStartDay = Math.max(1, today - now.getDay());
     const weekStartIso = `${thisKey}-${String(weekStartDay).padStart(2, '0')}`;
-    const weekSpent = monthTx.filter(t => t.type === 'expense' && !t.billId && String(t.date).slice(0, 10) >= weekStartIso).reduce((s, t) => s + t.amount, 0);
+    const weekSpent = monthTx.filter(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer' && String(t.date).slice(0, 10) >= weekStartIso).reduce((s, t) => s + t.amount, 0);
     const availableAtWeekStart = expectedIncome - (spentSoFar - weekSpent) - fixedTotal - openTripSpend;
     const daysFromWeekStart = daysInMonth - weekStartDay + 1;
     const weekDaysInMonth = Math.min(7 - (weekStartDay - (today - now.getDay())), daysFromWeekStart);
@@ -7220,6 +7261,7 @@ function App() {
     setOpenForm(null);
     setEditingId(null);
     setDupWarn(null);
+    setEntrySource('manual');
     setFormData(prev => ({
       ...prev,
       [tab]: emptyForms[tab]
@@ -7248,6 +7290,9 @@ function App() {
       balance: a.balance + delta
     } : a));
   };
+  // של מי ההוצאה: ערך שנבחר בטופס, אחרת לפי ההעדפה האישית ('' = משותף, undefined = עוד לא נבחר)
+  const myFinPref = finPrefs[currentProfile?.id] || {};
+  const txOwnerValue = f => f.forProfile !== undefined ? f.forProfile : myFinPref.owner === 'shared' ? '' : myFinPref.owner === 'mine' ? currentProfile?.id || '' : undefined;
   const submitExpense = async opts => {
     const skipDup = !!(opts && opts.skipDup === true);
     const f = formData.expenses;
@@ -7277,7 +7322,9 @@ function App() {
       const old = transactions.find(x => x.id === editingId);
       setTransactions(prev => prev.map(x => x.id === editingId ? {
         ...x,
-        ...row
+        ...row,
+        kind: f.type === 'expense' && f.kind === 'transfer' ? 'transfer' : 'regular',
+        forProfile: txOwnerValue(f) || null
       } : x));
       if (!isDemo) await sb.from('transactions').update({
         type: row.type,
@@ -7286,7 +7333,9 @@ function App() {
         amount: row.amount,
         description: row.description,
         date: row.date,
-        account_id: row.accountId
+        account_id: row.accountId,
+        kind: f.type === 'expense' && f.kind === 'transfer' ? 'transfer' : 'regular',
+        for_profile: txOwnerValue(f) || null
       }).eq('id', editingId);
       if (old) applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
       applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
@@ -7302,7 +7351,16 @@ function App() {
       }
     }
     setDupWarn(null);
-    const budgetMsg = row.type === 'expense' ? budgetAlertFor(row.category, row.date, row.amount) : '';
+    // של מי: חובה לבחור כשההעדפה היא "לשאול כל פעם" (אין ברירת מחדל לכל האפליקציה)
+    const ownerVal = txOwnerValue(f);
+    if (ownerVal === undefined && finParents.length > 1) return showToast('נא לבחור של מי ההוצאה');
+    row.forProfile = ownerVal || null;
+    row.kind = f.type === 'expense' && f.kind === 'transfer' ? 'transfer' : 'regular';
+    row.source = entrySource || 'manual';
+    row.createdBy = currentProfile?.id || null;
+    // לבדיקה: רק מה שנראה בעייתי (נשמר למרות אזהרת כפילות, נקרא מקבלה, או בלי קטגוריה ברורה)
+    row.reviewStatus = skipDup || row.source === 'ocr' || /^(אחר|כללי)$/.test(row.category || '') ? 'to_review' : 'reviewed';
+    const budgetMsg = row.type === 'expense' && row.kind !== 'transfer' ? budgetAlertFor(row.category, row.date, row.amount) : '';
     let newId;
     if (isDemo) {
       newId = nextId();
@@ -7323,7 +7381,12 @@ function App() {
         description: row.description,
         date: row.date,
         account_id: row.accountId,
-        family_id: familyId
+        family_id: familyId,
+        kind: row.kind,
+        source: row.source,
+        created_by: row.createdBy,
+        review_status: row.reviewStatus,
+        for_profile: row.forProfile
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
       newId = data.id;
@@ -7445,12 +7508,55 @@ function App() {
       splurge_limit: v
     }).eq('id', familyId);
   };
+  // "מחיקה" = הסתרה (finance-tidy.sql): הרשומה נשארת בבסיס הנתונים, לא נספרת, ואפשר לשחזר
   const deleteTransaction = async id => {
     const old = transactions.find(x => x.id === id);
+    if (!old) return;
     setTransactions(prev => prev.filter(x => x.id !== id));
-    if (!isDemo) await sb.from('transactions').delete().eq('id', id);
-    if (old) applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
-    showToast('הרשומה נמחקה');
+    setHiddenTx(prev => [{ ...old, hidden: true }, ...prev]);
+    applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
+    if (!isDemo) {
+      const { error } = await sb.from('transactions').update({ hidden: true, hidden_at: new Date().toISOString() }).eq('id', id);
+      if (error) {
+        // לפני הרצת finance-tidy.sql אין עמודת hidden: מחזירים את המצב ולא מוחקים
+        setHiddenTx(prev => prev.filter(x => x.id !== id));
+        setTransactions(prev => [old, ...prev]);
+        applyAccountDelta(old.accountId, old.type === 'income' ? old.amount : -old.amount);
+        return showToast('לא הצלחנו להסתיר את הרשומה');
+      }
+    }
+    showUndo('הרשומה הוסתרה. אפשר לשחזר ב"מוסתרות"', () => restoreTransaction(id));
+  };
+  const restoreTransaction = async id => {
+    const t = hiddenRef.current.find(x => x.id === id);
+    if (!t) return;
+    setHiddenTx(prev => prev.filter(x => x.id !== id));
+    setTransactions(prev => [{ ...t, hidden: false, duplicateOf: null }, ...prev]);
+    applyAccountDelta(t.accountId, t.type === 'income' ? t.amount : -t.amount);
+    if (!isDemo) await sb.from('transactions').update({ hidden: false, hidden_at: null, duplicate_of: null }).eq('id', id);
+    showToast('הרשומה שוחזרה');
+  };
+  // תיבת "לבדיקה": סימון "תקין", והחלפה בין הוצאה רגילה להעברה
+  const setTxFields = async (id, local, db) => {
+    setTransactions(prev => prev.map(x => x.id === id ? { ...x, ...local } : x));
+    if (!isDemo) await sb.from('transactions').update(db).eq('id', id);
+  };
+  const markReviewed = id => setTxFields(id, { reviewStatus: 'reviewed' }, { review_status: 'reviewed' });
+  const toggleTransfer = t => {
+    const kind = t.kind === 'transfer' ? 'regular' : 'transfer';
+    setTxFields(t.id, { kind }, { kind });
+    showUndo(kind === 'transfer' ? 'סומן כהעברה: לא נספר כהוצאה' : 'חזר להיות הוצאה רגילה', () => setTxFields(t.id, { kind: t.kind }, { kind: t.kind }));
+  };
+  // העדפות כלכלה של הפרופיל הנוכחי
+  const saveFinPref = async (changes) => {
+    const id = currentProfile?.id;
+    if (!id) return;
+    setFinPrefs(prev => ({ ...prev, [id]: { ...(prev[id] || {}), ...changes } }));
+    if (isDemo) return;
+    const db = {};
+    if ('owner' in changes) db.tx_owner_default = changes.owner;
+    if ('savings' in changes) db.savings_monthly = changes.savings;
+    await sb.from('profile_prefs').upsert({ profile_id: id, ...db, updated_at: new Date().toISOString() }, { onConflict: 'profile_id' });
   };
   const submitBill = async () => {
     const f = formData.bills;
@@ -7524,7 +7630,12 @@ function App() {
       const linked = transactions.filter(t => t.billId === id && String(t.date || '').startsWith(thisMonth));
       if (!linked.length) return;
       setTransactions(prev => prev.filter(t => !linked.some(l => l.id === t.id)));
-      if (!isDemo) await sb.from('transactions').delete().in('id', linked.map(l => l.id));
+      setHiddenTx(prev => [...linked.map(l => ({ ...l, hidden: true })), ...prev]);
+      // מסתירים ולא מוחקים (finance-tidy.sql); לפני ה-SQL נופלים למחיקה כמו קודם
+      if (!isDemo) {
+        const { error } = await sb.from('transactions').update({ hidden: true, hidden_at: new Date().toISOString() }).in('id', linked.map(l => l.id));
+        if (error) await sb.from('transactions').delete().in('id', linked.map(l => l.id));
+      }
       linked.forEach(l => applyAccountDelta(l.accountId, l.amount));
       return;
     }
@@ -8740,9 +8851,17 @@ function App() {
     transactions: transactions,
     bills: bills,
     categoryBudgets: categoryBudgets,
-    savingsSetAside: 0,
+    savingsSetAside: finParents.reduce((sum, p) => sum + ((finPrefs[p.id] || {}).savings || 0), 0),
     currency: currency,
     onNavigate: tab => setActiveTab(tab),
+    parents: finParents,
+    meId: currentProfile?.id,
+    mySavings: myFinPref.savings ?? null,
+    onSaveSavings: v => saveFinPref({ savings: v }),
+    reviewList: transactions.filter(t => t.reviewStatus === 'to_review'),
+    onReviewOk: markReviewed,
+    onHide: deleteTransaction,
+    onToggleTransfer: toggleTransfer,
     hasBankAccounts: bankAccounts.length > 0,
     bankTotal: totalBankBalance,
     weekly: isPremium ? /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
@@ -8957,7 +9076,24 @@ function App() {
     label: "תאריך",
     value: formData.expenses.date,
     onChange: v => updateField('expenses', 'date', v)
-  }), linkableAccounts.length > 1 && /*#__PURE__*/React.createElement("select", {
+  }), finParents.length > 1 && /*#__PURE__*/React.createElement(TxOwnerField, {
+    parents: finParents,
+    meId: currentProfile?.id,
+    value: txOwnerValue(formData.expenses),
+    pref: myFinPref.owner || null,
+    onChange: v => updateField('expenses', 'forProfile', v),
+    onSetPref: v => saveFinPref({ owner: v })
+  }), formData.expenses.type === 'expense' && /*#__PURE__*/React.createElement("label", {
+    className: "sm:col-span-2 flex items-start gap-2 text-sm cursor-pointer"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: formData.expenses.kind === 'transfer',
+    onChange: e => updateField('expenses', 'kind', e.target.checked ? 'transfer' : 'regular'),
+    style: { width: 18, height: 18, marginTop: 2, accentColor: 'var(--bronze)' }
+  }), /*#__PURE__*/React.createElement("span", null, "זו העברה ולא הוצאה", /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs",
+    style: { color: 'var(--text-muted)' }
+  }, "חיוב חודשי של כרטיס אשראי, הפקדה לחיסכון או העברה בין חשבונות. לא נספר בהוצאות ובקצב, אבל כן יורד מהעו\"ש."))), linkableAccounts.length > 1 && /*#__PURE__*/React.createElement("select", {
     className: inputClass,
     "aria-label": "מאיזה חשבון",
     value: formData.expenses.accountId,
@@ -9021,7 +9157,15 @@ function App() {
     style: {
       color: 'var(--text-muted)'
     }
-  }, t.description, " • ", fmtDateHe(t.date), t.accountId && bankAccounts.find(a => a.id === t.accountId) && ` • ${bankAccounts.find(a => a.id === t.accountId).label}`))),/*#__PURE__*/React.createElement("div", {
+  }, t.description, " • ", fmtDateHe(t.date), t.accountId && bankAccounts.find(a => a.id === t.accountId) && ` • ${bankAccounts.find(a => a.id === t.accountId).label}`), (t.kind === 'transfer' || t.reviewStatus === 'to_review' || t.forProfile) && /*#__PURE__*/React.createElement("p", {
+    className: "flex flex-wrap gap-1 mt-0.5"
+  }, t.kind === 'transfer' && /*#__PURE__*/React.createElement("span", {
+    className: "fin-tag"
+  }, "העברה"), t.reviewStatus === 'to_review' && /*#__PURE__*/React.createElement("span", {
+    className: "fin-tag warn"
+  }, "לבדיקה"), t.forProfile && finParents.find(p => p.id === t.forProfile) && /*#__PURE__*/React.createElement("span", {
+    className: "fin-tag"
+  }, finParents.find(p => p.id === t.forProfile).name.split(' ')[0])))),/*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold",
@@ -9041,17 +9185,44 @@ function App() {
       description: r.description || '',
       amount: String(r.amount),
       date: r.date || '',
-      accountId: r.accountId || 'none'
+      accountId: r.accountId || 'none',
+      kind: r.kind || 'regular',
+      forProfile: r.forProfile || ''
     }))
   }, /*#__PURE__*/React.createElement(IEdit, {
     size: 15
-  })), /*#__PURE__*/React.createElement("button", {
+  })), t.type === 'expense' && /*#__PURE__*/React.createElement("button", {
     className: "ent-icon-btn",
-    "aria-label": `מחיקת ${t.category}`,
+    style: { color: t.kind === 'transfer' ? 'var(--bronze)' : 'var(--text-muted)', fontSize: 13 },
+    "aria-label": t.kind === 'transfer' ? `להחזיר להוצאה: ${t.category}` : `לסמן כהעברה: ${t.category}`,
+    title: t.kind === 'transfer' ? 'להחזיר להוצאה רגילה' : 'לסמן כהעברה (לא הוצאה)',
+    onClick: () => toggleTransfer(t)
+  }, "⇄"), /*#__PURE__*/React.createElement("button", {
+    className: "ent-icon-btn",
+    "aria-label": `הסתרת ${t.category}`,
+    title: 'הסתרה (אפשר לשחזר)',
     onClick: () => deleteTransaction(t.id)
   }, /*#__PURE__*/React.createElement(ITrash, {
     size: 16
-  })))))), searchedTransactions.length > txShown && /*#__PURE__*/React.createElement("button", {
+  })))))), hiddenTx.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "pt-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "text-xs underline",
+    style: { color: 'var(--text-muted)' },
+    "aria-expanded": txShowHidden,
+    onClick: () => setTxShowHidden(!txShowHidden)
+  }, txShowHidden ? 'הסתרת המוסתרות' : `מוסתרות (${hiddenTx.length})`), txShowHidden && hiddenTx.slice(0, 50).map(t => /*#__PURE__*/React.createElement("div", {
+    key: 'h' + t.id,
+    className: "ent-row py-2 flex justify-between items-center gap-2",
+    style: { opacity: .7 }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm"
+  }, t.category, " · ", t.description || '', " • ", fmtDateHe(t.date), " · ", currency, t.amount, t.duplicateOf ? ' (כפילות)' : ''), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    onClick: () => restoreTransaction(t.id)
+  }, "שחזור")))), searchedTransactions.length > txShown && /*#__PURE__*/React.createElement("button", {
     className: "ent-pill-btn ghost w-full py-2 text-sm",
     onClick: () => setTxShown(n => n + 20)
   }, "הצגת עוד (", searchedTransactions.length - txShown, ")")), /*#__PURE__*/React.createElement("div", {
@@ -10767,9 +10938,23 @@ function App() {
     className: "ent-pill-btn solid-bronze px-5 py-2 text-sm w-full mt-3"
   }, "שליחת קישור הזמנה")), /*#__PURE__*/React.createElement("p", {
     className: "text-center text-xs pt-2"
-  }, "Homey פותחה על ידי ", LEGAL_OWNER)))), toast && /*#__PURE__*/React.createElement("div", {
+  }, "Homey פותחה על ידי ", LEGAL_OWNER)))), toast && !undoToast && /*#__PURE__*/React.createElement("div", {
     className: "ent-toast"
-  }, toast), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
+  }, toast), undoToast && /*#__PURE__*/React.createElement("div", {
+    key: undoToast.k,
+    className: "ent-toast flex items-center gap-3",
+    role: "status"
+  }, /*#__PURE__*/React.createElement("span", null, undoToast.msg), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "font-bold",
+    style: { color: 'var(--bronze)' },
+    onClick: () => {
+      clearTimeout(undoTimer.current);
+      const fn = undoToast.fn;
+      setUndoToast(null);
+      fn();
+    }
+  }, "ביטול")), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
     kid: currentProfile?.role === 'child',
     onClose: closeTour,
     pushState: pushState,

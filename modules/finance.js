@@ -34,7 +34,8 @@ function finMonthModel({ forecast: f, transactions, bills, categoryBudgets, savi
   const r = B > 0 ? (V / B) / t : null;
   const projEnd = finRound(B - V * f.daysInMonth / f.today, FIN.roundForecast);
   // אותו יום בחודש שעבר: הוצאה שוטפת בימים 1..היום
-  const varExp = tx => tx.type === 'expense' && !tx.billId;
+  // שוטף: בלי הוראות קבע מקושרות ובלי העברות (חיוב כרטיס אשראי, הפקדה לחיסכון)
+  const varExp = tx => tx.type === 'expense' && !tx.billId && tx.kind !== 'transfer';
   const prevSameDay = transactions.filter(tx => varExp(tx) && finMonthKey(tx.date) === prevKey && Number(String(tx.date).slice(8, 10)) <= f.today).reduce((s, tx) => s + tx.amount, 0);
   const hasPrev = transactions.some(tx => finMonthKey(tx.date) === prevKey);
   const diffPrev = V - prevSameDay;
@@ -129,16 +130,73 @@ function FinPaceChart({ model: md, currency }) {
       React.createElement('b', null, `היום: ${finMoney(lastV, currency)}`)));
 }
 
+/* ---- "של מי ההוצאה" בטופס: משותף / כל הורה. בלי ברירת מחדל לכל האפליקציה: כל הורה נשאל פעם אחת ---- */
+function TxOwnerField({ parents, meId, value, pref, onChange, onSetPref }) {
+  const opts = [['', 'משותף'], ...parents.map(p => [p.id, p.id === meId ? 'שלי' : String(p.name).split(' ')[0]])];
+  return React.createElement('div', { className: 'sm:col-span-2 space-y-2' },
+    !pref && React.createElement('div', { className: 'td-ask' },
+      React.createElement('p', { className: 'text-sm font-semibold' }, 'הוצאה חדשה שלך נרשמת כברירת מחדל כ:'),
+      React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, 'בוחרים פעם אחת וזו תהיה ההגדרה שלך בלבד. אפשר לשנות בכל הוצאה.'),
+      React.createElement('div', { className: 'flex flex-wrap gap-2 mt-2' }, [['shared', 'משותף'], ['mine', 'שלי'], ['ask', 'לשאול כל פעם']].map(([k, l]) =>
+        React.createElement('button', { key: k, type: 'button', className: 'ent-pill-btn ghost px-4 py-1.5 text-sm', onClick: () => onSetPref(k) }, l)))),
+    React.createElement('div', { className: 'flex flex-wrap items-center gap-1.5', role: 'radiogroup', 'aria-label': 'של מי ההוצאה' },
+      React.createElement('span', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, 'של מי:'),
+      opts.map(([id, l]) => React.createElement('button', { key: id || 'shared', type: 'button', role: 'radio', 'aria-checked': value === id, onClick: () => onChange(id),
+        className: 'ent-pill-btn px-3 py-1 text-xs', style: { background: value === id ? 'var(--bronze)' : 'var(--navy-panel)', color: value === id ? 'var(--on-accent)' : 'var(--text-2)', border: '1px solid var(--line)' } }, l))));
+}
+
+/* ---- תיבת "לבדיקה": רק מה שנראה בעייתי, במנות של עד 20 ---- */
+function FinReviewInbox({ list, currency, onOk, onHide, onToggleTransfer }) {
+  const [open, setOpen] = useState(false);
+  if (!list.length) return null;
+  return React.createElement('section', { className: 'ent-card p-4 fin-card', style: { borderColor: 'color-mix(in srgb, #f59e0b 45%, var(--line))' } },
+    React.createElement('button', { type: 'button', className: 'w-full flex items-center justify-between gap-2 text-right', 'aria-expanded': open, onClick: () => setOpen(!open) },
+      React.createElement('span', { className: 'text-sm font-semibold' }, `🔎 ${list.length === 1 ? 'תנועה אחת מחכה' : `${list.length} תנועות מחכות`} לבדיקה`),
+      React.createElement('span', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, open ? 'סגירה' : 'לבדוק')),
+    open && React.createElement('div', { className: 'mt-2' }, list.slice(0, 20).map(t => React.createElement('div', { key: t.id, className: 'fin-review-row' },
+      React.createElement('div', { className: 'min-w-0' },
+        React.createElement('p', { className: 'text-sm font-semibold truncate' }, t.description || t.category, ' · ', finMoney(t.amount, currency)),
+        React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, t.category, t.sub ? ` · ${t.sub}` : '', ' · ', String(t.date || '').slice(0, 10), t.source === 'ocr' ? ' · מקבלה' : t.source === 'sms' ? ' · מ-SMS' : '')),
+      React.createElement('div', { className: 'flex gap-1.5 flex-shrink-0' },
+        React.createElement('button', { type: 'button', className: 'ent-pill-btn solid-bronze px-3 py-1 text-xs', onClick: () => onOk(t.id) }, 'תקין'),
+        t.type === 'expense' && React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-1 text-xs', onClick: () => { onToggleTransfer(t); onOk(t.id); } }, 'העברה'),
+        React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-1 text-xs', onClick: () => onHide(t.id) }, 'הסתרה'))))));
+}
+
+/* ---- חיסכון חודשי קבוע: כל הורה מגדיר את שלו, והסכום של כולם יורד מ"נשאר להוציא" ---- */
+function FinSavingsCard({ total, mine, currency, onSave }) {
+  const [edit, setEdit] = useState(false);
+  const [val, setVal] = useState('');
+  return React.createElement('section', { className: 'ent-card p-4 fin-card' },
+    React.createElement('div', { className: 'flex items-center justify-between gap-2' },
+      React.createElement('div', null,
+        React.createElement('p', { className: 'text-sm font-semibold' }, 'חיסכון חודשי קבוע'),
+        React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, total > 0 ? `${finMoney(total, currency)} בחודש יורדים מ"נשאר להוציא"${mine != null ? ` (שלך: ${finMoney(mine, currency)})` : ''}` : 'סכום שמפרישים כל חודש לפני שמחשבים כמה נשאר')),
+      !edit && React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-1 text-xs', onClick: () => { setVal(mine != null ? String(mine) : ''); setEdit(true); } }, mine != null ? 'עריכה' : 'הגדרה')),
+    edit && React.createElement('div', { className: 'flex gap-2 mt-2' },
+      React.createElement('input', { type: 'number', min: 0, inputMode: 'numeric', className: 'ent-input px-3 py-2 rounded-xl text-sm outline-none flex-1', placeholder: `כמה אתה מפריש בחודש (${currency})`, value: val, autoFocus: true, onChange: e => setVal(e.target.value),
+        onKeyDown: e => { if (e.key === 'Enter') { onSave(val === '' ? null : Math.max(0, Number(val) || 0)); setEdit(false); } } }),
+      React.createElement('button', { type: 'button', className: 'ent-pill-btn solid-bronze px-4 text-sm', onClick: () => { onSave(val === '' ? null : Math.max(0, Number(val) || 0)); setEdit(false); } }, 'שמירה')));
+}
+
 /* ---- המסך "החודש" ---- */
-function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsSetAside, currency, onNavigate, weekly, bankTotal, hasBankAccounts }) {
+function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsSetAside, currency, onNavigate, weekly, bankTotal, hasBankAccounts,
+  parents = [], meId, mySavings, onSaveSavings, reviewList = [], onReviewOk, onHide, onToggleTransfer }) {
   if (!forecast.hasData) return React.createElement('div', { className: 'ent-card p-6' }, React.createElement(EmptyState, { text: 'עוד אין נתונים לחודש הזה', hint: 'הוסיפו הוצאה או הכנסה ראשונה בכפתור +' }));
   const md = finMonthModel({ forecast, transactions, bills, categoryBudgets, savingsSetAside, currency });
+  // מי הוציא החודש (שוטף): רק אם התחילו לסמן "של מי"
+  const thisKey = finMonthKey(new Date());
+  const monthVar = transactions.filter(tx => tx.type === 'expense' && !tx.billId && tx.kind !== 'transfer' && finMonthKey(tx.date) === thisKey);
+  const owners = monthVar.some(tx => tx.forProfile) ? [['', 'משותף'], ...parents.map(p => [p.id, p.id === meId ? 'שלי' : String(p.name).split(' ')[0]])]
+    .map(([id, l]) => [l, monthVar.filter(tx => (tx.forProfile || '') === id).reduce((s0, tx) => s0 + tx.amount, 0)]).filter(([, v]) => v > 0) : [];
   const tone = FIN_TONE[md.state];
   const monthName = new Date().toLocaleDateString('he-IL', { month: 'long' });
   const pacePct = md.B > 0 ? Math.min(100, md.V / md.B * 100) : 100;
   const card = (key, children, extra) => React.createElement('section', { key, className: 'ent-card p-4 sm:p-5 fin-card', ...extra }, children);
 
   return React.createElement('div', { className: 'space-y-4 fin-month' },
+    // 0. לבדיקה (מופיע רק כשיש)
+    React.createElement(FinReviewInbox, { list: reviewList, currency, onOk: onReviewOk, onHide, onToggleTransfer }),
     // 1. גיבור: סטטוס, משפט, מספר, ליום ולשבוע
     card('hero', React.createElement(React.Fragment, null,
       React.createElement('div', { className: 'flex items-center justify-between gap-2' },
@@ -206,7 +264,11 @@ function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsS
     md.B > 0 && card('pace', React.createElement(React.Fragment, null,
       React.createElement('h3', { className: 'fin-h' }, 'איך הגענו לכאן'),
       React.createElement(FinPaceChart, { model: md, currency }))),
-    // 7. סקירה שבועית + עו"ש
+    // 7. מי הוציא, חיסכון קבוע, סקירה שבועית, עו"ש
+    owners.length > 1 && card('owners', React.createElement(React.Fragment, null,
+      React.createElement('h3', { className: 'fin-h' }, 'מי הוציא החודש'),
+      React.createElement('p', { className: 'text-sm', style: { color: 'var(--text-2)' } }, owners.map(([l, v]) => `${l} ${finMoney(v, currency)}`).join(' · ')))),
+    onSaveSavings && React.createElement(FinSavingsCard, { total: md.S, mine: mySavings, currency, onSave: onSaveSavings }),
     weekly,
     hasBankAccounts && React.createElement('button', { type: 'button', className: 'ent-card w-full p-4 flex items-center justify-between gap-3 text-right', onClick: () => onNavigate('savings') },
       React.createElement('span', { className: 'text-sm' }, 'בעו"ש'),
