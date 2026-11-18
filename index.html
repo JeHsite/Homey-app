@@ -698,6 +698,54 @@ body[data-compact="1"] main { gap: .75rem; }
   .habit-heat-cell { aspect-ratio: 1; border-radius: 5px; }
   .habit-heat-cell.today { box-shadow: 0 0 0 2px var(--bronze); }
   @media (prefers-reduced-motion: reduce) { .habit-row, .goals-mini-card { transition: none; } .habit-row.done .habit-tick { animation: none; } }
+  /* כלכלה: מסך "החודש" (modules/finance.js) */
+  .fin-chip { --tone: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 4px 11px; border-radius: 999px;
+    color: var(--tone); background: color-mix(in srgb, var(--tone) 14%, transparent); border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent); }
+  .fin-sentence { font-size: 19px; font-weight: 700; line-height: 1.35; margin-top: 10px; }
+  .fin-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 16px; margin-top: 10px; }
+  .fin-hero-num { font-size: 40px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .fin-hero-side { font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; padding-bottom: 4px; }
+  .fin-bar-wrap { margin-top: 14px; }
+  .fin-bar { position: relative; height: 12px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); overflow: visible; }
+  .fin-bar-fill { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 999px; transition: width 600ms cubic-bezier(0.23,1,0.32,1); }
+  .fin-bar-today { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-inline-start: -1px; background: var(--text); border-radius: 2px; }
+  .fin-bar-labels { position: relative; font-size: 12px; color: var(--text-muted); margin-top: 4px; padding-top: 16px; font-variant-numeric: tabular-nums; }
+  .fin-bar-today-label { position: absolute; top: 0; transform: translateX(50%); white-space: nowrap; color: var(--text-2); font-size: 11px; }
+  .fin-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .fin-mini { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; text-align: right; }
+  .fin-mini b { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .fin-mini-label { font-size: 12px; color: var(--text-muted); }
+  .fin-mini-sub { font-size: 11px; color: var(--text-dim); line-height: 1.3; }
+  @media (max-width: 520px) { .fin-three { grid-template-columns: 1fr 1fr; } .fin-three > :last-child { grid-column: span 2; } .fin-hero-num { font-size: 34px; } }
+  .fin-h { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .fin-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .fin-list li:last-child { border-bottom: none; }
+  .fin-list li > span:nth-child(2) { font-size: 12px; }
+  .fin-cats { display: flex; flex-direction: column; gap: 10px; }
+  .fin-cat { display: block; width: 100%; text-align: right; }
+  .fin-cat:disabled { cursor: default; }
+  .fin-cat-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .fin-cat-head small { color: var(--text-dim); font-size: 12px; }
+  .fin-cat-track { position: relative; display: block; height: 9px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); }
+  .fin-cat-budget { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+  .fin-cat-fill { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 999px; transition: width 600ms cubic-bezier(0.23,1,0.32,1); }
+  .fin-cat-today { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-inline-start: -1px; background: var(--text); opacity: .7; border-radius: 2px; }
+  .fin-pace svg { width: 100%; height: auto; max-height: 220px; display: block; overflow: visible; }
+  .fin-pace-line { fill: none; stroke: var(--bronze); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .fin-pace-area { fill: color-mix(in srgb, var(--bronze) 18%, transparent); stroke: none; }
+  .fin-pace-plan { stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
+  .fin-pace-budget { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .fin-pace-proj { stroke: var(--bronze); stroke-width: 2; stroke-dasharray: 2 5; opacity: .55; vector-effect: non-scaling-stroke; }
+  .fin-pace-dot { fill: var(--bronze); stroke: var(--navy-panel); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .fin-pace-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  .fin-pace-legend i { display: inline-block; width: 16px; height: 0; margin-inline-end: 5px; vertical-align: middle; border-top: 2.5px solid var(--bronze); }
+  .fin-pace-legend i.lg-plan { border-top: 1.5px dashed var(--text-muted); }
+  .fin-pace-legend i.lg-proj { border-top: 2px dotted var(--bronze); opacity: .6; }
+  .fin-pace-legend b { margin-inline-start: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+  .fin-more-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 12px; }
+  .fin-more-row:hover { background: var(--navy-panel-2); }
+  .fin-more-ic { font-size: 22px; width: 36px; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { .fin-bar-fill, .fin-cat-fill { transition: none; } }
   /* "היום | שבוע" ושורת ההוספה המהירה (modules/today.js) */
   .td-quick { padding: 10px 12px; position: relative; z-index: 2; }
   .td-quick-plus { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--bronze) 18%, transparent); color: var(--bronze); }
@@ -1218,6 +1266,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
+<script src="modules/finance.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -2002,38 +2051,59 @@ function InitialAvatar({
     }
   }, letter);
 }
+// מזיז תאריכי דמו (YYYY-MM-DD) כך ש-baseMonth יהפוך לחודש הנוכחי; יום שלא קיים בחודש היעד נצמד לסופו,
+// ותאריך שיוצא עתידי (אחרי היום) נצמד להיום כדי שהחודש הנוכחי לא יכיל הוצאות מהעתיד
+function demoShiftDates(rows, baseMonth) {
+  const now = new Date();
+  const [by, bm] = baseMonth.split('-').map(Number);
+  const diff = (now.getFullYear() - by) * 12 + (now.getMonth() + 1 - bm);
+  if (!diff) return rows;
+  const todayIso = now.toISOString().slice(0, 10);
+  return rows.map(r => {
+    if (!r.date) return r;
+    const [y, m, d] = String(r.date).slice(0, 10).split('-').map(Number);
+    const t = new Date(y, m - 1 + diff, 1);
+    const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    let iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+    if (iso > todayIso) iso = todayIso;
+    return { ...r, date: iso };
+  });
+}
 // module = לאיזה מערך הלשונית שייכת (ראו HOMEY_MODULES). global = מוצגת בכל מערך (הגדרות, מדריך)
 const NAV_ITEMS_ALL = [{
+  // navHidden = קיים (קישורים, התראות) אבל לא בתפריט. parentHidden = בתפריט רק לילדים (אצל ההורים דרך "עוד")
   id: 'dashboard',
-  label: 'סקירה כללית',
+  label: 'החודש',
   icon: IHome,
   module: 'economy'
 }, {
   id: 'reviews',
-  label: 'סקירה שבועית',
+  label: 'סקירות שבועיות',
   icon: ISparkles,
   parentOnly: true,
+  navHidden: true,
   module: 'economy'
 }, {
   id: 'kidmoney',
   label: 'הכסף שלי',
   icon: IPiggyBank,
+  parentHidden: true,
   module: 'economy'
 }, {
   id: 'expenses',
-  label: 'הוצאות והכנסות',
+  label: 'תנועות',
   icon: IDollar,
   parentOnly: true,
   module: 'economy'
 }, {
   id: 'bills',
-  label: 'הוראות קבע והלוואות',
+  label: 'קבועים והלוואות',
   icon: ICalendar,
   parentOnly: true,
   module: 'economy'
 }, {
   id: 'savings',
-  label: 'חסכונות ויעדים',
+  label: 'חיסכון ונכסים',
   icon: IPiggyBank,
   parentOnly: true,
   module: 'economy'
@@ -2042,11 +2112,19 @@ const NAV_ITEMS_ALL = [{
   label: 'השקעות ונכסים',
   icon: ITrendingUp,
   parentOnly: true,
+  navHidden: true,
   module: 'economy'
 }, {
   id: 'gifts',
   label: 'מתנות ואירועים',
   icon: IGift,
+  parentHidden: true,
+  module: 'economy'
+}, {
+  id: 'finmore',
+  label: 'עוד',
+  icon: IMenu,
+  parentOnly: true,
   module: 'economy'
 }, {
   id: 'shopping',
@@ -6163,7 +6241,8 @@ function App() {
       setCategoryBudgets({
         'מזון': 1500
       });
-      setTransactions([{
+      // נתוני הדמו נכתבו בספטמבר 2026: מזיזים את כל התאריכים כך שהחודש האחרון בדמו הוא החודש הנוכחי
+      setTransactions(demoShiftDates([{
         id: 1,
         type: 'expense',
         category: 'מזון',
@@ -6243,7 +6322,7 @@ function App() {
         amount: 260,
         description: 'קולנוע ומסעדה',
         date: '2026-06-20'
-      }]);
+      }], '2026-09'));
       setLoans([{
         id: 'demo-loan-1',
         title: 'הלוואה לשיפוץ',
@@ -8313,6 +8392,9 @@ function App() {
   const allowedNav = NAV_ITEMS_ALL.filter(item => !(item.parentOnly && isChild)).map(item => item.id === 'kidmoney' && !isChild ? {
     ...item,
     label: 'הכסף של הילדים'
+  } : item.id === 'dashboard' && isChild ? {
+    ...item,
+    label: 'סקירה כללית'
   } : item.id === 'kids' && isChild ? {
     ...item,
     label: 'המטלות שלי'
@@ -8332,7 +8414,7 @@ function App() {
     id: 'home',
     label: 'בית',
     icon: IHome
-  }].concat(currentModule && currentModule !== 'global' ? allowedNav.filter(item => item.module === currentModule) : moduleShortcuts, allowedNav.filter(item => item.module === 'global'));
+  }].concat(currentModule && currentModule !== 'global' ? allowedNav.filter(item => item.module === currentModule && !item.navHidden && !(item.parentHidden && !isChild)) : moduleShortcuts, allowedNav.filter(item => item.module === 'global'));
   const parentOnlyIds = NAV_ITEMS_ALL.filter(i => i.parentOnly).map(i => i.id);
   // תצוגה מקדימה של "הבוקר שלכם" (אותו היגיון כמו בפונקציה daily-brief בשרת)
   const briefPreview = (() => {
@@ -8584,7 +8666,7 @@ function App() {
     className: "flex-1 space-y-6"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "ent-sr-only"
-  }, "Homey — ", navItems.find(i => i.id === activeTab)?.label || 'בית'), activeTab === 'home' && /*#__PURE__*/React.createElement(HubHome, {
+  }, "Homey — ", (navItems.find(i => i.id === activeTab) || allowedNav.find(i => i.id === activeTab))?.label || 'בית'), activeTab === 'home' && /*#__PURE__*/React.createElement(HubHome, {
     profileName: currentProfile?.name,
     isChild: isChild,
     cards: hubCards,
@@ -8625,354 +8707,29 @@ function App() {
     style: {
       color: monthCloseSummary.left >= 0 ? 'var(--pos)' : 'var(--neg)'
     }
-  }, monthCloseSummary.left >= 0 ? 'נשארו ' : 'גירעון ', currency, Math.round(Math.abs(monthCloseSummary.left)).toLocaleString('he-IL'), monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey] ? ' ✓' : '')), activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-6"
-  }, /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
-    familyId: familyId,
-    isDemo: isDemo,
-    isPremium: isPremium,
-    onOpenAll: () => setActiveTab('reviews')
-  }), !isPremium &&/*#__PURE__*/React.createElement("div", {
-    className: "ent-card ent-review p-4 flex items-center justify-between gap-3 flex-wrap"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ILock, {
-    size: 16
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "text-sm"
-  }, "סקירת AI שבועית על ההוצאות שלכם — תכונת פרימיום")), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    onClick: () => setActiveTab('settings'),
-    className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs"
-  }, "שדרוג")), newsState === 'ok' && news.length > 0 && /*#__PURE__*/React.createElement(NewsTicker, {
-    items: news
-  }), !isChild && /*#__PURE__*/React.createElement(BankAccountsCard, {
-    bankAccounts: bankAccounts,
+  }, monthCloseSummary.left >= 0 ? 'נשארו ' : 'גירעון ', currency, Math.round(Math.abs(monthCloseSummary.left)).toLocaleString('he-IL'), monthCloses && monthCloses !== 'unavailable' && monthCloses[prevMonthKey] ? ' ✓' : '')), activeTab === 'dashboard' && !isChild && /*#__PURE__*/React.createElement(FinanceMonth, {
+    forecast: forecast,
+    transactions: transactions,
+    bills: bills,
+    categoryBudgets: categoryBudgets,
+    savingsSetAside: 0,
     currency: currency,
-    rates: rates,
-    isPremium: isPremium,
-    inputClass: inputClass,
-    onSave: submitBankAccount,
-    onDelete: deleteBankAccount,
-    onSetPrimary: setPrimaryBankAccount,
-    onUpgrade: () => {
-      showToast('ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות');
-      setActiveTab('settings');
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-  }, [[IDollar, 'יתרה חודשית נוכחית', currentBalance, 'var(--cyan)', 'expenses'], [IPiggyBank, 'סה"כ חסכונות', totalSavings, 'var(--bronze)', 'savings'], [ITrendingUp, 'השקעות ונכסים', totalAssets, 'var(--pos-soft)', 'investments'], [ITrophy, 'שווי נטו כולל', netWorth, 'var(--text)', null]].map(([Ic, label, value, accent, tab]) => /*#__PURE__*/React.createElement("div", {
-    key: label,
-    onClick: tab ? () => setActiveTab(tab) : undefined,
-    className: `ent-card ent-stat ent-tilt p-6 relative overflow-hidden${tab ? ' cursor-pointer' : ''}`,
-    style: {
-      '--accent': accent
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "ent-stat-label"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-stat-icon"
-  }, /*#__PURE__*/React.createElement(Ic, {
-    size: 16
-  })), label), /*#__PURE__*/React.createElement("h3", {
-    className: "text-2xl mt-3",
-    style: {
-      color: accent
-    }
-  }, /*#__PURE__*/React.createElement(Money, {
-    v: value,
-    currency: currency
-  }))))), /*#__PURE__*/React.createElement(AlertCarousel, {
-    alerts: alerts.slice(0, 6),
-    onDismiss: id => setDismissedAlerts(prev => [...prev, id])
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap items-baseline justify-between gap-2 mb-4"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(ITrendingUp, {
-    size: 18
-  }), " תזרים חזוי לחודש הנוכחי"), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "יום ", forecast.today, " מתוך ", forecast.daysInMonth, " · נותרו ", forecast.daysLeft, " ימים")), !forecast.hasData ? /*#__PURE__*/React.createElement("p", {
-    className: "text-sm",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, "הוסיפו הכנסות והוצאות כדי לראות תחזית לסוף החודש.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "ent-forecast-hero p-5 rounded-2xl mb-4 text-center relative overflow-hidden",
-    style: {
-      background: `radial-gradient(90% 140% at 50% 0%, color-mix(in srgb, ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'} 16%, transparent), transparent 70%), var(--navy-panel-2)`,
-      border: `1px solid ${forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'}`
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mb-1",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, "נשאר להוציא החודש"), /*#__PURE__*/React.createElement("p", {
-    className: "ent-hero-num",
-    style: {
-      color: forecast.available >= 0 ? 'var(--pos)' : 'var(--neg)'
-    }
-  }, /*#__PURE__*/React.createElement(Money, {
-    v: Math.round(forecast.available),
-    currency: currency
-  })), forecast.daysLeft > 0 && /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, forecast.available >= 0 ? `זה ${currency}${Math.round(forecast.dailyPace).toLocaleString('he-IL')} ליום עד סוף החודש` : 'החודש צפוי להסתיים בחריגה. כדאי לצמצם')), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-mini-card p-3.5"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, "הכנסה צפויה"), /*#__PURE__*/React.createElement("p", {
-    className: "font-bold mt-1",
-    style: {
-      color: 'var(--pos)'
-    }
-  }, /*#__PURE__*/React.createElement(Money, {
-    v: forecast.expectedIncome,
-    currency: currency
-  })), forecast.incomeIsEstimate && /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-0.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, forecast.incomeSoFar > 0 ? `נכנסו ${currency}${Math.round(forecast.incomeSoFar).toLocaleString('he-IL')}, השאר לפי חודש רגיל` : 'לפי חודש רגיל שלכם')),/*#__PURE__*/React.createElement("div", {
-    className: "ent-mini-card p-3.5"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, "הוצאות שוטפות עד כה"),/*#__PURE__*/React.createElement("p", {
-    className: "font-bold mt-1",
-    style: {
-      color: 'var(--neg)'
-    }
-  }, /*#__PURE__*/React.createElement(Money, {
-    v: forecast.spentSoFar,
-    currency: currency
-  })), forecast.openTripSpend > 0 && /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-0.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, `ועוד ${currency}${Math.round(forecast.openTripSpend).toLocaleString('he-IL')} בטיול שמתרחש עכשיו`)), /*#__PURE__*/React.createElement("div", {
-    className: "ent-mini-card p-3.5"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, "התחייבויות קבועות החודש"), /*#__PURE__*/React.createElement("p", {
-    className: "font-bold mt-1",
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, /*#__PURE__*/React.createElement(Money, {
-    v: forecast.fixedTotal,
-    currency: currency
-  })), forecast.fixedTotal > 0 && /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-0.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, forecast.fixedUnpaid > 0 ? `טרם ירדו ${currency}${Math.round(forecast.fixedUnpaid).toLocaleString('he-IL')}` : 'כולן כבר ירדו'))),/*#__PURE__*/React.createElement("div", {
-    className: "p-4 rounded-xl",
-    style: {
-      background: 'var(--navy-panel-2)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-baseline justify-between mb-2"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-sm font-semibold"
-  }, "השבוע הזה"), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, currency, Math.round(forecast.weekSpent).toLocaleString('he-IL'), forecast.weeklyBudget > 0 && ` מתוך ${currency}${Math.round(forecast.weeklyBudget).toLocaleString('he-IL')}`)), forecast.weeklyBudget > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "ent-progress-track"
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: `${Math.min(100, forecast.weekSpent / forecast.weeklyBudget * 100)}%`,
-      height: '100%',
-      borderRadius: 999,
-      background: forecast.weekSpent > forecast.weeklyBudget ? 'var(--neg)' : 'var(--bronze)'
-    }
-  })), /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mt-2",
-    style: {
-      color: forecast.weekSpent > forecast.weeklyBudget ? 'var(--neg)' : 'var(--text-dim)'
-    }
-  }, forecast.weekSpent > forecast.weeklyBudget ? `חרגתם ב-${currency}${Math.round(forecast.weekSpent - forecast.weeklyBudget).toLocaleString('he-IL')} מהקצב השבועי` : `נשארו ${currency}${Math.round(forecast.weeklyBudget - forecast.weekSpent).toLocaleString('he-IL')} לשבוע הזה`))))), newsState !== 'unavailable' && /*#__PURE__*/React.createElement("div", {
-    className: "ent-card ent-newspaper p-0"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-newspaper-head"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-newspaper-title"
-  }, "כלכלה בעולם"), /*#__PURE__*/React.createElement("span", {
-    className: "ent-newspaper-date"
-  }, new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }))), newsState === 'loading' && /*#__PURE__*/React.createElement("div", {
-    className: "p-6"
-  }, /*#__PURE__*/React.createElement(Skeleton, {
-    rows: 4
-  })), newsState === 'ok' && news.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "ent-newspaper-body"
-  }, /*#__PURE__*/React.createElement("a", {
-    href: news[0].url,
-    target: "_blank",
-    rel: "noopener noreferrer",
-    className: "ent-newspaper-lead"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-newspaper-kicker"
-  }, news[0].source, " · ", newsAgo(news[0].datetime)), /*#__PURE__*/React.createElement("h4", {
-    className: "ent-newspaper-lead-title"
-  }, news[0].headline), news[0].summary && /*#__PURE__*/React.createElement("p", {
-    className: "ent-newspaper-lead-summary"
-  }, news[0].summary)), /*#__PURE__*/React.createElement("div", {
-    className: "ent-newspaper-rule",
-    "aria-hidden": "true"
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "ent-newspaper-briefs"
-  }, news.slice(1, 6).map((n, i) => /*#__PURE__*/React.createElement("a", {
-    key: i,
-    href: n.url,
-    target: "_blank",
-    rel: "noopener noreferrer",
-    className: "ent-newspaper-brief"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "ent-newspaper-kicker"
-  }, n.source, " · ", newsAgo(n.datetime)), /*#__PURE__*/React.createElement("h4", {
-    className: "ent-newspaper-brief-title"
-  }, n.headline)))))), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-5 flex items-start gap-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bronze)',
-      flexShrink: 0,
-      marginTop: 2
-    }
-  }, /*#__PURE__*/React.createElement(ITarget, {
-    size: 18
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs mb-1",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "טיפ להיום"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm",
-    style: {
-      color: 'var(--text-2)'
-    }
-  }, TIPS[todayTipIdx]))), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 lg:grid-cols-2 gap-6"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-3"
-  }, "התפלגות הוצאות לפי קטגוריה"), pieData.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
-    text: "אין נתונים עדיין"
-  }) : /*#__PURE__*/React.createElement(DonutChart, {
-    data: pieData,
-    currency: currency
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "ent-card p-6"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "ent-heading font-bold mb-3"
-  }, "מגמת הכנסות מול הוצאות"), /*#__PURE__*/React.createElement(TrendLines, {
-    rows: transactions,
-    currency: currency
-  }))),/*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-3 gap-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('bills'),
-    className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs flex items-center gap-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(ICalendar, {
-    size: 13
-  }), " הוראת הקבע הקרובה"), nextBill ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 font-semibold text-sm flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    cat: nextBill.category,
-    map: BILL_CATEGORIES,
-    size: 15
-  })), nextBill.title, " · ", currency, nextBill.amount) : /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "אין הוראות קבע ממתינות")), /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('trips'),
-    className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs flex items-center gap-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(ICompass, {
-    size: 13
-  }), " הטיול הבא"), nextTrip ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 font-semibold text-sm flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--cyan)'
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    cat: nextTrip.type,
-    map: TRIP_TYPES,
-    size: 15
-  })), nextTrip.title) : /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "לא תוכננו טיולים")), /*#__PURE__*/React.createElement("div", {
-    onClick: () => setActiveTab('gifts'),
-    className: "ent-mini-card p-4 cursor-pointer hover:brightness-110 transition"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "text-xs flex items-center gap-1.5",
-    style: {
-      color: 'var(--text-muted)'
-    }
-  }, /*#__PURE__*/React.createElement(IGift, {
-    size: 13
-  }), " האירוע הקרוב"), nextGift ? /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 font-semibold text-sm flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bronze)'
-    }
-  }, /*#__PURE__*/React.createElement(CatIcon, {
-    cat: nextGift.category,
-    map: GIFT_CATEGORIES,
-    size: 15
-  })), nextGift.event) : /*#__PURE__*/React.createElement("p", {
-    className: "mt-1 text-sm",
-    style: {
-      color: 'var(--text-dim)'
-    }
-  }, "אין אירועים קרובים")))), activeTab === 'dashboard' && isChild && /*#__PURE__*/React.createElement(KidDashboard, {
+    onNavigate: tab => setActiveTab(tab),
+    hasBankAccounts: bankAccounts.length > 0,
+    bankTotal: totalBankBalance,
+    weekly: isPremium ? /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
+      familyId: familyId,
+      isDemo: isDemo,
+      isPremium: isPremium,
+      onOpenAll: () => setActiveTab('reviews')
+    }) : null
+  }), activeTab === 'finmore' && !isChild && /*#__PURE__*/React.createElement(FinMorePage, {
+    onNavigate: tab => setActiveTab(tab),
+    news: news,
+    newsState: newsState,
+    newsAgo: newsAgo,
+    tip: TIPS[todayTipIdx]
+  }), activeTab === 'dashboard' && isChild && /*#__PURE__*/React.createElement(KidDashboard, {
     familyId: familyId,
     isDemo: isDemo,
     currentProfile: currentProfile,
@@ -9466,7 +9223,20 @@ function App() {
       showToast('בתוכנית החינמית אפשר לעקוב אחרי הלוואה אחת — שדרגו לפרימיום בהגדרות');
       setActiveTab('settings');
     }
-  })), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement("div", {
+  })), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement(BankAccountsCard, {
+    bankAccounts: bankAccounts,
+    currency: currency,
+    rates: rates,
+    isPremium: isPremium,
+    inputClass: inputClass,
+    onSave: submitBankAccount,
+    onDelete: deleteBankAccount,
+    onSetPrimary: setPrimaryBankAccount,
+    onUpgrade: () => {
+      showToast('ניהול חשבונות עו"ש הוא תכונת פרימיום — שדרגו בהגדרות');
+      setActiveTab('settings');
+    }
+  }), activeTab === 'savings' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
@@ -9643,7 +9413,7 @@ function App() {
     assets: assets,
     savingsPots: savingsPots,
     categories: Object.keys(allExpenseCategories)
-  }), activeTab === 'investments' && !isChild && /*#__PURE__*/React.createElement("div", {
+  }), (activeTab === 'investments' || activeTab === 'savings') && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
