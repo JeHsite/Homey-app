@@ -748,6 +748,12 @@ body[data-compact="1"] main { gap: .75rem; }
   .fin-pace-legend i.lg-plan { border-top: 1.5px dashed var(--text-muted); }
   .fin-pace-legend i.lg-proj { border-top: 2px dotted var(--bronze); opacity: .6; }
   .fin-pace-legend b { margin-inline-start: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+  /* גלגלת ספרות (FinRoller): כל ספרה היא עמודה 0-9 שזזה אנכית; ₪ סטטי; כיוון LTR מבודד */
+  .fin-roll { display: inline-flex; align-items: baseline; direction: ltr; unicode-bidi: isolate; }
+  .fin-digit { display: inline-block; height: 1.1em; overflow: hidden; line-height: 1.1em; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); }
+  .fin-digit-col { display: flex; flex-direction: column; transform: translateY(calc(var(--d) * -1.1em)); transition: transform 700ms cubic-bezier(0.23,1,0.32,1); transition-delay: calc((var(--i) - 1) * 30ms); }
+  .fin-digit-col > span { height: 1.1em; line-height: 1.1em; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { .fin-digit-col { transition: none; } }
   .fin-tag { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
   .fin-tag.warn { border-color: color-mix(in srgb, #f59e0b 55%, transparent); color: #f59e0b; }
   .fin-review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -1277,7 +1283,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=4"></script>
+<script src="modules/finance.js?v=5"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>

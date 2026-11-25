@@ -101,6 +101,31 @@ function finMonthModel({ forecast: f, transactions, bills, categoryBudgets, savi
 
 const FIN_TONE = { green: 'var(--pos)', amber: '#f59e0b', red: 'var(--neg)', negBudget: 'var(--neg)', early: 'var(--text-muted)', noIncome: 'var(--text-muted)' };
 
+/* ---- גלגלת ספרות: המספר עובר מהערך האחרון שראיתם לערך של עכשיו, ורק אם השתנה ----
+ * הערך האחרון נשמר ב-localStorage לפי פרופיל וחודש. 700ms, השהיה 30ms בין ספרות מהאחדות והלאה. ₪ סטטי. */
+function FinRoller({ value, currency, storeKey }) {
+  const target = Math.round(Math.abs(value));
+  const [from] = useState(() => { try { const v = localStorage.getItem(storeKey); return v == null || isNaN(Number(v)) ? target : Number(v); } catch (_e) { return target; } });
+  const [shown, setShown] = useState(from);
+  useEffect(() => {
+    try { localStorage.setItem(storeKey, String(target)); } catch (_e) {}
+    if (shown === target) return;
+    const t = setTimeout(() => setShown(target), 40);
+    return () => clearTimeout(t);
+  }, [target]);
+  const str = shown.toLocaleString('he-IL');
+  const width = target.toLocaleString('he-IL').length;
+  const chars = str.length < width ? str.padStart(width, ' ') : str;
+  return React.createElement('span', { className: 'fin-roll', 'aria-label': `${currency}${target.toLocaleString('he-IL')}`, role: 'text' },
+    React.createElement('span', { className: 'ent-cur', 'aria-hidden': 'true' }, currency),
+    ...chars.split('').map((ch, i) => {
+      const pos = chars.length - i; // מימין: האחדות הן 1
+      if (!/\d/.test(ch)) return React.createElement('span', { key: 'c' + pos, 'aria-hidden': 'true', className: 'fin-roll-sep' }, ch === ' ' ? '' : ch);
+      return React.createElement('span', { key: 'd' + pos, className: 'fin-digit', 'aria-hidden': 'true' },
+        React.createElement('span', { className: 'fin-digit-col', style: { '--d': Number(ch), '--i': pos } }, '0123456789'.split('').map(n => React.createElement('span', { key: n }, n))));
+    }));
+}
+
 /* ---- גרף הקצב: מצטבר בפועל מול קו מקווקו מתוכנן, המשך מנוקד = הערכה ---- */
 function FinPaceChart({ model: md, currency }) {
   // הקו מצויר פעם אחת בכל סשן (לא בכל כניסה למסך): 800ms, והשטח מתחתיו נכנס אחריו
@@ -298,7 +323,7 @@ function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsS
       md.state !== 'noIncome' && React.createElement('div', { className: 'fin-hero-row' },
         React.createElement('div', null,
           React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, md.L >= 0 ? 'נשאר להוציא החודש' : 'חריגה החודש'),
-          React.createElement('p', { className: 'fin-hero-num', style: { color: md.L < 0 ? 'var(--neg)' : 'var(--text)' } }, React.createElement(Money, { v: Math.abs(md.L), currency }))),
+          React.createElement('p', { className: 'fin-hero-num', style: { color: md.L < 0 ? 'var(--neg)' : 'var(--text)' } }, React.createElement(FinRoller, { value: md.L, currency, storeKey: `homey_fin_left_${meId || 'x'}_${thisKey}` }))),
         md.L > 0 && React.createElement('p', { className: 'fin-hero-side' }, `${finMoney(md.perDay, currency)} ליום · ${finMoney(md.perWeek, currency)} השבוע`)),
       md.sentences[1] && React.createElement('p', { className: 'text-sm mt-1', style: { color: 'var(--text-2)' } }, md.sentences[1]),
       md.incomeIsEstimate && md.incomeMissing > 0 && React.createElement('p', { className: 'text-xs mt-1', style: { color: 'var(--text-dim)' } }, `כולל הכנסה צפויה של ${finMoney(md.incomeMissing, currency)} שעוד לא נרשמה החודש.`),
