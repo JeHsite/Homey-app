@@ -5655,6 +5655,9 @@ function App() {
   const [finParents, setFinParents] = useState([]);
   const [txShowHidden, setTxShowHidden] = useState(false);
   const [goalHitId, setGoalHitId] = useState(null);
+  // עריכה מרובה בתנועות: מצב בחירה ומזהים נבחרים (בלי מחיקה מרובה; הסתרה עם ביטול)
+  const [txSelMode, setTxSelMode] = useState(false);
+  const [txSel, setTxSel] = useState(() => new Set());
   // "לא חויב החודש" (bill_skips): מפתחות "billId:YYYY-MM"; "התעלם" בבדיקות הנתונים (data_check_dismissals)
   const [billSkips, setBillSkips] = useState(() => new Set());
   const [dataDismissed, setDataDismissed] = useState(() => new Set());
@@ -7640,6 +7643,30 @@ function App() {
     if (!isDemo) await sb.from('transactions').update(db).eq('id', id);
   };
   const markReviewed = id => setTxFields(id, { reviewStatus: 'reviewed' }, { review_status: 'reviewed' });
+  // עריכה מרובה: שדה אחד לכל הנבחרים, עם ביטול שמחזיר כל שורה לערך שהיה לה
+  const bulkUpdate = async (local, db, msg) => {
+    const ids = [...txSel];
+    if (!ids.length) return;
+    const before = transactions.filter(t => ids.includes(t.id));
+    setTransactions(prev => prev.map(x => ids.includes(x.id) ? { ...x, ...local } : x));
+    if (!isDemo) await sb.from('transactions').update(db).in('id', ids.filter(id => typeof id === 'string'));
+    setTxSel(new Set());
+    showUndo(`${msg} (${ids.length})`, async () => {
+      setTransactions(prev => prev.map(x => { const b = before.find(y => y.id === x.id); return b ? { ...x, category: b.category, sub: b.sub, kind: b.kind, forProfile: b.forProfile } : x; }));
+      if (!isDemo) for (const b of before) await sb.from('transactions').update({ category: b.category, sub: b.sub, kind: b.kind || 'regular', for_profile: b.forProfile || null }).eq('id', b.id);
+    });
+  };
+  const bulkHide = async () => {
+    const ids = [...txSel];
+    const rows = transactions.filter(t => ids.includes(t.id));
+    if (!rows.length) return;
+    setTransactions(prev => prev.filter(x => !ids.includes(x.id)));
+    setHiddenTx(prev => [...rows.map(r => ({ ...r, hidden: true })), ...prev]);
+    rows.forEach(r => applyAccountDelta(r.accountId, r.type === 'income' ? -r.amount : r.amount));
+    if (!isDemo) await sb.from('transactions').update({ hidden: true, hidden_at: new Date().toISOString() }).in('id', ids.filter(id => typeof id === 'string'));
+    setTxSel(new Set());
+    showUndo(`הוסתרו ${rows.length} רשומות`, () => rows.forEach(r => restoreTransaction(r.id)));
+  };
   // הוראת קבע שנפתחת החודש ותנועה בסכום ±10% ובתאריך ±3 ימים מיום החיוב
   const findBillMatch = row => {
     if (row.type !== 'expense' || row.billId) return null;
@@ -9359,7 +9386,39 @@ function App() {
   }, "כל הקטגוריות"), txFilterCategories.map(c => /*#__PURE__*/React.createElement("option", {
     key: c,
     value: c
-  }, c)))), visibleTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
+  }, c)))), searchedTransactions.length > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap items-center gap-2 text-xs"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    "aria-pressed": txSelMode,
+    onClick: () => { setTxSelMode(!txSelMode); setTxSel(new Set()); }
+  }, txSelMode ? 'סיום בחירה' : 'בחירה מרובה'), txSelMode && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    style: { color: 'var(--text-muted)' }
+  }, `נבחרו ${txSel.size}`), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "underline",
+    style: { color: 'var(--text-muted)' },
+    onClick: () => setTxSel(new Set(searchedTransactions.slice(0, txShown).map(t => t.id)))
+  }, "בחירת המוצגות"), txSel.size > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("select", {
+    className: "ent-input px-2 py-1 rounded-lg text-xs outline-none",
+    "aria-label": "קטגוריה לכל הנבחרות",
+    value: "",
+    onChange: e => e.target.value && bulkUpdate({ category: e.target.value, sub: '' }, { category: e.target.value, sub: '' }, `הקטגוריה שונתה ל${e.target.value}`)
+  }, /*#__PURE__*/React.createElement("option", { value: "" }, "קטגוריה…"), Object.keys(allExpenseCategories).map(c => /*#__PURE__*/React.createElement("option", { key: c, value: c }, c))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    onClick: () => bulkUpdate({ kind: 'transfer' }, { kind: 'transfer' }, 'סומנו כהעברה')
+  }, "⇄ העברה"), finParents.length > 1 && /*#__PURE__*/React.createElement("select", {
+    className: "ent-input px-2 py-1 rounded-lg text-xs outline-none",
+    "aria-label": "של מי לכל הנבחרות",
+    value: "-",
+    onChange: e => e.target.value !== '-' && bulkUpdate({ forProfile: e.target.value || null }, { for_profile: e.target.value || null }, 'השיוך עודכן')
+  }, /*#__PURE__*/React.createElement("option", { value: "-" }, "של מי…"), /*#__PURE__*/React.createElement("option", { value: "" }, "משותף"), finParents.map(p => /*#__PURE__*/React.createElement("option", { key: p.id, value: p.id }, p.name))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-3 py-1 text-xs",
+    onClick: bulkHide
+  }, "הסתרה")))), visibleTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "עדיין אין רשומות"
   }) : searchedTransactions.length === 0 ? /*#__PURE__*/React.createElement(EmptyState, {
     text: "אין תוצאות התואמות לחיפוש"
@@ -9368,7 +9427,13 @@ function App() {
     className: "ent-row py-3 flex justify-between items-center group" + (t.id === justAddedTxId ? ' ent-row-new' : '')
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement("span", {
+  }, txSelMode && /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    "aria-label": `בחירת ${t.category} ${t.amount}`,
+    checked: txSel.has(t.id),
+    onChange: () => setTxSel(prev => { const n = new Set(prev); if (n.has(t.id)) n.delete(t.id); else n.add(t.id); return n; }),
+    style: { width: 18, height: 18, accentColor: 'var(--bronze)', flexShrink: 0 }
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
       color: 'var(--bronze)'
     }
