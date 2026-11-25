@@ -5599,11 +5599,13 @@ function App() {
   // "ביטול" אחרי פעולה (במקום חלון "בטוח?")
   const [undoToast, setUndoToast] = useState(null);
   const undoTimer = useRef(null);
-  const showUndo = (msg, fn) => {
+  const showUndo = (msg, fn, label, ms) => {
     clearTimeout(undoTimer.current);
-    setUndoToast({ msg, fn, k: Date.now() });
-    undoTimer.current = setTimeout(() => setUndoToast(null), 6000);
+    setUndoToast({ msg, fn, label: label || 'ביטול', k: Date.now() });
+    undoTimer.current = setTimeout(() => setUndoToast(null), ms || 6000);
   };
+  // כללי סיווג: [{ id, match, category, sub }]
+  const [financeRules, setFinanceRules] = useState([]);
   // העדפות כלכלה לכל פרופיל הורה (profile_prefs): tx_owner_default, savings_monthly
   const [finPrefs, setFinPrefs] = useState({});
   const [finParents, setFinParents] = useState([]);
@@ -6259,7 +6261,9 @@ function App() {
     setPasteText('');
     showToast('מולא מההודעה — בדקו ושמרו');
   };
-  const fillFromParsed = parsed => {
+  const fillFromParsed = parsedIn => {
+    const rule = ruleFor(parsedIn.merchant);
+    const parsed = rule ? { ...parsedIn, category: rule.category, sub: rule.sub } : parsedIn;
     setFormData(prev => ({
       ...prev,
       expenses: {
@@ -6580,7 +6584,8 @@ function App() {
       setTransactions(txRows.filter(r => !r.hidden && !r.duplicateOf));
       setHiddenTx(txRows.filter(r => r.hidden || r.duplicateOf));
       // הורים במשפחה והעדפות הכלכלה שלהם (חיסכון חודשי, "של מי" כברירת מחדל)
-      Promise.all([sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('profile_prefs').select('profile_id, tx_owner_default, savings_monthly'), sb.from('bill_skips').select('bill_id, month'), sb.from('data_check_dismissals').select('check_key')]).then(([pp, pf, bsk, dcd]) => {
+      Promise.all([sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('profile_prefs').select('profile_id, tx_owner_default, savings_monthly'), sb.from('bill_skips').select('bill_id, month'), sb.from('data_check_dismissals').select('check_key'), sb.from('finance_rules').select('id, match_text, category, sub')]).then(([pp, pf, bsk, dcd, frl]) => {
+        if (frl && !frl.error) setFinanceRules((frl.data || []).map(r => ({ id: r.id, match: r.match_text, category: r.category, sub: r.sub || '' })));
         if (!bsk.error) setBillSkips(new Set((bsk.data || []).map(r => `${r.bill_id}:${r.month}`)));
         if (!dcd.error) setDataDismissed(new Set((dcd.data || []).map(r => r.check_key)));
         setFinParents((pp.data || []).map(p => ({ id: p.id, name: p.full_name || 'הורה' })));
@@ -7304,6 +7309,23 @@ function App() {
   // של מי ההוצאה: ערך שנבחר בטופס, אחרת לפי ההעדפה האישית ('' = משותף, undefined = עוד לא נבחר)
   const myFinPref = finPrefs[currentProfile?.id] || {};
   const txOwnerValue = f => f.forProfile !== undefined ? f.forProfile : myFinPref.owner === 'shared' ? '' : myFinPref.owner === 'mine' ? currentProfile?.id || '' : undefined;
+  const ruleFor = text => {
+    const t = String(text || '').toLowerCase();
+    if (t.length < 2) return null;
+    return financeRules.filter(r => r.match && t.includes(String(r.match).toLowerCase())).sort((a, b) => b.match.length - a.match.length)[0] || null;
+  };
+  const addFinanceRule = async (match, category, sub) => {
+    const m = String(match || '').trim();
+    if (!m) return;
+    const local = { id: 'local-' + Date.now(), match: m, category, sub: sub || '' };
+    setFinanceRules(prev => [...prev.filter(r => r.match.toLowerCase() !== m.toLowerCase()), local]);
+    if (!isDemo) {
+      await sb.from('finance_rules').delete().eq('family_id', familyId).ilike('match_text', m);
+      const { data } = await sb.from('finance_rules').insert({ match_text: m, category, sub: sub || null, created_by: currentProfile?.id || null }).select().single();
+      if (data) setFinanceRules(prev => prev.map(r => r.id === local.id ? { ...r, id: data.id } : r));
+    }
+    showToast(`מעכשיו "${m}" יסווג אוטומטית כ${category}${sub ? ' · ' + sub : ''}`);
+  };
   const submitExpense = async opts => {
     const skipDup = !!(opts && opts.skipDup === true);
     if (opts && opts.dupAccepted) dupAcceptedRef.current = true;
@@ -7353,7 +7375,11 @@ function App() {
       if (old) applyAccountDelta(old.accountId, old.type === 'income' ? -old.amount : old.amount);
       applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
       closeForm('expenses');
-      showToast('הרשומה עודכנה');
+      const ruleText = String(row.description || '').trim();
+      if (old && row.type === 'expense' && old.category !== row.category && ruleText.length >= 2) {
+        const shortText = ruleText.split(/\s+/).slice(0, 3).join(' ');
+        showUndo(`הרשומה עודכנה. תמיד לסווג "${shortText}" כ${row.category}?`, () => addFinanceRule(shortText, row.category, row.sub), 'כן, תמיד', 9000);
+      } else showToast('הרשומה עודכנה');
       return;
     }
     if (!skipDup) {
@@ -9176,7 +9202,15 @@ function App() {
     className: inputClass,
     placeholder: "תיאור (אופציונלי)",
     value: formData.expenses.description,
-    onChange: e => updateField('expenses', 'description', e.target.value)
+    onChange: e => updateField('expenses', 'description', e.target.value),
+    onBlur: e => {
+      if (editingId || formData.expenses.type !== 'expense') return;
+      const rule = ruleFor(e.target.value);
+      if (rule && rule.category !== formData.expenses.category) {
+        setFormData(prev => ({ ...prev, expenses: { ...prev.expenses, category: rule.category, sub: rule.sub || '' } }));
+        showToast(`סווג אוטומטית כ${rule.category} (לפי כלל)`);
+      }
+    }
   }), /*#__PURE__*/React.createElement(DateField, {
     label: "תאריך",
     value: formData.expenses.date,
@@ -11059,7 +11093,7 @@ function App() {
       setUndoToast(null);
       fn();
     }
-  }, "ביטול")), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
+  }, undoToast.label || "ביטול")), showTour && /*#__PURE__*/React.createElement(OnboardingTour, {
     kid: currentProfile?.role === 'child',
     onClose: closeTour,
     pushState: pushState,
