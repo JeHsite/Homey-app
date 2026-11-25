@@ -5,11 +5,14 @@
 //   2. תזכורות: אירוע או משימה עם שעה, שמתחילים בעוד 40-65 דקות (חלון שמכסה ריצה כל 15 דקות).
 //      רק למי שאחראי: פריט של הורה מסוים = רק לו; חוג עם מסיע מוגדר = רק למסיע (הלוך לפני ההתחלה, חזור לפני הסיום);
 //      משפחתי/זוגי/של ילד בלי אחראי = לכל ההורים.
+//   4. סיכום השבוע (בבוקר של יום ראשון, בתוך "הבוקר שלכם", זהה לשני ההורים): כמה יצא שוטף בשבוע שעבר מול השבוע
+//      שלפניו, על מה הכי הרבה, וכמה תנועות מחכות לבדיקה. בלי העברות, מוסתרות וכפילויות (finance-tidy.sql).
 //   3. מחר אצלכם (evening-digest.sql): בשעה שבחר (ברירת מחדל 20:00): מה יש מחר, מי מסיע, חוג בלי מסיע, המשימות שלו למחר.
 // push_log מונע שליחה כפולה. מוגן בכותרת x-cron-secret, לכן "Verify JWT" כבוי לפונקציה הזו.
 // בדיקה ידנית: POST עם x-cron-secret וגוף {"dry": true} מחזיר מה היה נשלח עכשיו, בלי לשלוח.
 //               {"force_brief": true, "user_id": "<uuid>"} שולח הבוקר שלכם עכשיו למשתמש אחד (מתעלם מהשעה ומהיומן).
 //               {"force_evening": true, "user_id": "<uuid>"} אותו דבר לסיכום הערב.
+//               {"force_brief": true, "force_weekly": true, "user_id": "<uuid>"} הבוקר שלכם עם סיכום השבוע, גם אם היום לא ראשון.
 // פרטיות: פריט אישי של הורה נשלח רק אליו. פריטים זוגיים, משפחתיים ושל ילדים נשלחים לכל ההורים במשפחה.
 // משימות, לו"ז וקניות הם תכונת פרימיום: למשפחה חינמית הבוקר שלכם כולל רק חיובים.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -95,7 +98,8 @@ Deno.serve(async (req) => {
   // נתוני היום לכל המשפחות שיש להן מכשירים. טבלאות המערכים עשויות לא להיות קיימות עדיין: שגיאה = רשימה ריקה
   const prem = familyIds.filter((f) => premium.has(f));
   const safe = async <T,>(p: PromiseLike<{ data: T[] | null; error: unknown }>) => { const r = await p; return r.error ? [] as T[] : (r.data ?? []); };
-  const [events, tasks, bills, lists, items, children] = await Promise.all([
+  type Tx = { family_id: string; amount: number; category: string | null; date: string; review_status: string | null };
+  const [events, tasks, bills, lists, items, children, weekTx] = await Promise.all([
     prem.length ? (async () => {
       const base = "id, family_id, kind, title, location, scope, person_kind, person_id, start_date, start_time, end_time, repeat, repeat_until";
       const r = await supabase.from("family_events").select(base + ", drive_to, drive_from").in("family_id", prem).lte("start_date", tomorrow);
@@ -106,7 +110,32 @@ Deno.serve(async (req) => {
     prem.length ? safe<{ id: string; family_id: string; kind: string }>(supabase.from("shopping_lists").select("id, family_id, kind").in("family_id", prem)) : [],
     prem.length ? safe<{ family_id: string; list_id: string }>(supabase.from("shopping_items").select("family_id, list_id").in("family_id", prem).eq("status", "open")) : [],
     safe<{ id: string; name: string }>(supabase.from("children").select("id, name").in("family_id", familyIds)),
+    // סיכום השבוע: רק ביום ראשון (או בבדיקה). שוטף בלבד: בלי הוראות קבע, העברות, מוסתרות וכפילויות
+    (now.dow === 0 || input.force_weekly) ? safe<Tx>(supabase.from("transactions").select("family_id, amount, category, date, review_status")
+      .in("family_id", familyIds).eq("type", "expense").is("bill_id", null).neq("kind", "transfer").eq("hidden", false).is("duplicate_of", null)
+      .gte("date", addDays(now.iso, -14)).lte("date", now.iso)) : Promise.resolve([] as Tx[]),
   ]);
+  const shekel = (v: number) => `₪${Math.round(v).toLocaleString("he-IL")}`;
+  const weekLines = (familyId: string) => {
+    const lastStart = addDays(now.iso, -7), prevStart = addDays(now.iso, -14);
+    const mine = weekTx.filter((t) => t.family_id === familyId);
+    const inRange = (t: Tx, from: string, to: string) => { const d = String(t.date).slice(0, 10); return d >= from && d < to; };
+    const last = mine.filter((t) => inRange(t, lastStart, now.iso));
+    const prev = mine.filter((t) => inRange(t, prevStart, lastStart));
+    const lastSum = last.reduce((x, t) => x + Number(t.amount), 0);
+    const prevSum = prev.reduce((x, t) => x + Number(t.amount), 0);
+    const lines: string[] = [];
+    if (!last.length) return lines;
+    const diff = lastSum - prevSum;
+    lines.push(`השבוע שעבר: ${shekel(lastSum)} שוטף${prev.length ? `, ${shekel(Math.abs(diff))} ${diff <= 0 ? "פחות" : "יותר"} מהשבוע שלפניו` : ""}`);
+    const byCat: Record<string, number> = {};
+    last.forEach((t) => { const c = t.category || "אחר"; byCat[c] = (byCat[c] || 0) + Number(t.amount); });
+    const top = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+    if (top) lines.push(`הכי הרבה: ${top[0]} ${shekel(top[1])}`);
+    const review = mine.filter((t) => t.review_status === "to_review").length;
+    if (review) lines.push(`לבדיקה באפליקציה: ${review === 1 ? "תנועה אחת" : `${review} תנועות`}`);
+    return lines;
+  };
   const kidName = new Map(children.map((c) => [c.id, c.name]));
   const lastDay = new Date(Date.UTC(now.y, now.m, 0)).getUTCDate();
   const billToday = (b: { due_day: number }) => b.due_day === now.d || (now.d === lastDay && b.due_day > lastDay);
@@ -148,7 +177,10 @@ Deno.serve(async (req) => {
         const n = items.filter((i) => i.family_id === familyId && groceryLists.has(i.list_id)).length;
         if (n) lines.push(`ברשימת הקניות: ${n === 1 ? "פריט אחד" : `${n} פריטים`}`);
       }
-      if (lines.length) out.push({ userId, familyId, key: `brief:${userId}:${now.iso}`, title: "Homey · הבוקר שלכם", body: lines.join("\n"), tag: "homey-brief" });
+      // ביום ראשון: סיכום השבוע שעבר מצטרף לאותה התראה (לא התראה נוספת)
+      const weekly = (now.dow === 0 || input.force_weekly) ? weekLines(familyId) : [];
+      if (weekly.length) lines.push(...weekly);
+      if (lines.length) out.push({ userId, familyId, key: `brief:${userId}:${now.iso}`, title: weekly.length ? "Homey · הבוקר שלכם + סיכום השבוע" : "Homey · הבוקר שלכם", body: lines.join("\n"), tag: "homey-brief" });
     }
 
     // 2. תזכורת שעה לפני (רק למי שאחראי)
