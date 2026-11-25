@@ -563,6 +563,16 @@ body[data-compact="1"] main { gap: .75rem; }
   .ent-hub-line { font-size: 14px; color: rgba(255,255,255,.78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ent-hub-badge { position: absolute; z-index: 2; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 999px; background: rgba(6,8,12,.6); color: #fff; }
   .ent-hub-panel.enter { animation: ent-hub-in 260ms cubic-bezier(0.23,1,0.32,1) backwards; }
+  /* פס התמונה בראש המערך: 120px בטלפון, 160px במחשב, אותו רדיוס כמו הלוח */
+  .ent-hub-banner { position: relative; height: 120px; border-radius: var(--r-lg, 20px); overflow: hidden; isolation: isolate; background: #0A0D13; border: 1px solid rgba(255,255,255,.06); }
+  .ent-hub-banner .ent-hub-media img { opacity: 1; }
+  .ent-hub-banner-title { position: absolute; z-index: 2; right: 16px; bottom: 12px; color: #fff; font-size: 22px; font-weight: 700; }
+  @media (min-width: 768px) { .ent-hub-banner { height: 160px; } .ent-hub-banner-title { right: 20px; bottom: 16px; font-size: 26px; } }
+  /* המעבר עצמו: פתיחה 320ms בעקומת מגירה, חזרה 260ms, שאר הדף נמוג 180ms */
+  ::view-transition-group(*) { animation-duration: 320ms; animation-timing-function: cubic-bezier(0.32,0.72,0,1); }
+  html.vt-back::view-transition-group(*) { animation-duration: 260ms; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; animation-timing-function: cubic-bezier(0.23,1,0.32,1); }
+  @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 1ms !important; } }
   @media (hover: hover) { .ent-hub-panel:not(.soon):hover .ent-hub-media img, .ent-hub-panel:not(.soon):hover .ent-hub-ph { transform: scale(1.03); } }
   @media (min-width: 768px) {
     .ent-hub-list { gap: 16px; }
@@ -3885,6 +3895,32 @@ function HubArt({ id, tint, eager }) {
       loading: eager ? 'eager' : 'lazy', fetchpriority: eager ? 'high' : 'auto', onLoad: e => e.currentTarget.classList.add('loaded') }));
 }
 
+// View Transitions (Chrome 111+, Safari 18+, Firefox 144+): הלוח והפס חולקים view-transition-name, והדפדפן מנפיש ביניהם.
+// back = חזרה לדף הבית (מעבר מהיר יותר, 260ms במקום 320ms)
+function hubViewTransition(update, back) {
+  if (typeof document === 'undefined' || !document.startViewTransition || reducedMotion() || document.visibilityState !== 'visible') return update();
+  document.documentElement.classList.toggle('vt-back', !!back);
+  try {
+    document.startViewTransition(() => ReactDOM.flushSync(update));
+  } catch (_e) {
+    update();
+  }
+}
+// פס התמונה בראש מסך הכניסה של כל מערך: אותה תמונה ואותו רדיוס כמו הלוח בדף הבית
+function HubBanner({ id, title, tint }) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "ent-hub-banner",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ent-hub-media",
+    style: { viewTransitionName: 'hub-' + id }
+  }, /*#__PURE__*/React.createElement(HubArt, { id, tint, eager: true })), /*#__PURE__*/React.createElement("span", {
+    className: "ent-hub-scrim"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "ent-hub-banner-title"
+  }, title));
+}
+
 /* ---- העמוד הראשי (Hub): כרטיס חי לכל מערך, ומכל כרטיס נכנסים למערך עצמו ---- */
 // tab = הלשונית שנפתחת בכניסה למערך. soon = עוד לא נבנה (שלב 3 בתוכנית). kids = מוצג גם לילדים.
 const HOMEY_MODULES = [{
@@ -3997,7 +4033,7 @@ function HubHome({
       className: 'ent-hub-panel' + (m.soon ? ' soon' : '') + (hubEnter ? ' enter' : ''),
       style: hubEnter ? { animationDelay: (i * 40) + 'ms' } : null,
       "aria-label": [title, m.soon ? 'בקרוב' : null, c.big, c.line].filter(Boolean).join(': ')
-    }, /*#__PURE__*/React.createElement("span", { className: "ent-hub-media", "aria-hidden": "true" }, /*#__PURE__*/React.createElement(HubArt, { id: m.id, tint: c1, eager: i === 0 })),
+    }, /*#__PURE__*/React.createElement("span", { className: "ent-hub-media", "aria-hidden": "true", style: { viewTransitionName: 'hub-' + m.id } }, /*#__PURE__*/React.createElement(HubArt, { id: m.id, tint: c1, eager: i === 0 })),
     /*#__PURE__*/React.createElement("span", { className: "ent-hub-scrim", "aria-hidden": "true" }),
     (m.soon || locked) && /*#__PURE__*/React.createElement("span", { className: "ent-hub-badge", "aria-hidden": "true" }, m.soon ? 'בקרוב' : /*#__PURE__*/React.createElement(ILock, { size: 12 })),
     /*#__PURE__*/React.createElement("span", { className: "ent-hub-text" },
@@ -5599,13 +5635,19 @@ function App() {
         tab
       }, '');
     }
-    setActiveTabRaw(tab);
+    if (tab !== activeTab && (tab === 'home' || activeTab === 'home')) hubViewTransition(() => setActiveTabRaw(tab), tab === 'home');
+    else setActiveTabRaw(tab);
   };
+  const activeTabRef = useRef('home');
+  activeTabRef.current = activeTab;
   useEffect(() => {
     const onPop = e => {
       navLock.current = true;
       const st = e.state;
-      if (st && st.homey && st.tab) setActiveTabRaw(st.tab);else setActiveTabRaw('home');
+      const target = st && st.homey && st.tab ? st.tab : 'home';
+      const cur = activeTabRef.current;
+      if (target !== cur && (target === 'home' || cur === 'home')) hubViewTransition(() => setActiveTabRaw(target), target === 'home');
+      else setActiveTabRaw(target);
       setOpenForm(null);
       setEditingId(null);
       navLock.current = false;
@@ -8984,7 +9026,14 @@ function App() {
     className: "flex-1 space-y-6"
   }, /*#__PURE__*/React.createElement("h1", {
     className: "ent-sr-only"
-  }, "Homey — ", (navItems.find(i => i.id === activeTab) || allowedNav.find(i => i.id === activeTab))?.label || 'בית'), activeTab === 'home' && /*#__PURE__*/React.createElement(HubHome, {
+  }, "Homey — ", (navItems.find(i => i.id === activeTab) || allowedNav.find(i => i.id === activeTab))?.label || 'בית'), (() => {
+    const mod = HOMEY_MODULES.find(m => !m.soon && (isChild && m.kidTab ? m.kidTab : m.tab) === activeTab);
+    return mod ? /*#__PURE__*/React.createElement(HubBanner, {
+      id: mod.id,
+      title: isChild && mod.kidLabel ? mod.kidLabel : mod.label,
+      tint: (HUB_TILE_COLORS[mod.id] || ['var(--bronze)'])[0]
+    }) : null;
+  })(), activeTab === 'home' && /*#__PURE__*/React.createElement(HubHome, {
     profileName: currentProfile?.name,
     isChild: isChild,
     cards: hubCards,
