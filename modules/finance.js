@@ -279,6 +279,34 @@ function FinHealthCard({ transactions, bills, currency, health }) {
       React.createElement('p', { className: 'text-xs mt-2', style: { color: 'var(--text-dim)' } }, 'שום דבר לא נמחק: מיזוג מסתיר את השורה הכפולה, ואפשר לשחזר אותה ב"תנועות".')));
 }
 
+/* ---- היסטוריית שינויים של תנועה (transaction_history, נכתבת בטריגר): מי שינה, מתי, ומה. "להחזיר" ממלא את הטופס ---- */
+const FIN_HIST_FIELDS = { amount: 'סכום', category: 'קטגוריה', sub: 'תת-קטגוריה', description: 'תיאור', date: 'תאריך', kind: 'סוג', hidden: 'מוסתר', for_profile: 'של מי', bill_id: 'הוראת קבע' };
+function TxHistory({ txId, parents = [], onUse }) {
+  const [rows, setRows] = useState(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open || rows) return;
+    let alive = true;
+    sb.from('transaction_history').select('op, changed_by, changed_at, old_row, new_row').eq('transaction_id', txId).order('changed_at', { ascending: false }).limit(20)
+      .then(({ data, error }) => { if (alive) setRows(error ? [] : data || []); });
+    return () => { alive = false; };
+  }, [open, txId]);
+  const val = (k, v) => k === 'hidden' ? (v ? 'כן' : 'לא') : k === 'kind' ? (v === 'transfer' ? 'העברה' : 'רגילה') : v == null || v === '' ? 'ריק' : String(v).slice(0, 30);
+  const who = id => (parents.find(p => p.id === id) || {}).name;
+  return React.createElement('div', { className: 'sm:col-span-2' },
+    React.createElement('button', { type: 'button', className: 'text-xs underline', style: { color: 'var(--text-muted)' }, 'aria-expanded': open, onClick: () => setOpen(!open) }, open ? 'הסתרת היסטוריית השינויים' : 'היסטוריית שינויים'),
+    open && React.createElement('div', { className: 'mt-2 space-y-2' },
+      rows == null ? React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-dim)' } }, 'טוען...') :
+      !rows.length ? React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-dim)' } }, 'עוד לא היו שינויים ברשומה הזו.') :
+      rows.map((r, i) => {
+        const changed = Object.keys(FIN_HIST_FIELDS).filter(k => r.old_row && r.new_row && JSON.stringify(r.old_row[k]) !== JSON.stringify(r.new_row[k]));
+        return React.createElement('div', { key: i, className: 'p-2 rounded-lg text-xs', style: { background: 'var(--navy-panel)' } },
+          React.createElement('p', { style: { color: 'var(--text-muted)' } }, new Date(r.changed_at).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), who(r.changed_by) ? ` · ${who(r.changed_by)}` : '', r.op === 'DELETE' ? ' · נמחקה' : ''),
+          changed.map(k => React.createElement('p', { key: k }, `${FIN_HIST_FIELDS[k]}: ${val(k, r.old_row[k])} ← ${val(k, r.new_row[k])}`)),
+          r.old_row && React.createElement('button', { type: 'button', className: 'underline mt-1', style: { color: 'var(--bronze)' }, onClick: () => onUse(r.old_row) }, 'להחזיר לטופס את הגרסה שלפני השינוי'));
+      })));
+}
+
 /* ---- חיסכון חודשי קבוע: כל הורה מגדיר את שלו, והסכום של כולם יורד מ"נשאר להוציא" ---- */
 function FinSavingsCard({ total, mine, currency, onSave }) {
   const [edit, setEdit] = useState(false);
