@@ -1277,7 +1277,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=3"></script>
+<script src="modules/finance.js?v=4"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -5608,6 +5608,12 @@ function App() {
   const [finPrefs, setFinPrefs] = useState({});
   const [finParents, setFinParents] = useState([]);
   const [txShowHidden, setTxShowHidden] = useState(false);
+  // "לא חויב החודש" (bill_skips): מפתחות "billId:YYYY-MM"; "התעלם" בבדיקות הנתונים (data_check_dismissals)
+  const [billSkips, setBillSkips] = useState(() => new Set());
+  const [dataDismissed, setDataDismissed] = useState(() => new Set());
+  // הוצאה חדשה שנראית כמו הוראת קבע פתוחה: מחכה ל"כן, לקשר" / "לא"
+  const [billMatch, setBillMatch] = useState(null);
+  const dupAcceptedRef = useRef(false);
   const [entrySource, setEntrySource] = useState('manual');
   const [bills, setBills] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -6574,7 +6580,9 @@ function App() {
       setTransactions(txRows.filter(r => !r.hidden && !r.duplicateOf));
       setHiddenTx(txRows.filter(r => r.hidden || r.duplicateOf));
       // הורים במשפחה והעדפות הכלכלה שלהם (חיסכון חודשי, "של מי" כברירת מחדל)
-      Promise.all([sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('profile_prefs').select('profile_id, tx_owner_default, savings_monthly')]).then(([pp, pf]) => {
+      Promise.all([sb.from('profiles').select('id, full_name').eq('family_id', familyId), sb.from('profile_prefs').select('profile_id, tx_owner_default, savings_monthly'), sb.from('bill_skips').select('bill_id, month'), sb.from('data_check_dismissals').select('check_key')]).then(([pp, pf, bsk, dcd]) => {
+        if (!bsk.error) setBillSkips(new Set((bsk.data || []).map(r => `${r.bill_id}:${r.month}`)));
+        if (!dcd.error) setDataDismissed(new Set((dcd.data || []).map(r => r.check_key)));
         setFinParents((pp.data || []).map(p => ({ id: p.id, name: p.full_name || 'הורה' })));
         if (!pf.error) setFinPrefs(Object.fromEntries((pf.data || []).map(r => [r.profile_id, { owner: r.tx_owner_default || null, savings: r.savings_monthly == null ? null : Number(r.savings_monthly) }])));
       });
@@ -7107,8 +7115,9 @@ function App() {
     monthTx.forEach(t => {
       if (t.billId && t.type === 'expense') billPaidAmount[t.billId] = (billPaidAmount[t.billId] || 0) + t.amount;
     });
-    const billsTotal = bills.reduce((s, b) => s + (b.isPaid && billPaidAmount[b.id] != null ? billPaidAmount[b.id] : b.amount), 0);
-    const billsUnpaidOnly = bills.filter(b => !b.isPaid).reduce((s, b) => s + b.amount, 0);
+    const billsThisMonth = bills.filter(b => !billSkips.has(`${b.id}:${thisKey}`));
+    const billsTotal = billsThisMonth.reduce((s, b) => s + (b.isPaid && billPaidAmount[b.id] != null ? billPaidAmount[b.id] : b.amount), 0);
+    const billsUnpaidOnly = billsThisMonth.filter(b => !b.isPaid).reduce((s, b) => s + b.amount, 0);
     const loansTotal = loanItems.reduce((s, st) => s + st.thisMonthPayment, 0);
     const loansUnpaid = loanItems.filter(st => st.dueThisMonth).reduce((s, st) => s + st.thisMonthPayment, 0);
     const fixedTotal = billsTotal + loansTotal;
@@ -7147,7 +7156,7 @@ function App() {
       weeklyBudget,
       hasData: transactions.length > 0
     };
-  }, [transactions, bills, loans, trips, tripExpenses]);
+  }, [transactions, bills, loans, trips, tripExpenses, billSkips]);
   const TIPS = ['כלל 50/30/20: 50% לצרכים, 30% לרצונות, 20% לחיסכון והחזר חובות.', 'קרן חירום מומלצת: 3-6 חודשי הוצאות. זה מה שמונע כניסה למינוס בהפתעה.', 'בדקו מנויים חוזרים אחת לרבעון. רובנו משלמים על משהו שהפסקנו להשתמש בו.', 'לפני קנייה גדולה, המתינו 48 שעות. חלק ניכר מהרצון פשוט חולף.', 'שלמו קודם לעצמכם: העבירו לחיסכון ביום המשכורת, לא בסוף החודש.', 'חוב בריבית גבוהה (אשראי, מינוס) עדיף לסגור לפני שמגדילים השקעות.', 'עקבו אחרי ההוצאות הקטנות: קפה יומי הוא כ-4,000 ₪ בשנה.', 'השוו ביטוחים אחת לשנה. אותה פוליסה יכולה לעלות פחות אצל מתחרה.', 'הגדירו יעד חיסכון עם שם ותאריך. יעדים מוגדרים מושגים יותר.', 'תקציב הוא לא הגבלה, הוא החלטה מראש איפה אתם רוצים שהכסף יהיה.'];
   const todayTipIdx = new Date().getDate() % TIPS.length;
   const alerts = useMemo(() => {
@@ -7261,6 +7270,8 @@ function App() {
     setOpenForm(null);
     setEditingId(null);
     setDupWarn(null);
+    setBillMatch(null);
+    dupAcceptedRef.current = false;
     setEntrySource('manual');
     setFormData(prev => ({
       ...prev,
@@ -7295,6 +7306,8 @@ function App() {
   const txOwnerValue = f => f.forProfile !== undefined ? f.forProfile : myFinPref.owner === 'shared' ? '' : myFinPref.owner === 'mine' ? currentProfile?.id || '' : undefined;
   const submitExpense = async opts => {
     const skipDup = !!(opts && opts.skipDup === true);
+    if (opts && opts.dupAccepted) dupAcceptedRef.current = true;
+    const dupAccepted = dupAcceptedRef.current;
     const f = formData.expenses;
     if (!f.amount) return showToast('נא למלא סכום');
     if (!editingId && !isPremium && !isDemo) {
@@ -7351,6 +7364,14 @@ function App() {
       }
     }
     setDupWarn(null);
+    // נראה כמו הוראת קבע פתוחה? שואלים לפני שמירה (opts.billChoice: 'link' / 'no')
+    const billChoice = opts && opts.billChoice;
+    const matchedBill = !billChoice ? findBillMatch(row) : billChoice === 'link' ? billMatch : null;
+    if (!billChoice && matchedBill) {
+      setBillMatch(matchedBill);
+      return;
+    }
+    setBillMatch(null);
     // של מי: חובה לבחור כשההעדפה היא "לשאול כל פעם" (אין ברירת מחדל לכל האפליקציה)
     const ownerVal = txOwnerValue(f);
     if (ownerVal === undefined && finParents.length > 1) return showToast('נא לבחור של מי ההוצאה');
@@ -7359,7 +7380,8 @@ function App() {
     row.source = entrySource || 'manual';
     row.createdBy = currentProfile?.id || null;
     // לבדיקה: רק מה שנראה בעייתי (נשמר למרות אזהרת כפילות, נקרא מקבלה, או בלי קטגוריה ברורה)
-    row.reviewStatus = skipDup || row.source === 'ocr' || /^(אחר|כללי)$/.test(row.category || '') ? 'to_review' : 'reviewed';
+    row.reviewStatus = dupAccepted || row.source === 'ocr' || /^(אחר|כללי)$/.test(row.category || '') ? 'to_review' : 'reviewed';
+    if (matchedBill) row.billId = matchedBill.id;
     const budgetMsg = row.type === 'expense' && row.kind !== 'transfer' ? budgetAlertFor(row.category, row.date, row.amount) : '';
     let newId;
     if (isDemo) {
@@ -7386,7 +7408,8 @@ function App() {
         source: row.source,
         created_by: row.createdBy,
         review_status: row.reviewStatus,
-        for_profile: row.forProfile
+        for_profile: row.forProfile,
+        bill_id: row.billId || null
       }).select().single();
       if (error) return showToast('שגיאה בשמירה');
       newId = data.id;
@@ -7397,6 +7420,10 @@ function App() {
       }, ...prev]);
     }
     applyAccountDelta(row.accountId, row.type === 'income' ? row.amount : -row.amount);
+    if (matchedBill) {
+      setBills(prev => prev.map(b => b.id === matchedBill.id ? { ...b, isPaid: true } : b));
+      if (!isDemo) await sb.from('bills').update({ is_paid: true }).eq('id', matchedBill.id);
+    }
     // שהרשומה החדשה תופיע מיד בראש הרשימה: מנקים חיפוש/סינון, ועוברים לחודש שלה אם נבחר חודש אחר
     setTxSearch('');
     setTxFilterCategory('all');
@@ -7542,6 +7569,53 @@ function App() {
     if (!isDemo) await sb.from('transactions').update(db).eq('id', id);
   };
   const markReviewed = id => setTxFields(id, { reviewStatus: 'reviewed' }, { review_status: 'reviewed' });
+  // הוראת קבע שנפתחת החודש ותנועה בסכום ±10% ובתאריך ±3 ימים מיום החיוב
+  const findBillMatch = row => {
+    if (row.type !== 'expense' || row.billId) return null;
+    const key = String(row.date || '').slice(0, 7);
+    const day = Number(String(row.date || '').slice(8, 10));
+    return bills.find(b => !b.isPaid && !billSkips.has(`${b.id}:${key}`) && Math.abs(Number(b.amount) - row.amount) <= Number(b.amount) * 0.1 && Math.abs((b.dueDay || 1) - day) <= 3) || null;
+  };
+  // מקשר תנועה קיימת להוראת קבע ומסמן "שולם" (בלי ליצור תנועה נוספת)
+  const linkTxToBill = async (tx, bill) => {
+    setTransactions(prev => prev.map(x => x.id === tx.id ? { ...x, billId: bill.id, reviewStatus: 'reviewed' } : x));
+    setBills(prev => prev.map(b => b.id === bill.id ? { ...b, isPaid: true } : b));
+    if (!isDemo) {
+      await sb.from('transactions').update({ bill_id: bill.id, review_status: 'reviewed' }).eq('id', tx.id);
+      await sb.from('bills').update({ is_paid: true }).eq('id', bill.id);
+    }
+    showUndo(`קושר להוראת הקבע "${bill.title}" וסומן שולם`, async () => {
+      setTransactions(prev => prev.map(x => x.id === tx.id ? { ...x, billId: null } : x));
+      setBills(prev => prev.map(b => b.id === bill.id ? { ...b, isPaid: false } : b));
+      if (!isDemo) {
+        await sb.from('transactions').update({ bill_id: null }).eq('id', tx.id);
+        await sb.from('bills').update({ is_paid: false }).eq('id', bill.id);
+      }
+    });
+  };
+  // מיזוג כפילות: השורה העשירה נשארת, השנייה מוסתרת עם duplicate_of (אפשר לשחזר)
+  const mergeDuplicate = async (a, b) => {
+    const score = t => (t.description || '').length + (t.source === 'ocr' ? 20 : 0) + (t.billId ? 30 : 0) + (t.accountId ? 5 : 0);
+    const [keep, drop] = score(a) >= score(b) ? [a, b] : [b, a];
+    setTransactions(prev => prev.filter(x => x.id !== drop.id));
+    setHiddenTx(prev => [{ ...drop, duplicateOf: keep.id }, ...prev]);
+    applyAccountDelta(drop.accountId, drop.type === 'income' ? -drop.amount : drop.amount);
+    if (!isDemo) await sb.from('transactions').update({ duplicate_of: keep.id, hidden: true, hidden_at: new Date().toISOString() }).eq('id', drop.id);
+    showUndo('מוזג: נשארה רשומה אחת, השנייה מוסתרת', () => restoreTransaction(drop.id));
+  };
+  const skipBillThisMonth = async bill => {
+    const key = `${bill.id}:${kidToday().slice(0, 7)}`;
+    setBillSkips(prev => new Set([...prev, key]));
+    if (!isDemo) await sb.from('bill_skips').insert({ bill_id: bill.id, month: kidToday().slice(0, 7) });
+    showUndo(`"${bill.title}" לא נספר החודש בקבועים`, async () => {
+      setBillSkips(prev => { const n = new Set(prev); n.delete(key); return n; });
+      if (!isDemo) await sb.from('bill_skips').delete().eq('bill_id', bill.id).eq('month', kidToday().slice(0, 7));
+    });
+  };
+  const dismissDataCheck = async key => {
+    setDataDismissed(prev => new Set([...prev, key]));
+    if (!isDemo) await sb.from('data_check_dismissals').insert({ check_key: key });
+  };
   const toggleTransfer = t => {
     const kind = t.kind === 'transfer' ? 'regular' : 'transfer';
     setTxFields(t.id, { kind }, { kind });
@@ -8862,6 +8936,14 @@ function App() {
     onReviewOk: markReviewed,
     onHide: deleteTransaction,
     onToggleTransfer: toggleTransfer,
+    health: {
+      dismissed: dataDismissed,
+      onDismiss: dismissDataCheck,
+      onMerge: mergeDuplicate,
+      onLinkBill: linkTxToBill,
+      onSkipBill: skipBillThisMonth,
+      skipped: billSkips
+    },
     hasBankAccounts: bankAccounts.length > 0,
     bankTotal: totalBankBalance,
     weekly: isPremium ? /*#__PURE__*/React.createElement(WeeklyReviewBanner, {
@@ -8939,9 +9021,32 @@ function App() {
     type: "button",
     className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
     onClick: () => submitExpense({
-      skipDup: true
+      skipDup: true,
+      dupAccepted: true
     })
-  }, "הוצאה נפרדת, לשמור"))), !editingId && receiptDraft && /*#__PURE__*/React.createElement("div", {
+  }, "הוצאה נפרדת, לשמור"))), billMatch && !editingId && /*#__PURE__*/React.createElement("div", {
+    className: "sm:col-span-2 p-3 rounded-xl space-y-2",
+    role: "alert",
+    style: {
+      border: '1px solid color-mix(in srgb, var(--cyan) 55%, transparent)',
+      background: 'color-mix(in srgb, var(--cyan) 9%, transparent)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "זו הוראת הקבע \"", billMatch.title, "\" (", currency, Math.round(billMatch.amount).toLocaleString('he-IL'), ", ב-", billMatch.dueDay, " לחודש)?"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: { color: 'var(--text-muted)' }
+  }, "אם כן, היא תסומן \"שולם\" ולא תיספר פעמיים."), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn solid-bronze px-4 py-1.5 text-xs",
+    onClick: () => submitExpense({ skipDup: true, billChoice: 'link' })
+  }, "כן, לקשר"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-4 py-1.5 text-xs",
+    onClick: () => submitExpense({ skipDup: true, billChoice: 'no' })
+  }, "לא, הוצאה אחרת"))), !editingId && receiptDraft && /*#__PURE__*/React.createElement("div", {
     className: "sm:col-span-2 space-y-3 p-4 rounded-xl",
     style: {
       border: '1px dashed var(--bronze)'

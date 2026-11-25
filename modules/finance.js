@@ -163,6 +163,97 @@ function FinReviewInbox({ list, currency, onOk, onHide, onToggleTransfer }) {
         React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-1 text-xs', onClick: () => onHide(t.id) }, 'הסתרה'))))));
 }
 
+/* ---- בריאות הנתונים: בדיקות מקומיות על הנתונים הידניים, כל אחת עם פעולה או "התעלם" (נשמר ב-data_check_dismissals) ---- */
+function finHealthChecks({ transactions, bills, skipped, dismissed }) {
+  const now = new Date();
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayIso = iso(now), thisKey = todayIso.slice(0, 7), day = now.getDate();
+  const dnum = d => Math.round(new Date(String(d).slice(0, 10) + 'T00:00:00') / 86400000);
+  const today = dnum(todayIso);
+  const out = [];
+  const add = it => { if (!dismissed.has(it.key)) out.push(it); };
+  // 1. כפילויות אפשריות ב-60 הימים האחרונים
+  const recent = transactions.filter(t => t.date && today - dnum(t.date) <= 60 && today - dnum(t.date) >= -1);
+  let dups = 0;
+  for (let i = 0; i < recent.length && dups < 8; i++) {
+    for (let j = i + 1; j < recent.length; j++) {
+      const a = recent[i], b = recent[j];
+      if (a.billId && b.billId) continue;
+      if (typeof findDuplicateTx === 'function' && findDuplicateTx(a, [b])) {
+        const ids = [String(a.id), String(b.id)].sort();
+        add({ key: `dup:${ids[0]}:${ids[1]}`, type: 'dup', a, b });
+        dups++;
+        break;
+      }
+    }
+  }
+  // 2. הוראת קבע שעבר מועדה החודש ולא סומנה
+  bills.filter(b => !b.isPaid && !skipped.has(`${b.id}:${thisKey}`) && (b.dueDay || 1) < day - 2).forEach(b => {
+    const cand = transactions.find(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer' && String(t.date || '').startsWith(thisKey) && Math.abs(Number(t.amount) - Number(b.amount)) <= Number(b.amount) * 0.1);
+    add({ key: `bill:${b.id}:${thisKey}`, type: 'bill', bill: b, tx: cand || null });
+  });
+  // 3. סכום חריג: פי 5 מהחציון בקטגוריה (לפחות 5 תנועות), ב-60 הימים האחרונים
+  const byCat = {};
+  transactions.forEach(t => { if (t.type === 'expense' && !t.billId && t.kind !== 'transfer') (byCat[t.category] = byCat[t.category] || []).push(Number(t.amount)); });
+  recent.filter(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer').forEach(t => {
+    const arr = (byCat[t.category] || []).slice().sort((x, y) => x - y);
+    if (arr.length < 5) return;
+    const med = arr[arr.length >> 1];
+    if (med > 0 && Number(t.amount) > med * 5) add({ key: `big:${t.id}`, type: 'big', tx: t, med });
+  });
+  // 4. תאריך עתידי
+  transactions.filter(t => t.date && dnum(t.date) > today).slice(0, 5).forEach(t => add({ key: `future:${t.id}`, type: 'future', tx: t }));
+  // 5. "אחר" מעל 15% מהשוטף החודש
+  const monthVar = transactions.filter(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer' && String(t.date || '').startsWith(thisKey));
+  const total = monthVar.reduce((s0, t) => s0 + Number(t.amount), 0);
+  const other = monthVar.filter(t => /^(אחר|כללי)$/.test(t.category || '')).reduce((s0, t) => s0 + Number(t.amount), 0);
+  if (total > 0 && other / total > 0.15) add({ key: `other:${thisKey}`, type: 'other', pct: Math.round(other / total * 100) });
+  // 6. מחכה לבדיקה יותר מ-30 יום
+  const stale = transactions.filter(t => t.reviewStatus === 'to_review' && t.date && today - dnum(t.date) > 30).length;
+  if (stale) add({ key: `stale:${thisKey}`, type: 'stale', n: stale });
+  return out;
+}
+
+function FinHealthCard({ transactions, bills, currency, health }) {
+  const [open, setOpen] = useState(false);
+  const list = finHealthChecks({ transactions, bills, skipped: health.skipped, dismissed: health.dismissed });
+  if (!list.length) return null;
+  const d = t => String(t.date || '').slice(0, 10).split('-').reverse().slice(0, 2).join('.');
+  const btn = (label, fn, solid) => React.createElement('button', { type: 'button', className: `ent-pill-btn ${solid ? 'solid-bronze' : 'ghost'} px-3 py-1 text-xs`, onClick: fn }, label);
+  const ignore = it => btn('התעלם', () => health.onDismiss(it.key));
+  const row = it => {
+    let text, actions;
+    if (it.type === 'dup') {
+      text = `נראה כפול: ${it.a.description || it.a.category} ${finMoney(it.a.amount, currency)} ב-${d(it.a)} וב-${d(it.b)}`;
+      actions = [btn('מיזוג', () => health.onMerge(it.a, it.b), true), btn('לא כפילות', () => health.onDismiss(it.key))];
+    } else if (it.type === 'bill') {
+      text = `הוראת הקבע "${it.bill.title}" (${finMoney(it.bill.amount, currency)}, ב-${it.bill.dueDay} לחודש) עוד לא סומנה${it.tx ? `. אולי זו "${it.tx.description || it.tx.category}" מ-${d(it.tx)}?` : ''}`;
+      actions = [it.tx && btn('לקשר', () => health.onLinkBill(it.tx, it.bill), true), btn('לא חויב החודש', () => health.onSkipBill(it.bill)), ignore(it)].filter(Boolean);
+    } else if (it.type === 'big') {
+      text = `סכום גבוה מהרגיל: ${it.tx.description || it.tx.category} ${finMoney(it.tx.amount, currency)} (בדרך כלל כ-${finMoney(it.med, currency)}). אולי חסרה נקודה עשרונית?`;
+      actions = [btn('תקין', () => health.onDismiss(it.key))];
+    } else if (it.type === 'future') {
+      text = `תאריך עתידי: ${it.tx.description || it.tx.category} ב-${d(it.tx)}`;
+      actions = [btn('תקין', () => health.onDismiss(it.key))];
+    } else if (it.type === 'other') {
+      text = `${it.pct}% מההוצאות החודש בקטגוריה "אחר". שיוך לקטגוריה ברורה יעשה את התמונה מדויקת יותר.`;
+      actions = [ignore(it)];
+    } else {
+      text = `${it.n === 1 ? 'תנועה אחת מחכה' : `${it.n} תנועות מחכות`} לבדיקה יותר מחודש.`;
+      actions = [ignore(it)];
+    }
+    return React.createElement('div', { key: it.key, className: 'fin-review-row' },
+      React.createElement('p', { className: 'text-sm min-w-0' }, text),
+      React.createElement('div', { className: 'flex flex-wrap gap-1.5 flex-shrink-0' }, ...actions));
+  };
+  return React.createElement('section', { className: 'ent-card p-4 fin-card' },
+    React.createElement('button', { type: 'button', className: 'w-full flex items-center justify-between gap-2 text-right', 'aria-expanded': open, onClick: () => setOpen(!open) },
+      React.createElement('span', { className: 'text-sm font-semibold' }, `🩺 בריאות הנתונים: ${list.length === 1 ? 'דבר אחד' : `${list.length} דברים`} לבדוק`),
+      React.createElement('span', { className: 'text-xs', style: { color: 'var(--text-muted)' } }, open ? 'סגירה' : 'לבדוק')),
+    open && React.createElement('div', { className: 'mt-2' }, list.map(row),
+      React.createElement('p', { className: 'text-xs mt-2', style: { color: 'var(--text-dim)' } }, 'שום דבר לא נמחק: מיזוג מסתיר את השורה הכפולה, ואפשר לשחזר אותה ב"תנועות".')));
+}
+
 /* ---- חיסכון חודשי קבוע: כל הורה מגדיר את שלו, והסכום של כולם יורד מ"נשאר להוציא" ---- */
 function FinSavingsCard({ total, mine, currency, onSave }) {
   const [edit, setEdit] = useState(false);
@@ -181,7 +272,7 @@ function FinSavingsCard({ total, mine, currency, onSave }) {
 
 /* ---- המסך "החודש" ---- */
 function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsSetAside, currency, onNavigate, weekly, bankTotal, hasBankAccounts,
-  parents = [], meId, mySavings, onSaveSavings, reviewList = [], onReviewOk, onHide, onToggleTransfer }) {
+  parents = [], meId, mySavings, onSaveSavings, reviewList = [], onReviewOk, onHide, onToggleTransfer, health }) {
   if (!forecast.hasData) return React.createElement('div', { className: 'ent-card p-6' }, React.createElement(EmptyState, { text: 'עוד אין נתונים לחודש הזה', hint: 'הוסיפו הוצאה או הכנסה ראשונה בכפתור +' }));
   const md = finMonthModel({ forecast, transactions, bills, categoryBudgets, savingsSetAside, currency });
   // מי הוציא החודש (שוטף): רק אם התחילו לסמן "של מי"
@@ -197,6 +288,7 @@ function FinanceMonth({ forecast, transactions, bills, categoryBudgets, savingsS
   return React.createElement('div', { className: 'space-y-4 fin-month' },
     // 0. לבדיקה (מופיע רק כשיש)
     React.createElement(FinReviewInbox, { list: reviewList, currency, onOk: onReviewOk, onHide, onToggleTransfer }),
+    health && React.createElement(FinHealthCard, { transactions, bills, currency, health }),
     // 1. גיבור: סטטוס, משפט, מספר, ליום ולשבוע
     card('hero', React.createElement(React.Fragment, null,
       React.createElement('div', { className: 'flex items-center justify-between gap-2' },
