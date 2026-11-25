@@ -743,6 +743,11 @@ body[data-compact="1"] main { gap: .75rem; }
   .fin-pace-budget { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .fin-pace-proj { stroke: var(--bronze); stroke-width: 2; stroke-dasharray: 2 5; opacity: .55; vector-effect: non-scaling-stroke; }
   .fin-pace-dot { fill: var(--bronze); stroke: var(--navy-panel); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .fin-pace svg { touch-action: pan-y; cursor: crosshair; }
+  .fin-pace-dim { fill: var(--navy-panel); opacity: .65; }
+  .fin-pace-cursor { stroke: var(--text-2); stroke-width: 1; }
+  .fin-pace-dot.scrub { fill: var(--bronze); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--bronze) 60%, transparent)); }
+  .fin-pace.scrubbing .fin-pace-legend b { color: var(--bronze); }
   .fin-pace-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
   .fin-pace-legend i { display: inline-block; width: 16px; height: 0; margin-inline-end: 5px; vertical-align: middle; border-top: 2.5px solid var(--bronze); }
   .fin-pace-legend i.lg-plan { border-top: 1.5px dashed var(--text-muted); }
@@ -1292,7 +1297,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=7"></script>
+<script src="modules/finance.js?v=8"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>

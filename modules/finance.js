@@ -140,19 +140,44 @@ function FinPaceChart({ model: md, currency }) {
   const projV = md.today ? lastV * days / md.today : lastV;
   const showProj = md.state !== 'early' && md.today < days;
   const label = `${md.sentences[0]} היום: ${finMoney(lastV, currency)} שוטף מתוך ${finMoney(Math.max(0, md.B), currency)}.`;
-  return React.createElement('figure', { className: 'fin-pace' + (draw ? ' draw' : '') },
-    React.createElement('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label, dir: 'ltr' },
+  // גרירה: במחשב תנועת עכבר, בטלפון לחיצה ארוכה (250ms) כדי לא להפריע לגלילה. מעקב 1:1 בלי מעבר
+  const [scrub, setScrub] = useState(null);
+  const holdRef = useRef(null);
+  const dayAt = (e, el) => {
+    const r = el.getBoundingClientRect();
+    const vx = (e.clientX - r.left) / r.width * W;
+    return Math.max(1, Math.min(md.today, Math.round((vx - P) / (W - 2 * P) * days)));
+  };
+  const onDown = e => {
+    const el = e.currentTarget;
+    if (e.pointerType === 'mouse') return setScrub(dayAt(e, el));
+    clearTimeout(holdRef.current);
+    const ev = { clientX: e.clientX };
+    holdRef.current = setTimeout(() => { setScrub(dayAt(ev, el)); try { el.setPointerCapture(e.pointerId); } catch (_e) {} }, 250);
+  };
+  const onMove = e => {
+    if (e.pointerType === 'mouse' || scrub != null) setScrub(dayAt(e, e.currentTarget));
+    else clearTimeout(holdRef.current);
+  };
+  const onEnd = () => { clearTimeout(holdRef.current); setScrub(null); };
+  const sv = scrub != null ? md.cum[scrub] || 0 : null;
+  return React.createElement('figure', { className: 'fin-pace' + (draw ? ' draw' : '') + (scrub != null ? ' scrubbing' : '') },
+    React.createElement('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label, dir: 'ltr',
+      onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onEnd, onPointerCancel: onEnd, onPointerLeave: onEnd },
       md.B > 0 && React.createElement('line', { x1: x(0), y1: yv(md.B), x2: x(days), y2: yv(md.B), className: 'fin-pace-budget' }),
       md.B > 0 && React.createElement('line', { x1: x(0), y1: yv(0), x2: x(days), y2: yv(md.B), className: 'fin-pace-plan' }),
       React.createElement('path', { d: `${actual} L${x(md.today).toFixed(1)},${yv(0)} L${x(0)},${yv(0)} Z`, className: 'fin-pace-area' }),
       React.createElement('path', { d: actual, className: 'fin-pace-line', pathLength: 1 }),
       showProj && React.createElement('line', { x1: x(md.today), y1: yv(lastV), x2: x(days), y2: yv(projV), className: 'fin-pace-proj' }),
-      React.createElement('circle', { cx: x(md.today), cy: yv(lastV), r: 3.5, className: 'fin-pace-dot' })),
+      React.createElement('circle', { cx: x(md.today), cy: yv(lastV), r: 3.5, className: 'fin-pace-dot' }),
+      scrub != null && React.createElement('rect', { x: x(scrub), y: 0, width: Math.max(0, x(days) - x(scrub)), height: H, className: 'fin-pace-dim' }),
+      scrub != null && React.createElement('line', { x1: x(scrub), y1: P / 2, x2: x(scrub), y2: H - P, className: 'fin-pace-cursor' }),
+      scrub != null && React.createElement('circle', { cx: x(scrub), cy: yv(sv), r: 4, className: 'fin-pace-dot scrub' })),
     React.createElement('figcaption', { className: 'fin-pace-legend' },
       React.createElement('span', null, React.createElement('i', { className: 'lg-actual' }), 'בפועל'),
       md.B > 0 && React.createElement('span', null, React.createElement('i', { className: 'lg-plan' }), 'קצב מתוכנן'),
       showProj && React.createElement('span', null, React.createElement('i', { className: 'lg-proj' }), 'הערכה'),
-      React.createElement('b', null, `היום: ${finMoney(lastV, currency)}`)));
+      React.createElement('b', { 'aria-live': 'polite' }, scrub != null ? `עד יום ${scrub}: ${finMoney(sv, currency)}` : `היום: ${finMoney(lastV, currency)}`)));
 }
 
 /* ---- "של מי ההוצאה" בטופס: משותף / כל הורה. בלי ברירת מחדל לכל האפליקציה: כל הורה נשאל פעם אחת ---- */
