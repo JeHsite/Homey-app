@@ -3464,7 +3464,8 @@ function MonthCloseModal({
   closed,
   onClose,
   onLater,
-  onConfirm
+  onConfirm,
+  checklist = []
 }) {
   useEscapeClose(onLater || onClose);
   const trapRef = useFocusTrap();
@@ -3530,7 +3531,30 @@ function MonthCloseModal({
     }
   }, "סגירת חודש"), /*#__PURE__*/React.createElement("h2", {
     className: "ent-heading text-2xl font-bold"
-  }, summary.label)), /*#__PURE__*/React.createElement("div", {
+  }, summary.label)), checklist.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "p-3 rounded-2xl space-y-1.5",
+    style: {
+      background: 'var(--navy-panel-2)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "לפני שסוגרים"), checklist.map((c, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex items-center justify-between gap-2 text-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: c.ok ? 'var(--pos)' : 'var(--text-2)'
+    }
+  }, c.ok ? '✓ ' : '! ', c.text), !c.ok && c.action && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "ent-pill-btn ghost px-3 py-1 text-xs flex-shrink-0",
+    onClick: c.action.fn
+  }, c.action.label))), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs",
+    style: {
+      color: 'var(--text-dim)'
+    }
+  }, "אפשר לסגור גם אם משהו עוד פתוח, ולתקן אחר כך. עריכה בחודש סגור מותרת.")), /*#__PURE__*/React.createElement("div", {
     className: "p-4 rounded-2xl text-center",
     style: {
       background: `color-mix(in srgb, ${tone} 12%, var(--navy-panel-2))`,
@@ -8936,7 +8960,30 @@ function App() {
       } catch (_e) {}
       setMonthCloseOpen(false);
     },
-    onConfirm: confirmMonthClose
+    onConfirm: confirmMonthClose,
+    checklist: (() => {
+      const inPrev = transactions.filter(t => monthKey(t.date) === prevMonthKey);
+      const toReview = inPrev.filter(t => t.reviewStatus === 'to_review').length;
+      const varPrev = inPrev.filter(t => t.type === 'expense' && !t.billId && t.kind !== 'transfer');
+      const totalVar = varPrev.reduce((s0, t) => s0 + t.amount, 0);
+      const other = varPrev.filter(t => /^(אחר|כללי)$/.test(t.category || '')).reduce((s0, t) => s0 + t.amount, 0);
+      let dups = 0;
+      for (let i = 0; i < inPrev.length && dups < 20; i++) if (findDuplicateTx(inPrev[i], inPrev.slice(i + 1))) dups++;
+      const goDash = () => { setMonthCloseOpen(false); setActiveTab('dashboard'); };
+      return [{
+        ok: !toReview,
+        text: toReview ? `${toReview === 1 ? 'תנועה אחת מחכה' : `${toReview} תנועות מחכות`} לבדיקה` : 'אין תנועות שמחכות לבדיקה',
+        action: { label: 'לבדיקה', fn: goDash }
+      }, {
+        ok: !dups,
+        text: dups ? `${dups === 1 ? 'כפילות אפשרית אחת' : `${dups} כפילויות אפשריות`}` : 'לא נמצאו כפילויות',
+        action: { label: 'לבריאות הנתונים', fn: goDash }
+      }, {
+        ok: !(totalVar > 0 && other / totalVar > 0.15),
+        text: totalVar > 0 && other / totalVar > 0.15 ? `${Math.round(other / totalVar * 100)}% מההוצאות ב"אחר"` : 'הקטגוריות מסודרות',
+        action: { label: 'לתנועות', fn: () => { setMonthCloseOpen(false); setActiveTab('expenses'); } }
+      }];
+    })()
   }), activeTab === 'dashboard' && !isChild && monthCloseSummary.hasData && /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => setMonthCloseOpen(true),
