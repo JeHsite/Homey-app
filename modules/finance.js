@@ -307,6 +307,20 @@ function TxHistory({ txId, parents = [], onUse }) {
       })));
 }
 
+/* ---- פסים ממוינים במקום עוגה (נכסים): אורך נקרא מדויק, זווית לא ---- */
+function FinBars({ data, currency }) {
+  const rows = (data || []).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+  if (!rows.length) return React.createElement(EmptyState, { text: 'אין נתונים עדיין' });
+  const total = rows.reduce((s0, d) => s0 + d.value, 0);
+  const max = rows[0].value;
+  return React.createElement('div', { className: 'fin-cats' }, rows.map(d => React.createElement('div', { key: d.name, className: 'fin-cat' },
+    React.createElement('span', { className: 'fin-cat-head' },
+      React.createElement('span', null, d.name),
+      React.createElement('span', null, finMoney(d.value, currency), React.createElement('small', null, ` · ${Math.round(d.value / total * 100)}%`))),
+    React.createElement('span', { className: 'fin-cat-track' },
+      React.createElement('span', { className: 'fin-cat-fill', style: { width: `${d.value / max * 100}%`, background: 'var(--bronze)' } })))));
+}
+
 /* ---- חיסכון חודשי קבוע: כל הורה מגדיר את שלו, והסכום של כולם יורד מ"נשאר להוציא" ---- */
 function FinSavingsCard({ total, mine, currency, onSave }) {
   const [edit, setEdit] = useState(false);

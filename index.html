@@ -754,6 +754,15 @@ body[data-compact="1"] main { gap: .75rem; }
   .fin-digit-col { display: flex; flex-direction: column; transform: translateY(calc(var(--d) * -1.1em)); transition: transform 700ms cubic-bezier(0.23,1,0.32,1); transition-delay: calc((var(--i) - 1) * 30ms); }
   .fin-digit-col > span { height: 1.1em; line-height: 1.1em; text-align: center; }
   @media (prefers-reduced-motion: reduce) { .fin-digit-col { transition: none; } }
+  /* "הגעתם ליעד" (חיסכון, מבוגרים): הפס מתמלא 600ms, וי מצויר 300ms, הבהוב אחד; בלי קונפטי */
+  .fin-check { flex-shrink: 0; fill: none; stroke: var(--pos); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .fin-goal-hit { position: relative; }
+  .fin-goal-hit .ent-progress-fill { transition: width 600ms cubic-bezier(0.23,1,0.32,1); }
+  @media (prefers-reduced-motion: no-preference) {
+    .fin-check.draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: fin-draw 300ms cubic-bezier(0.23,1,0.32,1) 600ms forwards; }
+    .fin-goal-hit::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 0 2px var(--pos), 0 0 26px color-mix(in srgb, var(--pos) 45%, transparent); opacity: 0; animation: fin-glow 600ms ease-out 700ms; }
+  }
+  @keyframes fin-glow { 40% { opacity: 1; } }
   .fin-tag { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
   .fin-tag.warn { border-color: color-mix(in srgb, #f59e0b 55%, transparent); color: #f59e0b; }
   .fin-review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -1283,7 +1292,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
-<script src="modules/finance.js?v=6"></script>
+<script src="modules/finance.js?v=7"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -5640,6 +5649,7 @@ function App() {
   const [finPrefs, setFinPrefs] = useState({});
   const [finParents, setFinParents] = useState([]);
   const [txShowHidden, setTxShowHidden] = useState(false);
+  const [goalHitId, setGoalHitId] = useState(null);
   // "לא חויב החודש" (bill_skips): מפתחות "billId:YYYY-MM"; "התעלם" בבדיקות הנתונים (data_check_dismissals)
   const [billSkips, setBillSkips] = useState(() => new Set());
   const [dataDismissed, setDataDismissed] = useState(() => new Set());
@@ -8410,6 +8420,8 @@ function App() {
     if (!depositAmount) return showToast('נא להזין סכום');
     const pot = savingsPots.find(p => p.id === potId);
     const newCurrent = pot.current + Number(depositAmount);
+    // "הגעתם ליעד" למבוגרים: רגע שקט אחד (פס מתמלא, וי, הבהוב), בלי קונפטי; פעם אחת לכל יעד
+    const hitGoal = pot.target > 0 && pot.current < pot.target && newCurrent >= pot.target;
     setSavingsPots(prev => prev.map(p => p.id === potId ? {
       ...p,
       current: newCurrent
@@ -8419,7 +8431,12 @@ function App() {
     }).eq('id', potId);
     setDepositForId(null);
     setDepositAmount('');
-    showToast('ההפקדה נוספה');
+    if (hitGoal) {
+      setGoalHitId(potId);
+      setTimeout(() => setGoalHitId(cur => cur === potId ? null : cur), 2200);
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (_e) {}
+      showToast(`הגעתם ליעד "${pot.name}"`);
+    } else showToast('ההפקדה נוספה');
   };
   // השווי האחרון של נכס = הנקודה בתאריך המאוחר ביותר (כמו הטריגר asset_values_sync_latest בשרת)
   const latestAssetValue = (list, assetId) => {
@@ -9756,7 +9773,7 @@ function App() {
     const pct = Math.min(100, Math.round(p.current / p.target * 100));
     return /*#__PURE__*/React.createElement("div", {
       key: p.id,
-      className: "ent-mini-card p-4 group"
+      className: "ent-mini-card p-4 group" + (goalHitId === p.id ? " fin-goal-hit" : "")
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center justify-between mb-2"
     }, /*#__PURE__*/React.createElement("div", {
@@ -9772,7 +9789,16 @@ function App() {
       });
     })()), /*#__PURE__*/React.createElement("span", {
       className: "ent-heading font-bold"
-    }, p.name)), /*#__PURE__*/React.createElement("div", {
+    }, p.name), (goalHitId === p.id || p.current >= p.target && p.target > 0) && /*#__PURE__*/React.createElement("svg", {
+      className: "fin-check" + (goalHitId === p.id ? " draw" : ""),
+      viewBox: "0 0 24 24",
+      width: 18,
+      height: 18,
+      "aria-label": "הושג"
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M5 12.5l4.2 4.2L19 7",
+      pathLength: 1
+    }))), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
       className: "ent-icon-btn",
@@ -10066,7 +10092,7 @@ function App() {
     className: "ent-card p-6"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "ent-heading font-bold mb-3"
-  }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(DonutChart, {
+  }, "התפלגות תיק הנכסים · סה\"כ ", currency, totalAssets.toLocaleString('he-IL')), /*#__PURE__*/React.createElement(FinBars, {
     data: assetBreakdown,
     currency: currency
   }))), activeTab === 'shopping' && /*#__PURE__*/React.createElement(GroceryPage, {
