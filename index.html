@@ -778,6 +778,18 @@ body[data-compact="1"] main { gap: .75rem; }
     .fin-goal-hit::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 0 2px var(--pos), 0 0 26px color-mix(in srgb, var(--pos) 45%, transparent); opacity: 0; animation: fin-glow 600ms ease-out 700ms; }
   }
   @keyframes fin-glow { 40% { opacity: 1; } }
+  /* חופשות וטיולים (modules/trips.js) */
+  .trip-hero { background: radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--cyan) 14%, transparent), transparent 60%), var(--navy-panel); }
+  .trip-count { font-size: 22px; font-weight: 700; margin-top: 4px; color: var(--cyan); }
+  .trip-planner { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+  .trip-pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; }
+  .trip-pack-item { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 2px; cursor: pointer; }
+  .trip-pack-item input { width: 18px; height: 18px; accent-color: var(--cyan); flex-shrink: 0; }
+  .trip-pack-item.on span { text-decoration: line-through; color: var(--text-dim); }
+  .trip-pack-x { color: var(--text-dim); font-size: 16px; line-height: 1; padding: 0 4px; opacity: .6; }
+  .trip-pack-x:hover { opacity: 1; color: var(--neg); }
+  .trip-day { padding: 10px 12px; border-radius: 14px; background: var(--navy-panel-2); }
+  .trip-time { width: 52px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .fin-tag { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--navy-panel-2); border: 1px solid var(--line); color: var(--text-2); }
   .fin-tag.warn { border-color: color-mix(in srgb, #f59e0b 55%, transparent); color: #f59e0b; }
   .fin-review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -1308,6 +1320,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=6"></script>
 <script src="modules/finance.js?v=8"></script>
+<script src="modules/trips.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -6991,6 +7004,13 @@ function App() {
     reloadKey: assistReload
   });
   // שגרות, ישיבת שבוע והסעות (modules/plan.js)
+  // חופשות וטיולים כאפליקציה (modules/trips.js): ציוד, תוכנית יומית, מסמכי נסיעה
+  const tripsApp = useTripsApp({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app' && isPremium,
+    showToast
+  });
   const planExtras = usePlanExtras({
     familyId,
     isDemo,
@@ -10447,7 +10467,13 @@ function App() {
     style: {
       color: 'var(--text-2)'
     }
-  }, n.content))))), activeTab === 'trips' && /*#__PURE__*/React.createElement("div", {
+  }, n.content))))), activeTab === 'trips' && isPremium && /*#__PURE__*/React.createElement(TripsTop, {
+    trips: trips,
+    api: tripsApp,
+    members: planner.members.length ? planner.members : finParents.map(p => ({ id: p.id, name: p.name, kind: 'parent' })),
+    isChild: isChild,
+    tripStatus: tripStatus
+  }), activeTab === 'trips' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between gap-3"
@@ -10593,6 +10619,12 @@ function App() {
       ended: st === 'past',
       onAdd: f => addTripExpense(tr, f),
       onDelete: deleteTripExpense
+    }), isPremium && st !== 'past' && plannerMe && /*#__PURE__*/React.createElement(TripPlanner, {
+      trip: tr,
+      api: tripsApp,
+      members: planner.members.length ? planner.members : finParents.map(p => ({ id: p.id, name: p.name, kind: 'parent' })),
+      me: plannerMe,
+      isChild: isChild
     }));
   })), activeTab === 'gifts' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
