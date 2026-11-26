@@ -9,7 +9,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
-const MODEL = "claude-sonnet-5";
+// Claude Sonnet 5.5: הדור הנוכחי, אותו מחיר כמו Sonnet 5. חשיבה אדפטיבית פועלת כברירת מחדל, ולכן max_tokens גבוה (החשיבה נספרת בו)
+const MODEL = "claude-sonnet-5-5";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -91,16 +92,24 @@ ${kind === "summary"
 async function askClaude(apiKey: string, kind: Kind, data: unknown) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+    headers: {
+      "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01",
+      // אם מסנן הבטיחות דוחה בטעות, הבקשה רצה מחדש על מודל חלופי באותה קריאה
+      "anthropic-beta": "server-side-fallback-2026-07-01",
+    },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 8000,
+      output_config: { effort: "medium" },
+      fallbacks: "default",
       system: SYSTEM(kind),
       messages: [{ role: "user", content: `הנתונים של המשפחה (JSON):\n${JSON.stringify(data)}` }],
     }),
   });
   if (!r.ok) throw new Error(`anthropic ${r.status}: ${(await r.text()).slice(0, 300)}`);
   const body = await r.json();
+  if (body.stop_reason === "refusal") throw new Error("refusal");
+  if (body.stop_reason === "max_tokens") throw new Error("max_tokens");
   const text = (body.content ?? []).filter((b: { type: string }) => b.type === "text")
     .map((b: { text: string }) => b.text).join("");
   const raw = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
