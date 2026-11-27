@@ -7,10 +7,10 @@ alter table public.children add column if not exists birth_date date;
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'profiles_birth_date_range') then
-    alter table public.profiles add constraint profiles_birth_date_range check (birth_date is null or birth_date between '1900-01-01' and current_date + 1) not valid;
+    alter table public.profiles add constraint profiles_birth_date_range check (birth_date is null or birth_date between '1900-01-01' and '2100-01-01') not valid;
   end if;
   if not exists (select 1 from pg_constraint where conname = 'children_birth_date_range') then
-    alter table public.children add constraint children_birth_date_range check (birth_date is null or birth_date between '1900-01-01' and current_date + 1) not valid;
+    alter table public.children add constraint children_birth_date_range check (birth_date is null or birth_date between '1900-01-01' and '2100-01-01') not valid;
   end if;
 end $$;
 
