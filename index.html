@@ -887,6 +887,14 @@ body[data-compact="1"] main { gap: .75rem; }
   .td-month-extra { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--navy-panel-2); font-size: 14px; margin-bottom: 6px; }
   .td-month-extra.hol { color: #fbbf24; font-weight: 700; }
   .td-month-extra.is-done { opacity: .6; }
+  .td-month-extra.bday { color: #f9a8d4; font-weight: 700; }
+  .td-month-cake { position: absolute; bottom: 3px; left: 4px; font-size: 11px; line-height: 1; }
+  .td-bday { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px;
+    background: linear-gradient(135deg, color-mix(in srgb, #f472b6 22%, var(--navy-panel)), color-mix(in srgb, #fbbf24 14%, var(--navy-panel))); border: 1px solid color-mix(in srgb, #f472b6 35%, transparent); }
+  .td-bday-ic { font-size: 30px; line-height: 1; }
+  .td-bday b { display: block; font-size: 16px; }
+  .td-bday span:not(.td-bday-ic) { font-size: 13px; color: var(--text-muted); }
+  .td-bday-soon { font-size: 13px; color: var(--text-2); padding: 0 4px; }
   .td-month-grid { gap: 3px; }
   @media (min-width: 900px) { .td-month { padding: 14px; } }
   /* לפי רוחב הלוח עצמו (בטאבלט עם תפריט צד הלוח צר גם כשהמסך רחב) */
@@ -1356,14 +1364,14 @@ document.addEventListener('click', function (e) {
   } catch (_e) {}
 }, { passive: true });
 </script>
-<script src="modules/tasks.js?v=6"></script>
+<script src="modules/tasks.js?v=7"></script>
 <script src="modules/shopping.js?v=3"></script>
 <script src="modules/kitchen.js?v=1"></script>
 <script src="modules/events.js?v=3"></script>
 <script src="modules/chores.js?v=2"></script>
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
-<script src="modules/today.js?v=7"></script>
+<script src="modules/today.js?v=8"></script>
 <script src="modules/finance.js?v=9"></script>
 <script src="modules/trips.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
@@ -4890,6 +4898,17 @@ function ProfileScreen({
       }))];
       setMembers(list);
       setLoading(false);
+      Promise.all([sb.from('profiles').select('id, birth_date').eq('family_id', familyId), sb.from('children').select('id, birth_date').eq('family_id', familyId)]).then(([a, b]) => {
+        if (a.error || b.error) return;
+        const map = {};
+        [...(a.data || []), ...(b.data || [])].forEach(r => {
+          if (r.birth_date) map[r.id] = String(r.birth_date).slice(0, 10);
+        });
+        setMembers(prev => prev.map(m => map[m.id] ? {
+          ...m,
+          birthDate: map[m.id]
+        } : m));
+      }, () => {});
     })();
   }, [familyId]);
   const addChild = async () => {
@@ -4989,6 +5008,10 @@ function ProfileScreen({
       if ('status' in updates) dbUpdates.status = updates.status;
       if ('photoUrl' in updates) dbUpdates.photo_url = updates.photoUrl;
       if (Object.keys(dbUpdates).length) await sb.from(table).update(dbUpdates).eq('id', memberId);
+      // בעדכון נפרד: לפני birthdays.sql העמודה לא קיימת, וזה לא יפיל את שמירת הסטטוס והתמונה
+      if ('birthDate' in updates && (updates.birthDate || null) !== (editingMember?.birthDate || null)) await sb.from(table).update({
+        birth_date: updates.birthDate || null
+      }).eq('id', memberId);
     }
     setEditingMember(null);
     return 'ok';
@@ -5219,6 +5242,7 @@ function EditProfileModal({
 }) {
   const [status, setStatus] = useState(member.status || '');
   const [photoUrl, setPhotoUrl] = useState(member.photoUrl || '');
+  const [birthDate, setBirthDate] = useState(member.birthDate || '');
   const [pin, setPin] = useState('');
   const [currentPin, setCurrentPin] = useState('');
   const [removePin, setRemovePin] = useState(false);
@@ -5270,7 +5294,8 @@ function EditProfileModal({
     }
     const updates = {
       status,
-      photoUrl
+      photoUrl,
+      birthDate: birthDate || null
     };
     if (member.role === 'parent' && (pin || removePin)) {
       updates.pin = removePin ? '' : pin;
@@ -5357,7 +5382,20 @@ function EditProfileModal({
     value: status,
     onChange: e => setStatus(e.target.value),
     maxLength: 40
-  }), member.role === 'parent' && /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "block"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs block mb-1.5",
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "יום הולדת (יופיע בלוח השנה כל שנה)"), /*#__PURE__*/React.createElement("input", {
+    className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",
+    type: "date",
+    value: birthDate,
+    max: new Date().toISOString().slice(0, 10),
+    onChange: e => setBirthDate(e.target.value)
+  })), member.role === 'parent' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, hasPin && /*#__PURE__*/React.createElement("input", {
     className: "ent-input w-full px-4 py-2.5 rounded-xl text-sm outline-none",

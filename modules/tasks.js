@@ -32,6 +32,13 @@ const plVisible = (item, me, isChild) => {
 };
 const plIsMine = (item, me) => item.personId === me.id;
 
+// דמו: ימי הולדת יחסיים להיום, כדי שתמיד יהיה מה לראות בלוח
+function plDemoBirth(i) {
+  const off = [40, 75, 3, 26][i];
+  const year = [1986, 1988, 2017, 2020][i];
+  return off == null ? null : year + plAddDays(plToday(), off).slice(4);
+}
+
 function plDemoData(me) {
   const t = plToday();
   const kid = FAMILY_PROFILES.find(p => p.role === 'child');
@@ -84,7 +91,7 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey 
     if (!enabled || !familyId || !me) return;
     if (isDemo) {
       const d = plDemoData(me);
-      setState({ ready: true, unavailable: false, tasks: d.tasks, events: d.events, members: FAMILY_PROFILES.map(p => ({ kind: p.role, id: p.id, name: p.name })) });
+      setState({ ready: true, unavailable: false, tasks: d.tasks, events: d.events, members: FAMILY_PROFILES.map((p, i) => ({ kind: p.role, id: p.id, name: p.name, birthDate: plDemoBirth(i) })) });
       return;
     }
     let alive = true;
@@ -92,8 +99,11 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey 
       const [t, e, pr, ch] = await Promise.all([
         sb.from('tasks').select('*').eq('family_id', familyId),
         sb.from('family_events').select('*').eq('family_id', familyId),
-        sb.from('profiles').select('id, full_name').eq('family_id', familyId),
-        sb.from('children').select('id, name').eq('family_id', familyId)
+        // birth_date קיים רק אחרי birthdays.sql. אם השאילתה נכשלת, חוזרים לשאילתה בלעדיו
+        sb.from('profiles').select('id, full_name, birth_date').eq('family_id', familyId)
+          .then(r => r.error ? sb.from('profiles').select('id, full_name').eq('family_id', familyId) : r),
+        sb.from('children').select('id, name, birth_date').eq('family_id', familyId)
+          .then(r => r.error ? sb.from('children').select('id, name').eq('family_id', familyId) : r)
       ]);
       if (!alive) return;
       setState({
@@ -102,7 +112,7 @@ function useFamilyPlanner({ familyId, isDemo, enabled, me, showToast, reloadKey 
         unavailable: !!(t.error || e.error),
         tasks: (t.data || []).map(plTaskFromRow),
         events: (e.data || []).map(plEventFromRow),
-        members: [...(pr.data || []).map(p => ({ kind: 'parent', id: p.id, name: p.full_name || 'הורה' })), ...(ch.data || []).map(k => ({ kind: 'child', id: k.id, name: k.name }))]
+        members: [...(pr.data || []).map(p => ({ kind: 'parent', id: p.id, name: p.full_name || 'הורה', birthDate: p.birth_date || null })), ...(ch.data || []).map(k => ({ kind: 'child', id: k.id, name: k.name, birthDate: k.birth_date || null }))]
       });
     })();
     return () => { alive = false; };
