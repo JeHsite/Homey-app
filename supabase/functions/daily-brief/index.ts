@@ -135,6 +135,37 @@ Deno.serve(async (req) => {
       return md === iso.slice(5, 10) && age > 0 ? { ...b, age } : null;
     }).filter(Boolean) as (Bday & { age: number })[];
   };
+  // ימים קבועים במשפחה המורחבת (family-dates.sql). לועזי: יום+חודש. עברי: לפי Intl he-u-ca-hebrew, כמו באפליקציה
+  type FDate = { id: string; family_id: string; name: string; kind: string; date: string; hebrew: boolean; heb_month: string | null; heb_day: number | null };
+  const fdates = await safe<FDate>(supabase.from("family_dates").select("id, family_id, name, kind, date, hebrew, heb_month, heb_day").in("family_id", familyIds));
+  const hebFmt = new Intl.DateTimeFormat("en-u-ca-hebrew", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  const heb = (iso: string) => {
+    const p = hebFmt.formatToParts(new Date(iso + "T12:00:00Z"));
+    const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+    return { m: g("month"), d: Number(g("day")), y: Number(g("year")) };
+  };
+  const fdYears = (f: FDate, iso: string): number | null => {
+    if (iso < String(f.date).slice(0, 10)) return null;
+    const fd = String(f.date).slice(0, 10);
+    if (!f.hebrew || !f.heb_month) {
+      const y = Number(iso.slice(0, 4));
+      const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+      const md = fd.slice(5) === "02-29" && !leap ? "02-28" : fd.slice(5);
+      return md === iso.slice(5) ? y - Number(fd.slice(0, 4)) : null;
+    }
+    const h = heb(iso), w = f.heb_month;
+    const monthOk = h.m === w || (w === "Adar" && h.m === "Adar II") || ((w === "Adar I" || w === "Adar II") && h.m === "Adar");
+    const dayOk = h.d === f.heb_day || (f.heb_day === 30 && h.d === 29 && heb(addDays(iso, 1)).d === 1);
+    return monthOk && dayOk ? h.y - heb(fd).y : null;
+  };
+  const fdLines = (familyId: string, iso: string) => fdates.filter((f) => f.family_id === familyId).map((f) => {
+    const y = fdYears(f, iso);
+    if (y === null || (y <= 0 && f.kind !== "other")) return null;
+    if (f.kind === "birthday") return `🎂 יום הולדת ${y} ל${f.name}`;
+    if (f.kind === "anniversary") return `💍 יום נישואין ${y}: ${f.name}`;
+    if (f.kind === "memorial") return `🕯️ אזכרה: ${f.name}`;
+    return `📌 ${f.name}`;
+  }).filter(Boolean) as string[];
   const shekel = (v: number) => `₪${Math.round(v).toLocaleString("he-IL")}`;
   const weekLines = (familyId: string) => {
     const lastStart = addDays(now.iso, -7), prevStart = addDays(now.iso, -14);
@@ -178,6 +209,8 @@ Deno.serve(async (req) => {
       const lines: string[] = [];
       for (const b of bdaysOn(familyId, now.iso)) lines.push(b.id === userId ? `🎂 יום הולדת ${b.age} שמח` : `🎂 היום יום ההולדת של ${b.name} (${b.age})`);
       for (const b of bdaysOn(familyId, addDays(now.iso, 7)).filter((b) => b.id !== userId)) lines.push(`🎂 בעוד שבוע: יום הולדת ${b.age} ל${b.name}`);
+      for (const l of fdLines(familyId, now.iso)) lines.push(`היום: ${l}`);
+      for (const l of fdLines(familyId, addDays(now.iso, 7))) lines.push(`בעוד שבוע: ${l}`);
       if (isPrem) {
         const evs = todayEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId))
           .sort((a, b) => (toMin(a.start_time) ?? 9999) - (toMin(b.start_time) ?? 9999));
@@ -236,6 +269,7 @@ Deno.serve(async (req) => {
     if (isPrem && eveningDue) {
       const lines: string[] = [];
       for (const b of bdaysOn(familyId, tomorrow).filter((b) => b.id !== userId)) lines.push(`🎂 מחר יום ההולדת של ${b.name} (${b.age})`);
+      for (const l of fdLines(familyId, tomorrow)) lines.push(`מחר: ${l}`);
       const evs = tomorrowEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId))
         .sort((a, b) => (toMin(a.start_time) ?? 9999) - (toMin(b.start_time) ?? 9999));
       if (evs.length) {

@@ -1374,9 +1374,10 @@ document.addEventListener('click', function (e) {
 <script src="modules/chores.js?v=3"></script>
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
-<script src="modules/today.js?v=8"></script>
+<script src="modules/today.js?v=9"></script>
 <script src="modules/finance.js?v=9"></script>
 <script src="modules/trips.js?v=1"></script>
+<script src="modules/familydates.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
 <script>
@@ -7149,6 +7150,13 @@ function App() {
     enabled: authStage === 'app' && isPremium,
     showToast
   });
+  // ימים קבועים של המשפחה המורחבת (modules/familydates.js): לכל המשפחות, לא רק פרימיום
+  const familyDatesApi = useFamilyDates({
+    familyId,
+    isDemo,
+    enabled: authStage === 'app',
+    showToast
+  });
   const planExtras = usePlanExtras({
     familyId,
     isDemo,
@@ -10419,7 +10427,8 @@ function App() {
     onNavigate: tab => setActiveTab(tab),
     notesApi: notesApi,
     trips: trips,
-    gifts: gifts
+    gifts: gifts,
+    familyDates: familyDatesApi.list
   }), activeTab === 'sync' && !isChild && /*#__PURE__*/React.createElement("div", {
     className: "space-y-8"
   }, /*#__PURE__*/React.createElement(CoupleSyncPage, {
@@ -10766,7 +10775,16 @@ function App() {
       me: plannerMe,
       isChild: isChild
     }));
-  })), activeTab === 'gifts' && /*#__PURE__*/React.createElement("div", {
+  })), activeTab === 'gifts' && !isChild && /*#__PURE__*/React.createElement(FamilyDatesCard, {
+    api: familyDatesApi,
+    // "🎁 מתנה": פותח את טופס האירוע עם השם והתאריך של המופע הבא
+    onGift: (event, date) => {
+      setOpenForm('gifts');
+      updateField('gifts', 'event', event);
+      updateField('gifts', 'date', date);
+      updateField('gifts', 'category', 'משפחה');
+    }
+  }), activeTab === 'gifts' && /*#__PURE__*/React.createElement("div", {
     className: "ent-card p-6 space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap items-center justify-between gap-3"

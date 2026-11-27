@@ -521,7 +521,7 @@ function tdBirthdaysOn(members, day) {
   }).filter(Boolean);
 }
 
-function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrade, onNavigate, notesApi, trips, gifts }) {
+function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrade, onNavigate, notesApi, trips, gifts, familyDates }) {
   const [view, setView] = useState(() => { try { return localStorage.getItem('homey_today_view') || 'today'; } catch (_e) { return 'today'; } });
   const [person, setPerson] = useState('all');
   const [openKey, setOpenKey] = useState(null);
@@ -621,6 +621,9 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
     const empty = !overdue.length && !timed.length && !todo.length && !runs.length && !routines.length;
     const bdays = tdBirthdaysOn(members, today);
     const bdaysSoon = isChild ? [] : [1, 2, 3, 4, 5, 6, 7].flatMap(n => tdBirthdaysOn(members, plAddDays(today, n)).map(b => ({ ...b, inDays: n })));
+    const fdHas = typeof fdOn === 'function';
+    const fdToday = fdHas ? fdOn(familyDates, today) : [];
+    const fdSoon = fdHas && !isChild ? [1, 2, 3, 4, 5, 6, 7].flatMap(n => fdOn(familyDates, plAddDays(today, n)).map(x => ({ ...x, inDays: n }))) : [];
     return React.createElement('div', { className: 'space-y-4 td-page' },
       header,
       bdays.map(b => React.createElement('div', { key: b.key, className: 'td-bday', role: 'status' },
@@ -630,6 +633,9 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
           React.createElement('span', null, b.id === me.id ? 'מכל המשפחה' : `${b.age} שנים`)))),
       bdaysSoon.length > 0 && React.createElement('p', { className: 'td-bday-soon' }, '🎂 ',
         bdaysSoon.map(b => `${b.name} בעוד ${b.inDays === 1 ? 'יום' : b.inDays + ' ימים'} (${b.age})`).join(' · ')),
+      fdToday.map(x => React.createElement('p', { key: x.key, className: 'td-bday-soon' }, x.icon, ' היום: ', x.title)),
+      fdSoon.length > 0 && React.createElement('p', { className: 'td-bday-soon' },
+        fdSoon.map(x => `${x.icon} ${x.title} ${x.inDays === 1 ? 'מחר' : 'בעוד ' + x.inDays + ' ימים'}`).join(' · ')),
       quick, personBar,
       overdue.length > 0 && section('overdue', React.createElement('span', { style: { color: 'var(--neg)' } }, `באיחור (${overdue.length})`),
         overdue.map(t => row({ key: 't' + t.id, type: 'task', time: t.dueTime, src: t }, t.dueDate)),
@@ -675,7 +681,8 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
       ...tripList.filter(t => day >= String(t.startDate).slice(0, 10) && day <= String(t.endDate || t.startDate).slice(0, 10))
         .map(t => ({ key: 'trip' + t.id + day, kind: 'trip', title: t.title, first: day === String(t.startDate).slice(0, 10) })),
       ...giftList.filter(g => String(g.date).slice(0, 10) === day).map(g => ({ key: 'gift' + g.id, kind: 'gift', title: g.event, done: g.purchased })),
-      ...tdBirthdaysOn(members, day)
+      ...tdBirthdaysOn(members, day),
+      ...(typeof fdOn === 'function' ? fdOn(familyDates, day) : [])
     ];
     const colorOf = it => it.src.personId ? tdColorOf(members, it.src.personId) : 'var(--bronze)';
     const monthName = first.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
@@ -685,9 +692,9 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
     const selHol = tdHoliday(sel);
     const move = n => { setMonthOff(monthOff + n); setSelDay(null); };
     const extraRow = x => React.createElement('div', { key: x.key, className: 'td-month-extra' + (x.done ? ' is-done' : '') + (x.kind === 'bday' ? ' bday' : '') },
-      React.createElement('span', { 'aria-hidden': 'true' }, x.kind === 'trip' ? '✈️' : x.kind === 'bday' ? '🎂' : '🎁'),
+      React.createElement('span', { 'aria-hidden': 'true' }, x.kind === 'trip' ? '✈️' : x.kind === 'bday' ? '🎂' : x.kind === 'fdate' ? x.icon : '🎁'),
       React.createElement('span', { className: 'flex-1' }, x.title),
-      x.kind !== 'bday' && React.createElement('button', { type: 'button', className: 'text-xs underline', style: { color: 'var(--text-muted)' }, onClick: () => onNavigate(x.kind === 'trip' ? 'trips' : 'gifts') }, x.kind === 'trip' ? 'לטיול' : 'למתנות'));
+      (x.kind === 'trip' || x.kind === 'gift') && React.createElement('button', { type: 'button', className: 'text-xs underline', style: { color: 'var(--text-muted)' }, onClick: () => onNavigate(x.kind === 'trip' ? 'trips' : 'gifts') }, x.kind === 'trip' ? 'לטיול' : 'למתנות'));
     return React.createElement('div', { className: 'space-y-4 td-page' },
       header, quick,
       React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-2' },
@@ -715,12 +722,13 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
               onClick: () => setSelDay(day) },
               React.createElement('span', { className: 'td-month-num' }, React.createElement('b', null, dnum), React.createElement('small', null, (tdHeb(day) ? TD_GEM[tdHeb(day).d] : ''))),
               hol && React.createElement('span', { className: 'td-month-hol' }, hol.name),
-              ex.some(x => x.kind === 'bday') && React.createElement('span', { className: 'td-month-cake', 'aria-hidden': 'true' }, '🎂'),
+              (() => { const f = ex.find(x => x.kind === 'bday' || x.kind === 'fdate'); return f ? React.createElement('span', { className: 'td-month-cake', 'aria-hidden': 'true' }, f.kind === 'bday' ? '🎂' : f.icon) : null; })(),
               ex.filter(x => x.kind === 'trip').slice(0, 1).map(x => React.createElement('span', { key: x.key, className: 'td-month-trip' }, '✈️', x.first && React.createElement('span', { className: 'td-month-trip-t' }, ' ' + x.title))),
               // במחשב: עד 3 שורות עם כותרת. בטלפון: נקודות צבע לפי בן משפחה
               React.createElement('span', { className: 'td-month-chips' }, list.slice(0, 3).map(it => React.createElement('span', { key: it.key, className: 'td-month-chip' + (it.type === 'task' && it.src.status === 'done' ? ' done' : ''), style: { '--who': colorOf(it) } },
                 it.time ? plTime(it.time) + ' ' : '', it.src.title)),
                 ex.filter(x => x.kind === 'bday').map(x => React.createElement('span', { key: x.key, className: 'td-month-chip', style: { '--who': '#f472b6' } }, '🎂 ', x.title)),
+                ex.filter(x => x.kind === 'fdate').map(x => React.createElement('span', { key: x.key, className: 'td-month-chip', style: { '--who': '#a78bfa' } }, x.icon, ' ', x.title)),
                 ex.filter(x => x.kind === 'gift').map(x => React.createElement('span', { key: x.key, className: 'td-month-chip', style: { '--who': '#f472b6' } }, '🎁 ', x.title)),
                 list.length > 3 && React.createElement('span', { className: 'td-month-more' }, `+${list.length - 3}`)),
               React.createElement('span', { className: 'td-month-dots', 'aria-hidden': 'true' }, [...list.slice(0, 4).map(it => React.createElement('i', { key: it.key, style: { background: colorOf(it) } })),
