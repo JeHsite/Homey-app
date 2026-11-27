@@ -448,13 +448,76 @@ function ImportPanel({ planner, me, onClose, pushUndo }) {
 }
 
 /* ======================= המסך "היום | שבוע" ======================= */
-function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrade, onNavigate, notesApi }) {
+/* ---------- לוח עברי וחגים (Intl he-u-ca-hebrew: Chrome, Safari, Firefox) ---------- */
+const TD_HEB_FMT = (() => { try { return new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long' }); } catch (_e) { return null; } })();
+const TD_HEB_MONTH = { Tishri: 'תשרי', Heshvan: 'חשוון', Kislev: 'כסלו', Tevet: 'טבת', Shevat: 'שבט', 'Adar I': 'אדר א׳', 'Adar II': 'אדר ב׳', Adar: 'אדר', Nisan: 'ניסן', Iyar: 'אייר', Sivan: 'סיוון', Tamuz: 'תמוז', Av: 'אב', Elul: 'אלול' };
+const TD_GEM = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב', 'י״ג', 'י״ד', 'ט״ו', 'ט״ז', 'י״ז', 'י״ח', 'י״ט', 'כ׳', 'כ״א', 'כ״ב', 'כ״ג', 'כ״ד', 'כ״ה', 'כ״ו', 'כ״ז', 'כ״ח', 'כ״ט', 'ל׳'];
+const tdHebCache = {};
+function tdHeb(day) {
+  if (!TD_HEB_FMT) return null;
+  if (!tdHebCache[day]) {
+    const p = TD_HEB_FMT.formatToParts(plParse(day));
+    tdHebCache[day] = { m: (p.find(x => x.type === 'month') || {}).value, d: Number((p.find(x => x.type === 'day') || {}).value) };
+  }
+  return tdHebCache[day];
+}
+const tdHebLabel = day => { const h = tdHeb(day); return h ? `${TD_GEM[h.d] || h.d} ${TD_HEB_MONTH[h.m] || h.m}` : ''; };
+const tdIs = (day, m, d) => { const h = tdHeb(day); return !!h && h.m === m && h.d === d; };
+// יום העצמאות לפי הכלל הישראלי: ה' באייר, מוקדם לחמישי אם נופל בשישי/שבת, נדחה לשלישי אם נופל בשני
+function tdAtzmaut(day) {
+  const w = plParse(day).getDay();
+  return (tdIs(day, 'Iyar', 5) && ![1, 5, 6].includes(w)) || (w === 4 && (tdIs(day, 'Iyar', 4) || tdIs(day, 'Iyar', 3))) || (w === 2 && tdIs(day, 'Iyar', 6));
+}
+// חג אחד ביום לכל היותר. major = חג/ערב חג (בלי לימודים ועבודה ברוב המקומות)
+function tdHoliday(day) {
+  const h = tdHeb(day);
+  if (!h) return null;
+  const w = plParse(day).getDay();
+  const { m, d } = h;
+  const H = (name, major) => ({ name, major: !!major });
+  if (m === 'Elul' && d === 29) return H('ערב ראש השנה', 1);
+  if (m === 'Tishri') {
+    if (d === 1 || d === 2) return H('ראש השנה', 1);
+    if (d === 9) return H('ערב יום כיפור', 1);
+    if (d === 10) return H('יום כיפור', 1);
+    if (d === 14) return H('ערב סוכות', 1);
+    if (d === 15) return H('סוכות', 1);
+    if (d >= 16 && d <= 20) return H('חול המועד סוכות');
+    if (d === 21) return H('הושענא רבה', 1);
+    if (d === 22) return H('שמחת תורה', 1);
+  }
+  // חנוכה: הנר שמדליקים בערב של אותו יום (כ"ד בכסלו = נר ראשון, היום השמיני = בלי הדלקה)
+  if (m === 'Kislev' && d === 24) return H('ערב חנוכה · נר 1');
+  for (let k = 0; k < 8; k++) if (tdIs(plAddDays(day, -k), 'Kislev', 25)) return H(k < 7 ? `חנוכה · נר ${k + 2}` : 'חנוכה · יום אחרון');
+  if (m === 'Shevat' && d === 15) return H('ט״ו בשבט');
+  if ((m === 'Adar' || m === 'Adar II') && d === 14) return H('פורים');
+  if (m === 'Nisan') {
+    if (d === 14) return H('ערב פסח', 1);
+    if (d === 15) return H('פסח', 1);
+    if (d >= 16 && d <= 20) return H('חול המועד פסח');
+    if (d === 21) return H('שביעי של פסח', 1);
+    if ((d === 27 && w !== 5 && w !== 0) || (d === 26 && w === 4) || (d === 28 && w === 1)) return H('יום השואה');
+  }
+  if (tdAtzmaut(plAddDays(day, 1))) return H('יום הזיכרון');
+  if (tdAtzmaut(day)) return H('יום העצמאות', 1);
+  if (m === 'Iyar' && d === 18) return H('ל״ג בעומר');
+  if (m === 'Iyar' && d === 28) return H('יום ירושלים');
+  if (m === 'Sivan' && d === 5) return H('ערב שבועות', 1);
+  if (m === 'Sivan' && d === 6) return H('שבועות', 1);
+  if (m === 'Av' && ((d === 9 && w !== 6) || (d === 10 && w === 0))) return H('תשעה באב');
+  return null;
+}
+const TD_MONTH_DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+
+function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrade, onNavigate, notesApi, trips, gifts }) {
   const [view, setView] = useState(() => { try { return localStorage.getItem('homey_today_view') || 'today'; } catch (_e) { return 'today'; } });
   const [person, setPerson] = useState('all');
   const [openKey, setOpenKey] = useState(null);
   const [offset, setOffset] = useState(0);
   const [dragDay, setDragDay] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [monthOff, setMonthOff] = useState(0);
+  const [selDay, setSelDay] = useState(null);
   const [undoNode, pushUndo] = useTdUndo();
   const pickView = v => { setView(v); try { localStorage.setItem('homey_today_view', v); } catch (_e) {} };
 
@@ -494,14 +557,14 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
   const header = React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-3' },
     React.createElement('div', null,
       React.createElement('p', { className: 'text-sm', style: { color: 'var(--text-muted)' } }, plParse(today).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })),
-      React.createElement('h2', { className: 'ent-heading text-2xl font-bold' }, view === 'today' ? (isChild ? 'היום שלי' : 'היום בבית') : 'השבוע')),
+      React.createElement('h2', { className: 'ent-heading text-2xl font-bold' }, view === 'today' ? (isChild ? 'היום שלי' : 'היום בבית') : view === 'month' ? 'החודש' : 'השבוע')),
     React.createElement('div', { className: 'flex items-center gap-2' },
       !isChild && React.createElement('button', { type: 'button', className: 'ent-pill-btn ghost px-3 py-2 text-sm', 'aria-expanded': importing, onClick: () => setImporting(!importing), title: 'הודעה מהגן, מבית הספר או מהחוג' }, '📥 מהודעה'),
-      React.createElement('div', { className: 'td-seg', role: 'tablist', 'aria-label': 'תצוגה' }, [['today', 'היום'], ['week', 'שבוע']].map(([k, l]) =>
+      React.createElement('div', { className: 'td-seg', role: 'tablist', 'aria-label': 'תצוגה' }, [['today', 'היום'], ['week', 'שבוע'], ['month', 'חודש']].map(([k, l]) =>
         React.createElement('button', { key: k, type: 'button', role: 'tab', 'aria-selected': view === k, className: view === k ? 'on' : '', onClick: () => pickView(k) }, l)))));
 
   const quick = React.createElement(React.Fragment, null,
-    React.createElement(QuickAdd, { planner, shop, me, isChild, notesApi, defaultDate: today, pushUndo }),
+    React.createElement(QuickAdd, { planner, shop, me, isChild, notesApi, defaultDate: view === 'month' && selDay && selDay >= today ? selDay : today, pushUndo }),
     importing && !isChild && React.createElement(ImportPanel, { planner, me, pushUndo, onClose: () => setImporting(false) }));
   const section = (key, title, body, extra) => React.createElement('section', { key, className: 'ent-card p-4 sm:p-5 td-section', 'aria-label': typeof title === 'string' ? title : undefined },
     React.createElement('div', { className: 'flex items-center justify-between gap-2 mb-2' }, React.createElement('h3', { className: 'td-h' }, title), extra || null), body);
@@ -570,6 +633,81 @@ function TodayPage({ planner, ch, extras, shop, me, isChild, isPremium, onUpgrad
         React.createElement('b', null, 'מחר: '),
         tomorrow.slice(0, 3).map(it => `${it.time ? plTime(it.time) + ' ' : ''}${it.src.title}`).join(' · '),
         tomorrow.length > 3 ? ` ועוד ${tomorrow.length - 3}` : '', ' ←'),
+      undoNode);
+  }
+
+  /* ---------- חודש ---------- */
+  if (view === 'month') {
+    const base = plParse(today);
+    const first = new Date(base.getFullYear(), base.getMonth() + monthOff, 1);
+    const mFirst = plIso(first);
+    const mLast = plIso(new Date(first.getFullYear(), first.getMonth() + 1, 0));
+    const gridStart = plWeekStart(mFirst);
+    const weeks = Math.ceil((plParse(mLast).getDay() + 1 + (plParse(mLast) - plParse(gridStart)) / 86400000) / 7);
+    const cells = Array.from({ length: weeks * 7 }, (_, i) => plAddDays(gridStart, i));
+    const sel = selDay && selDay >= mFirst && selDay <= mLast ? selDay : monthOff === 0 ? today : mFirst;
+    const tripList = (trips || []).filter(t => t.startDate);
+    // מתנות הן הפתעה: ילדים לא רואים אותן
+    const giftList = isChild ? [] : (gifts || []).filter(g => g.date);
+    const extrasOn = day => [
+      ...tripList.filter(t => day >= String(t.startDate).slice(0, 10) && day <= String(t.endDate || t.startDate).slice(0, 10))
+        .map(t => ({ key: 'trip' + t.id + day, kind: 'trip', title: t.title, first: day === String(t.startDate).slice(0, 10) })),
+      ...giftList.filter(g => String(g.date).slice(0, 10) === day).map(g => ({ key: 'gift' + g.id, kind: 'gift', title: g.event, done: g.purchased }))
+    ];
+    const colorOf = it => it.src.personId ? tdColorOf(members, it.src.personId) : 'var(--bronze)';
+    const monthName = first.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+    const hebSpan = (() => { const a = tdHeb(mFirst), b = tdHeb(mLast); if (!a || !b) return ''; const ma = TD_HEB_MONTH[a.m], mb = TD_HEB_MONTH[b.m]; return ma === mb ? ma : `${ma}-${mb}`; })();
+    const selItems = itemsOn(sel, true);
+    const selExtras = extrasOn(sel);
+    const selHol = tdHoliday(sel);
+    const move = n => { setMonthOff(monthOff + n); setSelDay(null); };
+    const extraRow = x => React.createElement('div', { key: x.key, className: 'td-month-extra' + (x.done ? ' is-done' : '') },
+      React.createElement('span', { 'aria-hidden': 'true' }, x.kind === 'trip' ? '✈️' : '🎁'),
+      React.createElement('span', { className: 'flex-1' }, x.title),
+      React.createElement('button', { type: 'button', className: 'text-xs underline', style: { color: 'var(--text-muted)' }, onClick: () => onNavigate(x.kind === 'trip' ? 'trips' : 'gifts') }, x.kind === 'trip' ? 'לטיול' : 'למתנות'));
+    return React.createElement('div', { className: 'space-y-4 td-page' },
+      header, quick,
+      React.createElement('div', { className: 'flex flex-wrap items-center justify-between gap-2' },
+        personBar || React.createElement('span'),
+        React.createElement('div', { className: 'flex items-center gap-1.5' },
+          React.createElement('button', { className: 'ent-pill-btn ghost px-3 py-1.5 text-xs', 'aria-label': 'חודש קודם', onClick: () => move(-1) }, '→'),
+          React.createElement('button', { className: 'ent-pill-btn ghost px-3 py-1.5 text-xs', onClick: () => { setMonthOff(0); setSelDay(null); }, 'aria-label': 'חזרה לחודש הנוכחי' }, monthName),
+          React.createElement('button', { className: 'ent-pill-btn ghost px-3 py-1.5 text-xs', 'aria-label': 'חודש הבא', onClick: () => move(1) }, '←'))),
+      React.createElement('section', { className: 'ent-card td-month', 'aria-label': `לוח ${monthName}` },
+        hebSpan && React.createElement('p', { className: 'td-month-heb' }, hebSpan),
+        React.createElement('div', { className: 'td-month-grid', role: 'grid' },
+          TD_MONTH_DAYS.map((d, i) => React.createElement('div', { key: 'h' + i, className: 'td-month-dow' + (i === 6 ? ' sat' : ''), role: 'columnheader' }, d)),
+          cells.map(day => {
+            const inMonth = day >= mFirst && day <= mLast;
+            const list = inMonth ? itemsOn(day, true) : [];
+            const ex = inMonth ? extrasOn(day) : [];
+            const hol = inMonth ? tdHoliday(day) : null;
+            const dnum = plParse(day).getDate();
+            const isSat = plParse(day).getDay() === 6;
+            const total = list.length + ex.length;
+            const aria = `${plParse(day).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}${hol ? ', ' + hol.name : ''}${total ? `, ${total} פריטים` : ''}`;
+            if (!inMonth) return React.createElement('div', { key: day, className: 'td-month-cell out', 'aria-hidden': 'true' });
+            return React.createElement('button', { key: day, type: 'button', role: 'gridcell', 'aria-label': aria, 'aria-selected': day === sel,
+              className: 'td-month-cell' + (day === today ? ' today' : '') + (day === sel ? ' sel' : '') + (isSat ? ' sat' : '') + (hol && hol.major ? ' hol' : ''),
+              onClick: () => setSelDay(day) },
+              React.createElement('span', { className: 'td-month-num' }, React.createElement('b', null, dnum), React.createElement('small', null, (tdHeb(day) ? TD_GEM[tdHeb(day).d] : ''))),
+              hol && React.createElement('span', { className: 'td-month-hol' }, hol.name),
+              ex.filter(x => x.kind === 'trip').slice(0, 1).map(x => React.createElement('span', { key: x.key, className: 'td-month-trip' }, '✈️', x.first && React.createElement('span', { className: 'td-month-trip-t' }, ' ' + x.title))),
+              // במחשב: עד 3 שורות עם כותרת. בטלפון: נקודות צבע לפי בן משפחה
+              React.createElement('span', { className: 'td-month-chips' }, list.slice(0, 3).map(it => React.createElement('span', { key: it.key, className: 'td-month-chip' + (it.type === 'task' && it.src.status === 'done' ? ' done' : ''), style: { '--who': colorOf(it) } },
+                it.time ? plTime(it.time) + ' ' : '', it.src.title)),
+                ex.filter(x => x.kind === 'gift').map(x => React.createElement('span', { key: x.key, className: 'td-month-chip', style: { '--who': '#f472b6' } }, '🎁 ', x.title)),
+                list.length > 3 && React.createElement('span', { className: 'td-month-more' }, `+${list.length - 3}`)),
+              React.createElement('span', { className: 'td-month-dots', 'aria-hidden': 'true' }, [...list.slice(0, 4).map(it => React.createElement('i', { key: it.key, style: { background: colorOf(it) } })),
+                ...ex.filter(x => x.kind === 'gift').slice(0, 1).map(x => React.createElement('i', { key: x.key, style: { background: '#f472b6' } }))]));
+          }))),
+      section('day', React.createElement('span', null, plParse(sel).toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' }),
+        React.createElement('span', { className: 'td-month-dayheb' }, tdHebLabel(sel))),
+        React.createElement('div', { className: 'td-list' },
+          selHol && React.createElement('div', { className: 'td-month-extra hol' }, React.createElement('span', { 'aria-hidden': 'true' }, '🕯️'), React.createElement('span', { className: 'flex-1' }, selHol.name)),
+          selExtras.map(extraRow),
+          selItems.map(it => row(it, sel)),
+          !selItems.length && !selExtras.length && React.createElement('p', { className: 'text-sm', style: { color: 'var(--text-dim)' } }, sel >= today ? 'אין כלום ביום הזה. אפשר לכתוב למעלה, וזה ייכנס ליום הזה' : 'לא היה כלום ביום הזה'))),
       undoNode);
   }
 
