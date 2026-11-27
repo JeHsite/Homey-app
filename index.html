@@ -1364,7 +1364,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=7"></script>
-<script src="modules/finance.js?v=8"></script>
+<script src="modules/finance.js?v=9"></script>
 <script src="modules/trips.js?v=1"></script>
 <script src="modules/goals.js?v=1"></script>
 <script src="modules/assistant.js?v=3"></script>
@@ -3410,7 +3410,7 @@ async function bioVerify(p) {
   return !!res;
 }
 
-/* ---- PIN: נשמר מוצפן ונבדק בשרת (supabase/pin.sql). אם ה-SQL עוד לא הורץ — נופל חזרה להתנהגות הישנה ---- */
+/* ---- PIN: נשמר מגובב (bcrypt) ונבדק רק בשרת (supabase/pin.sql). אין מסלול חלופי בצד הלקוח ---- */
 const isMissingRpc = e => !!e && (e.code === 'PGRST202' || /could not find the function/i.test(e.message || ''));
 async function checkPinServer(profileId, pin) {
   const {
@@ -3431,14 +3431,6 @@ async function savePin(profileId, newPin, currentPin) {
     p_new_pin: newPin || null,
     p_current_pin: currentPin || null
   });
-  if (isMissingRpc(error)) {
-    const {
-      error: e2
-    } = await sb.from('profiles').update({
-      pin: newPin || null
-    }).eq('id', profileId);
-    return e2 ? 'error' : 'ok_legacy';
-  }
   return error ? 'error' : data; // ok | wrong_pin | locked | invalid_pin | forbidden
 }
 const PIN_MESSAGES = {
@@ -4884,8 +4876,8 @@ function ProfileScreen({
         name: p.full_name,
         avatar: p.avatar || '',
         role: 'parent',
-        pin: p.pin || null,
-        hasPin: !!(p.has_pin || p.pin),
+        pin: null,
+        hasPin: !!p.has_pin,
         status: p.status || '',
         photoUrl: p.photo_url || ''
       })), ...(kids || []).map(k => ({
@@ -4981,9 +4973,9 @@ function ProfileScreen({
         bioForget(memberId);
       } else {
         const res = await savePin(memberId, newPin, currentPin);
-        if (res !== 'ok' && res !== 'ok_legacy') return res;
+        if (res !== 'ok') return res;
         bioForget(memberId); // קוד השתנה — זיהוי הפנים במכשיר מתאפס עד שיוזן הקוד החדש
-        rest.pin = res === 'ok_legacy' ? newPin || null : null;
+        rest.pin = null;
         rest.hasPin = !!newPin;
       }
     }
@@ -10919,7 +10911,7 @@ function App() {
       color: 'var(--cyan)',
       textDecoration: 'underline'
     }
-  }, "הקישור הזה"), "."), communityLink ? /*#__PURE__*/React.createElement("a", {
+  }, "הקישור הזה"), "."), /^https:\/\//i.test(communityLink || '') ? /*#__PURE__*/React.createElement("a", {
     href: communityLink,
     target: "_blank",
     rel: "noopener noreferrer",
@@ -13485,11 +13477,11 @@ function PinToggleCard({
     // כיבוי = קוד חדש ריק. השרת דורש את הקוד הנוכחי (או כניסה עם סיסמה ב-10 הדקות האחרונות)
     const res = isDemo ? on && profile.pin && cur !== profile.pin ? 'wrong_pin' : 'ok' : await savePin(profile.id, on ? '' : p1, on ? cur : null);
     setBusy(false);
-    if (res === 'ok' || res === 'ok_legacy') {
+    if (res === 'ok') {
       bioForget(profile.id); // קוד השתנה, זיהוי הפנים במכשיר מתאפס
       onChanged({
         hasPin: !on,
-        pin: isDemo || res === 'ok_legacy' ? on ? null : p1 : null
+        pin: isDemo ? on ? null : p1 : null
       });
       close();
       return;

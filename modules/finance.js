@@ -472,7 +472,7 @@ function FinMorePage({ onNavigate, news, newsState, newsAgo, tip }) {
     newsState === 'ok' && news && news.length > 0 && React.createElement('div', { className: 'ent-card p-4' },
       React.createElement('h3', { className: 'fin-h' }, 'כלכלה בעולם'),
       React.createElement('ul', { className: 'space-y-2' }, news.slice(0, 6).map((n, i) => React.createElement('li', { key: i },
-        React.createElement('a', { href: n.url, target: '_blank', rel: 'noopener noreferrer', className: 'text-sm hover:underline' }, n.headline),
+        React.createElement('a', { href: /^https?:\/\//i.test(n.url || '') ? n.url : undefined, target: '_blank', rel: 'noopener noreferrer', className: 'text-sm hover:underline' }, n.headline),
         React.createElement('span', { className: 'block text-xs', style: { color: 'var(--text-dim)' } }, n.source, newsAgo ? ` · ${newsAgo(n.datetime)}` : ''))))));
 }
 

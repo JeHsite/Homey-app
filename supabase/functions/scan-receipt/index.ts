@@ -3,7 +3,8 @@
 // (טבלת receipt_scans) כדי שעלות ה-AI תישאר חסומה. בלי הסוד ANTHROPIC_API_KEY מחזיר no_api_key.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const MODEL = "claude-sonnet-5";
+// Claude Sonnet 5.5 (אותו מחיר כמו Sonnet 5). effort נמוך: חילוץ פשוט מתמונה
+const MODEL = "claude-sonnet-5-5";
 const MONTHLY_LIMIT = 40;
 const MAX_IMAGE_CHARS = 2_500_000; // ~1.8MB אחרי base64; הלקוח מקטין את התמונה לפני שליחה
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -41,9 +42,11 @@ Deno.serve(async (req) => {
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  const { count } = await sb.from("receipt_scans").select("id", { count: "exact", head: true })
+  const { count, error: countErr } = await sb.from("receipt_scans").select("id", { count: "exact", head: true })
     .eq("family_id", familyId).gte("created_at", monthStart);
-  if ((count ?? 0) >= MONTHLY_LIMIT) return json({ error: "monthly_limit", limit: MONTHLY_LIMIT }, 429);
+  // fail-closed: בלי מונה תקין (למשל הטבלה לא קיימת) אין קריאה ל-AI, אחרת המכסה לא נאכפת
+  if (countErr || count === null) return json({ error: "quota_unavailable" }, 503);
+  if (count >= MONTHLY_LIMIT) return json({ error: "monthly_limit", limit: MONTHLY_LIMIT }, 429);
 
   const input = await req.json().catch(() => ({} as Record<string, unknown>));
   const image = typeof input.image === "string" ? input.image : "";
@@ -60,7 +63,8 @@ Deno.serve(async (req) => {
   if (!Object.keys(categories).length) return json({ error: "no_categories" }, 400);
 
   // נספר את הניסיון לפני הקריאה, כדי שגם כשלונות לא יעקפו את המכסה
-  await sb.from("receipt_scans").insert({ family_id: familyId });
+  const { error: insErr } = await sb.from("receipt_scans").insert({ family_id: familyId });
+  if (insErr) return json({ error: "quota_unavailable" }, 503);
 
   const system = `אתם קוראים קבלות ישראליות מצילום. החזירו JSON בלבד, בלי טקסט לפניו או אחריו:
 {"merchant": "שם בית העסק", "total": 123.45, "date": "YYYY-MM-DD", "category": "...", "sub": "..."}
@@ -75,7 +79,8 @@ ${JSON.stringify(categories)}
     headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 400,
+      max_tokens: 4000,
+      output_config: { effort: "low" },
       system,
       messages: [{
         role: "user",
@@ -91,6 +96,7 @@ ${JSON.stringify(categories)}
     return json({ error: "ai_failed" }, 502);
   }
   const body = await r.json();
+  if (body.stop_reason === "refusal" || body.stop_reason === "max_tokens") return json({ error: "unreadable" }, 422);
   const text = (body.content ?? []).filter((b: { type: string }) => b.type === "text")
     .map((b: { text: string }) => b.text).join("");
   let raw: Record<string, unknown>;
