@@ -115,6 +115,26 @@ Deno.serve(async (req) => {
       .in("family_id", familyIds).eq("type", "expense").is("bill_id", null).neq("kind", "transfer").eq("hidden", false).is("duplicate_of", null)
       .gte("date", addDays(now.iso, -14)).lte("date", now.iso)) : Promise.resolve([] as Tx[]),
   ]);
+  // ימי הולדת (birthdays.sql). לפני ה-SQL השאילתה נכשלת ופשוט אין ימי הולדת
+  type Bday = { id: string; family_id: string; name: string; birth_date: string };
+  const [bdParents, bdKids] = await Promise.all([
+    safe<{ id: string; family_id: string; full_name: string | null; birth_date: string | null }>(supabase.from("profiles").select("id, family_id, full_name, birth_date").in("family_id", familyIds).not("birth_date", "is", null)),
+    safe<{ id: string; family_id: string; name: string; birth_date: string | null }>(supabase.from("children").select("id, family_id, name, birth_date").in("family_id", familyIds).not("birth_date", "is", null)),
+  ]);
+  const bdays: Bday[] = [
+    ...bdParents.map((p) => ({ id: p.id, family_id: p.family_id, name: String(p.full_name || "").trim().split(/\s+/)[0], birth_date: String(p.birth_date) })),
+    ...bdKids.map((k) => ({ id: k.id, family_id: k.family_id, name: String(k.name || "").trim().split(/\s+/)[0], birth_date: String(k.birth_date) })),
+  ].filter((b) => b.name);
+  // מי חוגג בתאריך מסוים (נולדו ב-29.2: בשנה לא מעוברת ב-28.2), עם הגיל
+  const bdaysOn = (familyId: string, iso: string) => {
+    const y = Number(iso.slice(0, 4));
+    const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    return bdays.filter((b) => b.family_id === familyId).map((b) => {
+      const md = b.birth_date.slice(5, 10) === "02-29" && !leap ? "02-28" : b.birth_date.slice(5, 10);
+      const age = y - Number(b.birth_date.slice(0, 4));
+      return md === iso.slice(5, 10) && age > 0 ? { ...b, age } : null;
+    }).filter(Boolean) as (Bday & { age: number })[];
+  };
   const shekel = (v: number) => `₪${Math.round(v).toLocaleString("he-IL")}`;
   const weekLines = (familyId: string) => {
     const lastStart = addDays(now.iso, -7), prevStart = addDays(now.iso, -14);
@@ -156,6 +176,8 @@ Deno.serve(async (req) => {
     const briefDue = input.force_brief || (!input.force_evening && p.brief_enabled && now.hour === p.brief_hour && now.minute < 15);
     if (briefDue) {
       const lines: string[] = [];
+      for (const b of bdaysOn(familyId, now.iso)) lines.push(b.id === userId ? `🎂 יום הולדת ${b.age} שמח` : `🎂 היום יום ההולדת של ${b.name} (${b.age})`);
+      for (const b of bdaysOn(familyId, addDays(now.iso, 7)).filter((b) => b.id !== userId)) lines.push(`🎂 בעוד שבוע: יום הולדת ${b.age} ל${b.name}`);
       if (isPrem) {
         const evs = todayEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId))
           .sort((a, b) => (toMin(a.start_time) ?? 9999) - (toMin(b.start_time) ?? 9999));
@@ -213,6 +235,7 @@ Deno.serve(async (req) => {
     const eveningDue = input.force_evening || (!input.force_brief && p.evening_enabled && now.hour === p.evening_hour && now.minute < 15);
     if (isPrem && eveningDue) {
       const lines: string[] = [];
+      for (const b of bdaysOn(familyId, tomorrow).filter((b) => b.id !== userId)) lines.push(`🎂 מחר יום ההולדת של ${b.name} (${b.age})`);
       const evs = tomorrowEvents.filter((e) => e.family_id === familyId && visibleTo(e, userId))
         .sort((a, b) => (toMin(a.start_time) ?? 9999) - (toMin(b.start_time) ?? 9999));
       if (evs.length) {
