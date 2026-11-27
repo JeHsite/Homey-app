@@ -17,9 +17,27 @@ const choreAppliesOn = (c, iso) => {
 const choreKidsOn = (c, iso) => {
   if (!choreAppliesOn(c, iso)) return [];
   if (c.assignMode !== 'rotate') return c.assignees;
-  const idx = c.repeat === 'weekly' ? choreWeekNo(iso) : choreDayNo(iso);
-  return [c.assignees[((idx % c.assignees.length) + c.assignees.length) % c.assignees.length]];
+  return [c.assignees[choreTurnIdx(c, iso, c.assignees.length)]];
 };
+function choreTurnIdx(c, iso, n) {
+  let idx;
+  if (c.repeat === 'weekly') idx = choreWeekNo(iso);
+  else {
+    const days = [...c.weekdays].sort((a, b) => a - b);
+    idx = choreWeekNo(iso) * days.length + Math.max(0, days.indexOf(plParse(iso).getDay()));
+  }
+  return ((idx % n) + n) % n;
+}
+// התורות הקרובים (כולל היום אם המטלה חלה היום): [{ date, kid }]
+function choreNextTurns(c, fromIso, count) {
+  const out = [];
+  for (let i = 0; i < 70 && out.length < count; i++) {
+    const d = plAddDays(fromIso, i);
+    const k = choreKidsOn(c, d)[0];
+    if (k) out.push({ date: d, kid: k });
+  }
+  return out;
+}
 const choreFromRow = r => ({ id: r.id, title: r.title, icon: r.icon, points: r.points, assignMode: r.assign_mode, assignees: r.assignees || [],
   repeat: r.repeat, weekdays: (r.weekdays || []).map(Number), active: r.active });
 const runFromRow = r => ({ id: r.id, choreId: r.chore_id, childId: r.child_id, date: String(r.date).slice(0, 10), status: r.status, points: r.points, doneAt: r.done_at, approvedAt: r.approved_at });
@@ -81,6 +99,7 @@ function useChores({ familyId, isDemo, enabled, showToast }) {
       const today = plToday();
       const missing = [];
       chores.forEach(ch => choreKidsOn(ch, today).forEach(k => {
+        if (ch.assignMode === 'rotate' && runs.some(x => x.choreId === ch.id && x.date === today)) return;
         if (!runs.some(x => x.choreId === ch.id && x.childId === k && x.date === today)) missing.push({ family_id: familyId, chore_id: ch.id, child_id: k, date: today, points: ch.points });
       }));
       if (missing.length) {
@@ -190,9 +209,27 @@ function useChores({ familyId, isDemo, enabled, showToast }) {
     patch(() => ({ rate }));
     if (!isDemo) await sb.from('families').update({ points_rate: rate }).eq('id', familyId);
   };
+  const swapToday = async c => {
+    const today = plToday();
+    const run = state.runs.find(r => r.choreId === c.id && r.date === today);
+    if (!run || run.status !== 'todo' || c.assignees.length < 2) return null;
+    const next = c.assignees[(c.assignees.indexOf(run.childId) + 1) % c.assignees.length];
+    await setRun(run, { childId: next }, { child_id: next });
+    // החלפה הוגנת: מי שוויתר היום לוקח את התור הבא של מי שהחליף אותו
+    const nt = choreNextTurns(c, plAddDays(today, 1), 1)[0];
+    if (nt && nt.kid === next && !state.runs.some(r => r.choreId === c.id && r.date === nt.date)) {
+      let row = { id: tmp(), choreId: c.id, childId: run.childId, date: nt.date, status: 'todo', points: c.points, doneAt: null, approvedAt: null };
+      if (!isDemo) {
+        const { data } = await sb.from('chore_runs').upsert({ family_id: familyId, chore_id: c.id, child_id: run.childId, date: nt.date, points: c.points }, { onConflict: 'chore_id,date,child_id' }).select().single();
+        if (data) row = runFromRow(data);
+      }
+      patch(st => ({ runs: [...st.runs, row] }));
+    }
+    return next;
+  };
   // award: נקודות ממקור אחר (למשל השלמת שגרה ב-modules/plan.js)
   const award = (childId, delta, reason) => addPoints(childId, delta, reason);
-  return { ...state, balance, markDone, unmark, approve, reject, addChore, toggleChore, deleteChore, addReward, deleteReward, redeem, convert, setRate, award };
+  return { ...state, balance, markDone, unmark, approve, reject, addChore, toggleChore, deleteChore, addReward, deleteReward, redeem, convert, setRate, award, swapToday };
 }
 
 const choreGate = (ch, isPremium, onUpgrade) => !isPremium ? React.createElement(PremiumLock, { title: 'תורנויות ונקודות הן תכונת פרימיום', desc: 'מטלות בית לילדים בסבב, נקודות על כל מטלה, פרסים והמרה לדמי כיס.', onUpgrade })
@@ -361,7 +398,17 @@ function ChoresPage({ ch, members, me, isChild, isPremium, onUpgrade, currency }
           React.createElement('p', { className: 'text-xs', style: { color: 'var(--text-muted)' } },
             [c.assignees.map(nameOf).filter(Boolean).join(', '), c.assignMode === 'rotate' && c.assignees.length > 1 ? 'בסבב' : null,
               c.repeat === 'weekly' ? `כל יום ${PL_DAYS[c.weekdays[0] ?? 0]}` : c.weekdays.length === 7 ? 'כל יום' : c.weekdays.map(i => PL_DAYS[i]).join(', '),
-              c.assignMode === 'rotate' && choreKidsOn(c, today)[0] ? `היום: ${nameOf(choreKidsOn(c, today)[0])}` : null].filter(Boolean).join(' · '))),
+              null].filter(Boolean).join(' · ')),
+          c.assignMode === 'rotate' && c.assignees.length > 1 && c.active && (() => {
+            const todayRun = ch.runs.find(r => r.choreId === c.id && r.date === today);
+            // תור שכבר נקבע (מופע קיים, למשל אחרי החלפה) גובר על החישוב
+            const turns = choreNextTurns(c, today, 4).map(t => { const r = ch.runs.find(x => x.choreId === c.id && x.date === t.date); return r ? { ...t, kid: r.childId } : t; });
+            return React.createElement('p', { className: 'chore-turns' },
+              turns.map((t, i) => React.createElement('span', { key: t.date, className: i === 0 ? 'now' : '' },
+                `${t.date === today ? 'היום' : t.date === plAddDays(today, 1) ? 'מחר' : PL_DAYS[plParse(t.date).getDay()]}: ${nameOf(t.kid)}`)),
+              todayRun && todayRun.status === 'todo' && React.createElement('button', { type: 'button', className: 'chore-swap', onClick: () => ch.swapToday(c),
+                'aria-label': `להעביר את התור של היום מ${nameOf(todayRun.childId)} לילד הבא` }, '⇄ החלפה היום'));
+          })()),
         React.createElement('button', { className: 'ent-pill-btn ghost px-2.5 py-1 text-xs', onClick: () => ch.toggleChore(c) }, c.active ? 'השהיה' : 'הפעלה'),
         React.createElement('button', { className: 'ent-icon-btn', 'aria-label': `מחיקת ${c.title}`, onClick: () => ch.deleteChore(c) }, React.createElement(ITrash, { size: 15 }))))),
     // פרסים ושווי נקודה

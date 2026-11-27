@@ -887,6 +887,9 @@ body[data-compact="1"] main { gap: .75rem; }
   .td-month-extra { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--navy-panel-2); font-size: 14px; margin-bottom: 6px; }
   .td-month-extra.hol { color: #fbbf24; font-weight: 700; }
   .td-month-extra.is-done { opacity: .6; }
+  .chore-turns { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  .chore-turns .now { color: var(--bronze); font-weight: 700; }
+  .chore-swap { font-size: 12px; font-weight: 600; color: var(--cyan); padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--cyan) 40%, transparent); }
   .td-month-extra.bday { color: #f9a8d4; font-weight: 700; }
   .td-month-cake { position: absolute; bottom: 3px; left: 4px; font-size: 11px; line-height: 1; }
   .td-bday { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px;
@@ -1368,7 +1371,7 @@ document.addEventListener('click', function (e) {
 <script src="modules/shopping.js?v=3"></script>
 <script src="modules/kitchen.js?v=1"></script>
 <script src="modules/events.js?v=3"></script>
-<script src="modules/chores.js?v=2"></script>
+<script src="modules/chores.js?v=3"></script>
 <script src="modules/plan.js?v=2"></script>
 <script src="modules/heparse.js?v=3"></script>
 <script src="modules/today.js?v=8"></script>
